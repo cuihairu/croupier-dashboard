@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Space, Tag, Button, Select, Input, App, Drawer, Typography } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { listOpsJobs, type OpsJob, listOpsFunctions } from '@/services/croupier/ops';
-import { cancelJob, fetchJobResult } from '@/services/croupier/functions';
+import { cancelJob, fetchJobResult, openJobEventSource } from '@/services/croupier/functions';
 const { Paragraph, Text } = Typography;
 
 export default function OpsJobsPage() {
@@ -18,9 +19,21 @@ export default function OpsJobsPage() {
   const [result, setResult] = useState<{ state?: string; payload?: any; error?: string }|null>(null);
   const esRef = useRef<EventSource | null>(null);
 
-  const load = async ()=>{
+  const load = async () => {
     setLoading(true);
-    try { const r = await listOpsJobs({ status, function_id: fid, actor }); setRows(r.jobs||[]); } catch(e:any){ message.error(e?.message||'加载失败'); } finally { setLoading(false); }
+    try {
+      const params: Record<string, string> = {};
+      if (status) params.status = status;
+      if (fid) params.function_id = fid;
+      const actorValue = actor.trim();
+      if (actorValue) params.actor = actorValue;
+      const r = await listOpsJobs(params);
+      setRows(r.jobs || []);
+    } catch (e: any) {
+      message.error(e?.message || '加载失败');
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect(()=>{ load(); }, [status, fid, actor]);
   useEffect(()=>{ (async()=>{ try { const s = await listOpsFunctions(); setFuncs((s.functions||[]).map(x=>x.id)); } catch{} })(); }, []);
@@ -33,7 +46,7 @@ export default function OpsJobsPage() {
     if (detail.state !== 'running') return;
     try { if (esRef.current) { esRef.current.close(); esRef.current = null; } } catch {}
     const id = detail.id;
-    const es = new EventSource(`/api/stream_job?id=${encodeURIComponent(id)}`);
+    const es = openJobEventSource(id);
     const push = (type: string, data: any) => {
       setStream(prev => [...prev, `${type}: ${typeof data==='string'?data:JSON.stringify(data)}`].slice(-200));
     };
@@ -80,7 +93,7 @@ export default function OpsJobsPage() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
+    <PageContainer>
       <Card title="任务监控" extra={
         <Space>
           <Select placeholder='状态' allowClear style={{ width:140 }} value={status||undefined} onChange={(v)=> setStatus(v||'')} options={[{label:'running',value:'running'},{label:'succeeded',value:'succeeded'},{label:'failed',value:'failed'},{label:'canceled',value:'canceled'}]} />
@@ -127,7 +140,7 @@ export default function OpsJobsPage() {
                 try {
                   if (esRef.current) { esRef.current.close(); esRef.current = null; }
                 } catch {}
-                const es = new EventSource(`/api/stream_job?id=${encodeURIComponent(detail.id)}`);
+                const es = openJobEventSource(detail.id);
                 const push = (type: string, data: any) => setStream(prev => [...prev, `${type}: ${typeof data==='string'?data:JSON.stringify(data)}`].slice(-200));
                 es.onmessage = (ev)=> push('message', ev.data);
                 ['stdout','stderr','progress','log'].forEach(t => es.addEventListener(t, (ev: MessageEvent)=> push(t, (ev as any).data)));
@@ -143,6 +156,6 @@ export default function OpsJobsPage() {
           </Space>
         )}
       </Drawer>
-    </div>
+    </PageContainer>
   );
 }

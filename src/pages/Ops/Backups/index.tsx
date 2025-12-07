@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Tag, Modal, Form, Input, Select, App } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
 import { request } from '@umijs/max';
+import { apiUrl } from '@/utils/api';
 
 type Backup = { id:string; kind:string; target?:string; path:string; size:number; status:string; error?:string; created_at:string };
 
@@ -17,7 +19,7 @@ export default function OpsBackupsPage() {
   const del = async (r:Backup)=>{ try{ await request(`/api/ops/backups/${r.id}`, { method:'DELETE' }); message.success('已删除'); load(); } catch(e:any){ message.error(e?.message||'失败'); } };
 
   return (
-    <div style={{ padding: 24 }}>
+    <PageContainer>
       <Card title='数据备份' extra={<Space>
         <Button onClick={load} loading={loading}>刷新</Button>
         <Button type='primary' onClick={()=>{ form.resetFields(); setOpen(true); }}>创建备份</Button>
@@ -33,7 +35,7 @@ export default function OpsBackupsPage() {
             { title:'时间', dataIndex:'created_at' },
             { title:'操作', render: (_:any, r:Backup)=> (
               <Space>
-                <a href={`/api/ops/backups/${encodeURIComponent(r.id)}/download`} target='_blank' rel='noreferrer'>下载</a>
+                <a href={apiUrl(`/api/ops/backups/${encodeURIComponent(r.id)}/download`)} target='_blank' rel='noreferrer'>下载</a>
                 <Button size='small' danger onClick={()=> Modal.confirm({ title:'删除备份', onOk: ()=> del(r) })}>删除</Button>
               </Space>
             ) },
@@ -51,7 +53,6 @@ export default function OpsBackupsPage() {
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </PageContainer>
   );
 }
-

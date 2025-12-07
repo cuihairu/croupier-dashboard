@@ -21,23 +21,46 @@ export type OpsAgent = {
   qps_1m?: number;
 };
 
+export type OpsService = {
+  id: string;
+  name: string;
+  type: 'server' | 'agent';
+  status: 'running' | 'healthy' | 'expired';
+  address?: string;
+  gameId?: string;
+  env?: string;
+  version?: string;
+  region?: string;
+  zone?: string;
+  labels?: Record<string, string>;
+  functionsCount?: number;
+  lastSeen?: string;
+  metadata?: Record<string, any>;
+};
+
+export type OpsServicesResponse = {
+  services: OpsService[];
+  total: number;
+};
+
 export async function fetchOpsServices() {
-  return request<{ agents: OpsAgent[] }>("/api/ops/services");
+  return request<OpsServicesResponse>("/api/v1/ops/services");
 }
 
 export type RateLimitRule = { scope: 'function'|'service'; key: string; limit_qps: number; match?: Record<string,string>; percent?: number };
+const RATE_LIMIT_BASE = '/api/v1/rate-limits';
 export async function listRateLimits() {
-  return request<{ rules: RateLimitRule[] }>("/api/ops/rate-limits");
+  return request<{ rules: RateLimitRule[] }>(RATE_LIMIT_BASE);
 }
 export async function putRateLimits(rules: RateLimitRule[]) {
-  return request<void>("/api/ops/rate-limits", { method: 'PUT', data: { rules } });
+  return request<void>(RATE_LIMIT_BASE, { method: 'PUT', data: { rules } });
 }
 export async function deleteRateLimit(scope: string, key: string) {
-  return request<void>(`/api/ops/rate-limits?scope=${encodeURIComponent(scope)}&key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+  return request<void>(`${RATE_LIMIT_BASE}?scope=${encodeURIComponent(scope)}&key=${encodeURIComponent(key)}`, { method: 'DELETE' });
 }
 export async function previewRateLimit(params: { scope: 'service'; key?: string; limit_qps: number; percent?: number; match_game_id?: string; match_env?: string; match_region?: string; match_zone?: string }) {
   return request<{ matched: number; agents: { agent_id: string; game_id?: string; env?: string; region?: string; zone?: string; rpc_addr?: string; qps: number }[] }>(
-    "/api/ops/rate-limits/preview",
+    `${RATE_LIMIT_BASE}/preview`,
     { params },
   );
 }
@@ -61,7 +84,7 @@ export type OpsJob = {
   trace_id?: string;
 };
 export async function listOpsJobs(params?: { status?: string; function_id?: string; actor?: string; game_id?: string; env?: string; page?: number; size?: number }) {
-  return request<{ jobs: OpsJob[]; total: number }>("/api/ops/jobs", { params });
+  return request<{ jobs: OpsJob[]; total: number }>("/api/v1/jobs", { params });
 }
 
 export async function fetchOpsMetrics(params: { instance: string; range?: string; step?: string }) {
@@ -69,10 +92,10 @@ export async function fetchOpsMetrics(params: { instance: string; range?: string
 }
 
 export async function listSilences() {
-  return request<{ silences: any[] }>("/api/ops/alerts/silences");
+  return request<{ silences: any[] }>("/api/v1/ops/silences");
 }
 export async function deleteSilence(id: string) {
-  return request<void>(`/api/ops/alerts/silences/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  return request<void>(`/api/v1/ops/silences/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 export async function fetchOpsConfig() {
   return request<{ alertmanager_url?: string; grafana_explore_url?: string }>("/api/ops/config");

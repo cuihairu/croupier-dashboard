@@ -31,7 +31,13 @@ export default {
   'menu.GameManagement': 'Game Management',
   'menu.GameManagement.GameEnvironments': 'Game Environments',
   'menu.GameManagement.GameEntities': 'Entity Management',
-  'menu.GameManagement.GameFunctions': 'Function Management',
+  'menu.GameManagement.FunctionManagement': 'Function Management',
+  'menu.GameManagement.FunctionManagement.FunctionCatalog': 'Function Catalog',
+  'menu.GameManagement.FunctionManagement.FunctionInvoke': 'Function Invoke',
+  'menu.GameManagement.FunctionManagement.FunctionInstances': 'Instance Management',
+  'menu.GameManagement.FunctionManagement.FunctionAssignments': 'Permission Assignments',
+  'menu.GameManagement.FunctionManagement.FunctionPacks': 'Pack Management',
+  'menu.GameManagement.GameFunctionsLegacy': 'Legacy Function Center',
   'menu.GameManagement.ComponentManagement': 'Component Management',
   'menu.GameManagement.GameAssignments': 'Function Assignments',
   'menu.GameManagement.GamePacks': 'Pack Management',
@@ -72,6 +78,7 @@ export default {
   'menu.Analytics.Segments': 'Segments',
 
   // Legacy menu items (for backward compatibility)
+  'menu.GameAssignments': 'Assignments',
   'menu.GM': 'Game Management',
   'menu.GM.Approvals': 'Approvals',
   'menu.GM.Functions': 'Functions',

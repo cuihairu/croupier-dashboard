@@ -61,12 +61,14 @@ export default [
         name: 'Registry',
         access: 'canRegistryRead',
         component: './Registry',
+        hideInMenu: true,
       },
       {
         path: '/operations/servers',
         name: 'Servers',
         access: 'canRegistryRead',
         component: './Servers',
+        hideInMenu: true,
       },
       {
         path: '/operations/configs',
@@ -137,9 +139,9 @@ export default [
         name: 'UserAccount',
         icon: 'user',
         routes: [
-          { path: '/admin/account/center', name: 'Center', component: './Account/Center' },
-          { path: '/admin/account/settings', name: 'Settings', component: './Account/Settings' },
-          { path: '/admin/account/messages', name: 'Messages', component: './Account/Messages' },
+          { path: '/admin/account/center', name: 'Center', component: './Profile' },
+          { path: '/admin/account/settings', name: 'Settings', redirect: '/admin/account/center?tab=security' },
+          { path: '/admin/account/messages', name: 'Messages', redirect: '/admin/account/center?tab=notifications' },
         ],
       },
       // Back-office user management (mirrors Security pages for convenience)
@@ -201,18 +203,68 @@ export default [
         access: 'canEntitiesRead',
         component: './Entities',
       },
+      // 函数管理模块 - 重构后的统一函数管理菜单
       {
         path: '/game/functions',
-        name: 'GameFunctions',
+        name: 'FunctionManagement',
+        access: 'canFunctionsRead',
+        routes: [
+          {
+            path: '/game/functions',
+            redirect: '/game/functions/catalog',
+          },
+          {
+            path: '/game/functions/catalog',
+            name: 'FunctionCatalog',
+            access: 'canFunctionsRead',
+            component: './Functions/Directory',
+            icon: 'unordered-list',
+          },
+          {
+            path: '/game/functions/invoke',
+            name: 'FunctionInvoke',
+            access: 'canFunctionsRead',
+            component: './GmFunctions',
+            icon: 'play-circle',
+          },
+          {
+            path: '/game/functions/instances',
+            name: 'FunctionInstances',
+            access: 'canFunctionsRead',
+            component: './Functions/Instances',
+            icon: 'cluster',
+          },
+          {
+            path: '/game/functions/assignments',
+            name: 'FunctionAssignments',
+            access: 'canAssignmentsRead',
+            component: './Assignments',
+            icon: 'safety',
+          },
+          {
+            path: '/game/functions/packs',
+            name: 'FunctionPacks',
+            access: 'canPacksRead',
+            component: './Packs',
+            icon: 'inbox',
+          },
+        ],
+      },
+      // 保持向后兼容的重定向
+      {
+        path: '/game/functions/old',
+        name: 'GameFunctionsLegacy',
         access: 'canFunctionsRead',
         component: './GmFunctions',
+        hideInMenu: true,
       },
-      // 新增统一组件管理中心
+      // 新增统一组件管理中心（主菜单已迁移到 /components）
       {
         path: '/game/component-management',
         name: 'ComponentManagement',
         access: 'canFunctionsRead',
         component: './ComponentManagement',
+        hideInMenu: true,
       },
       // 游戏运营管理
       {
@@ -250,7 +302,6 @@ export default [
       { path: '/ops/maintenance', name: 'Maintenance', access: 'canOpsManage', component: './Ops/Maintenance' },
     ],
   },
-  // Security menu removed (duplicated with AdminUsers/Permissions)
   {
     path: '/',
     redirect: '/analytics/realtime',
@@ -319,6 +370,22 @@ export default [
   {
     path: '/gm',
     redirect: '/game/meta',
+  },
+  // Security menu removed (duplicated with AdminUsers/Permissions)
+  {
+    path: '/components',
+    name: 'ComponentManagement',
+    icon: 'appstore',
+    access: 'canFunctionsRead',
+    component: './ComponentManagement',
+  },
+  // 后台组件分配，显式展示在主菜单
+  {
+    path: '/assignments',
+    name: 'GameAssignments',
+    icon: 'branches',
+    access: 'canAssignmentsRead',
+    component: './Assignments',
   },
   {
     path: '*',

@@ -4,7 +4,7 @@ import FormRender from 'form-render';
 import { getMessage } from '@/utils/antdApp';
 import GameSelector from '@/components/GameSelector';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
-import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments } from '@/services/croupier';
+import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/croupier';
 import { getRenderer, registerBuiltins, loadPackPlugins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
 
@@ -324,13 +324,15 @@ export default function GmFunctionsPage() {
   const [formData, setFormData] = useState<any>({});
   const [renderMode, setRenderMode] = useState<'form-render' | 'enhanced' | 'legacy'>('enhanced');
 
-  const currentDesc = useMemo(() => descs.find((d) => d.id === currentId), [descs, currentId]);
+  const currentDesc = useMemo(() => (Array.isArray(descs) ? descs : []).find((d) => d.id === currentId), [descs, currentId]);
 
   useEffect(() => {
     registerBuiltins();
     loadPackPlugins().catch(()=>{});
     listDescriptors().then((d) => {
-      setDescs(d);
+      const raw = Array.isArray(d) ? d : Array.isArray((d as any)?.descriptors) ? (d as any).descriptors : [];
+      const arr = Array.isArray(raw) ? raw : [];
+      setDescs(arr);
       // initial filter by assignments (if any)
       const gid = localStorage.getItem('game_id') || undefined;
       const env = localStorage.getItem('env') || undefined;
@@ -338,14 +340,14 @@ export default function GmFunctionsPage() {
         fetchAssignments({ game_id: gid, env }).then((res)=>{
           const m = res?.assignments || {};
           const fns = Object.values(m).flat();
-          const dd = (Array.isArray(d)?d:[]);
+          const dd = Array.isArray(arr) ? arr : [];
           const filt = (fns && fns.length>0) ? dd.filter(x => fns.includes(x.id)) : dd;
           setFilteredDescs(filt);
           if (filt?.length) setCurrentId(filt[0].id);
-        }).catch(()=>{ setFilteredDescs(d); if (d?.length) setCurrentId(d[0].id); });
+        }).catch(()=>{ setFilteredDescs(arr); if (arr?.length) setCurrentId(arr[0].id); });
       } else {
-        setFilteredDescs(d);
-        if (d?.length) setCurrentId(d[0].id);
+        setFilteredDescs(arr);
+        if (arr?.length) setCurrentId(arr[0].id);
       }
     });
     return () => {
@@ -371,22 +373,22 @@ export default function GmFunctionsPage() {
         setInstances(res.instances||[]);
       });
       // fetch UI schema (optional)
-      fetch(`/api/ui_schema?id=${encodeURIComponent(currentId)}`).then(async (resp)=>{
-        if (!resp.ok) return;
-        const json = await resp.json();
-        setUiSchema(json.uischema || json.uiSchema || { fields: {} });
-      }).catch(()=>{});
+      fetchFunctionUiSchema(currentId)
+        .then((json) => {
+          setUiSchema(json?.uischema || json?.uiSchema || { fields: {} });
+        })
+        .catch(() => {});
       // refresh assignments filter when scope changes
+      const safeDescs = Array.isArray(descs) ? descs : [];
       if (gid) {
         fetchAssignments({ game_id: gid, env }).then((res)=>{
           const m = res?.assignments || {};
           const fns = Object.values(m).flat();
-          const dd = descs;
-          const filt = (fns && fns.length>0) ? dd.filter(x => fns.includes(x.id)) : dd;
+          const filt = (fns && fns.length>0) ? safeDescs.filter(x => fns.includes(x.id)) : safeDescs;
           setFilteredDescs(filt);
-        }).catch(()=>{ setFilteredDescs(descs); });
+        }).catch(()=>{ setFilteredDescs(safeDescs); });
       } else {
-        setFilteredDescs(descs);
+        setFilteredDescs(safeDescs);
       }
     } else {
       setInstances([]);
@@ -449,7 +451,7 @@ export default function GmFunctionsPage() {
       setLastOutput(undefined);
       // open SSE
       if (esRef.current) esRef.current.close();
-      const es = new EventSource(`/api/stream_job?id=${encodeURIComponent(res.job_id)}`);
+      const es = openJobEventSource(res.job_id);
       es.onmessage = (ev) => setEvents((prev) => [...prev, ev.data]);
       es.addEventListener('done', () => es.close());
       es.addEventListener('error', () => es.close());
@@ -544,11 +546,29 @@ export default function GmFunctionsPage() {
                 onChange={(e)=>setHashKey(e.target.value)} />
             </>
           )}
-        </Space>
+      </Space>
 
-        {/* Form Rendering Section */}
-        {(() => {
-          if (renderMode === 'form-render' && currentDesc?.params) {
+      {/* 配置可视化，便于后台查看参数与 UI 定制 */}
+      <Row gutter={16}>
+        <Col span={12}>
+          <Card size="small" title="参数 Schema">
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
+              {currentDesc?.params ? JSON.stringify(currentDesc.params, null, 2) : '无参数定义'}
+            </pre>
+          </Card>
+        </Col>
+        <Col span={12}>
+          <Card size="small" title="UI 参数 (uiSchema)">
+            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
+              {uiSchema ? JSON.stringify(uiSchema, null, 2) : '无 UI Schema'}
+            </pre>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Form Rendering Section */}
+      {(() => {
+        if (renderMode === 'form-render' && currentDesc?.params) {
             return (
               <FormRender
                 schema={currentDesc.params}

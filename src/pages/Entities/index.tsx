@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Modal } from 'antd';
-import { ProColumns } from '@ant-design/pro-components';
+import { ProColumns, PageContainer } from '@ant-design/pro-components';
 import GameSelector from '@/components/GameSelector';
 import XResourceTable from '@/components/XResourceTable';
 import XEntityForm from '@/components/XEntityForm';
@@ -132,7 +132,15 @@ export default function EntitiesPage() {
       dataIndex: 'operations',
       key: 'operations',
       width: 150,
-      render: (operations: string[]) => operations?.join(', ') || '-',
+      render: (operations: string[] | string | undefined) => {
+        if (Array.isArray(operations)) {
+          return operations.length ? operations.join(', ') : '-';
+        }
+        if (typeof operations === 'string') {
+          return operations || '-';
+        }
+        return '-';
+      },
     },
     {
       title: 'Updated',
@@ -163,7 +171,8 @@ export default function EntitiesPage() {
   };
 
   return (
-    <Card title="Entity Management" extra={<GameSelector />}>
+    <PageContainer>
+      <Card title="Entity Management" extra={<GameSelector />}>
       <XResourceTable<EntityDefinition>
         dataSource={entities}
         loading={loading}
@@ -229,6 +238,7 @@ export default function EntitiesPage() {
       >
         <div dangerouslySetInnerHTML={{ __html: previewContent }} />
       </Modal>
-    </Card>
+      </Card>
+    </PageContainer>
   );
 }

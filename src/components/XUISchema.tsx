@@ -190,19 +190,19 @@ export function renderXUIField(
     (uiField.label || fieldName);
 
   const formItemProps = {
-    key: namePath.join('.'),
     name: namePath,
     label,
     rules,
     hidden: !shouldShow,
     tooltip: uiField.description,
   };
+  const formItemKey = namePath.join('.');
 
   // Render appropriate widget
   const inputComponent = renderWidget(widget, schema, uiField, shouldDisable, formData);
 
   return (
-    <Form.Item {...formItemProps}>
+    <Form.Item key={formItemKey} {...formItemProps}>
       {inputComponent}
     </Form.Item>
   );

@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Space, Typography, Button, Tooltip } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
 import { getMessage } from '@/utils/antdApp';
 import GameSelector from '@/components/GameSelector';
 import { listPacks, reloadPacks } from '@/services/croupier';
 import { useModel } from '@umijs/max';
+import { apiUrl } from '@/utils/api';
 
 export default function PacksPage() {
   const [loading, setLoading] = useState(false);
@@ -35,8 +37,9 @@ export default function PacksPage() {
   const onReload = async () => { setLoading(true); try { await reloadPacks(); getMessage()?.success('Reloaded'); await load(); } catch (e:any){ getMessage()?.error(e?.message || 'Reload failed'); } finally { setLoading(false); } };
 
   return (
-    <Card title="Packs" extra={<GameSelector />}> 
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+    <PageContainer>
+      <Card title="Packs" extra={<GameSelector />}> 
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
         <Typography.Text>
           Descriptors: <b>{counts.descriptors}</b>, UI Schema: <b>{counts.ui_schema}</b> {etag ? (<span> / ETag: <b style={{fontFamily:'monospace'}}>{etag.slice(0,12)}...</b></span>) : null}
         </Typography.Text>
@@ -49,7 +52,7 @@ export default function PacksPage() {
             <Button onClick={onReload} loading={loading}>Reload</Button>
           ) : null}
           {canExport ? (
-            <Button onClick={()=>{ window.location.href = '/api/packs/export'; }}>Export</Button>
+            <Button onClick={()=>{ window.location.href = apiUrl('/api/packs/export'); }}>Export</Button>
           ) : (
             exportAuthRequired ? (
               <Tooltip title="Server requires packs:export to download export"><span><Button disabled>Export</Button></span></Tooltip>
@@ -59,6 +62,7 @@ export default function PacksPage() {
           {(!canReload && !canExport) ? (<Typography.Text type="secondary">No permission for Reload/Export</Typography.Text>) : null}
         </Space>
       </Space>
-    </Card>
+      </Card>
+    </PageContainer>
   );
 }

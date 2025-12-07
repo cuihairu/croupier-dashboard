@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Tag, Select, Input, Button, App, Modal, Form, Input as AntInput } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { listConfigs, getConfig, saveConfig, validateConfig, listVersions, getVersion } from '@/services/croupier/configs';
 import { CodeEditor, DiffEditor as MonacoDiff } from '@/components/MonacoDynamic';
@@ -24,7 +25,13 @@ export default function OperationsConfigsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const r = await listConfigs({ game_id: game, env, format, id_like: q });
+      const params: Record<string, string> = {};
+      if (game) params.game_id = game;
+      if (env) params.env = env;
+      if (format) params.format = format;
+      const term = q.trim();
+      if (term) params.id_like = term;
+      const r = await listConfigs(params);
       setRows(r?.items||[]);
     } catch { message.error('加载失败'); }
     finally { setLoading(false); }
@@ -95,7 +102,7 @@ export default function OperationsConfigsPage() {
   };
 
   return (
-    <div style={{ padding: 24 }}>
+    <PageContainer>
       <Card title='配置管理' extra={<Space>
         <Select allowClear placeholder='Game' value={game} onChange={setGame as any} style={{ width: 140 }} options={games} />
         <Select allowClear placeholder='Env' value={env} onChange={setEnv as any} style={{ width: 120 }} options={envs} />
@@ -156,7 +163,7 @@ export default function OperationsConfigsPage() {
         </div>
         {!hasMonaco() && <DiffView left={diffLeft} right={diffRight} />}
       </Modal>
-    </div>
+    </PageContainer>
   );
 }
 

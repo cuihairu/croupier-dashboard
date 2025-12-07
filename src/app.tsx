@@ -1,6 +1,6 @@
 import { Footer, Question, SelectLang, AvatarDropdown, AvatarName } from '@/components';
 import MessagesBell from '@/components/MessagesBell';
-import { LinkOutlined } from '@ant-design/icons';
+import { LinkOutlined, UserOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
@@ -8,7 +8,7 @@ import { history, Link } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { fetchMe } from '@/services/croupier';
+import { fetchCurrentUser } from '@/services/croupier';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
@@ -29,8 +29,16 @@ export async function getInitialState(): Promise<{
     try {
       const token = localStorage.getItem('token');
       if (!token) return undefined;
-      const me = await fetchMe();
-      return { name: me.username, userid: me.username, access: (me.roles||[]).join(',') } as any;
+      const currentUser = await fetchCurrentUser();
+      const roles = (currentUser.roles || []).map((role) =>
+        typeof role === 'string' ? role.toLowerCase() : role,
+      );
+      return {
+        name: currentUser.username,
+        userid: currentUser.username,
+        access: roles.join(','),
+        roles,
+      } as any;
     } catch (error) {
       history.push(loginPath);
       return undefined;
@@ -71,15 +79,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     ].filter(Boolean) as any,
     avatarProps: {
       src: initialState?.currentUser?.avatar,
+      icon: initialState?.currentUser?.avatar ? undefined : <UserOutlined />,
       title: <AvatarName />,
       render: (_, avatarChildren) => {
         return <AvatarDropdown menu>{avatarChildren}</AvatarDropdown>;
       },
     },
-    waterMarkProps: {
-      content: initialState?.currentUser?.name,
-    },
     footerRender: () => <Footer />,
+    
     onPageChange: () => {
       const { location } = history;
       // 如果没有登录，重定向到 login

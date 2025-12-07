@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, DatePicker, Select, Button, Row, Col, Statistic, Divider, Table } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
+import { useIntl } from '@umijs/max';
 import { exportToXLSX } from '@/utils/export';
 import { fetchAnalyticsOverview } from '@/services/croupier/analytics';
 
 export default function AnalyticsOverviewPage() {
+  const intl = useIntl();
   const [loading, setLoading] = useState(false);
   const [range, setRange] = useState<any>(null);
   const [channel, setChannel] = useState<string>('');
@@ -67,42 +70,36 @@ export default function AnalyticsOverviewPage() {
   };
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card title="概览 KPI" extra={
-        <Space>
-          <DatePicker.RangePicker showTime value={range as any} onChange={setRange as any} />
-          <Select allowClear placeholder="渠道" value={channel} onChange={setChannel} style={{ width: 140 }} options={[]} />
-          <Select allowClear placeholder="平台" value={platform} onChange={setPlatform} style={{ width: 140 }} options={[]} />
-          <Button type="primary" onClick={load}>查询</Button>
-          <Button onClick={exportExcel}>导出 Excel</Button>
+    <PageContainer>
+      <Card title={intl.formatMessage({ id: 'pages.analytics.overview.title' } || '概览 KPI')}>
+        <Space direction="vertical" size={16} style={{ width: '100%' }}>
+          <Row gutter={[16,16]}>
+            <Col span={4}><Card loading={loading}><Statistic title="DAU" value={data?.dau||0} /></Card></Col>
+            <Col span={4}><Card loading={loading}><Statistic title="WAU" value={data?.wau||0} /></Card></Col>
+            <Col span={4}><Card loading={loading}><Statistic title="MAU" value={data?.mau||0} /></Card></Col>
+            <Col span={4}><Card loading={loading}><Statistic title="新增" value={data?.new_users||0} /></Card></Col>
+            <Col span={4}><Card loading={loading}><Statistic title="注册用户总数" value={data?.registered_total||0} /></Card></Col>
+            <Col span={4}><Card loading={loading}><Statistic title="收入(分)" value={data?.revenue_cents||0} /></Card></Col>
+          </Row>
+          <Row gutter={[16,16]}>
+            <Col span={8}><Card loading={loading}><Statistic title="付费率" suffix="%" value={data?.pay_rate||0} /></Card></Col>
+            <Col span={8}><Card loading={loading}><Statistic title="ARPU" value={data?.arpu||0} /></Card></Col>
+            <Col span={8}><Card loading={loading}><Statistic title="ARPPU" value={data?.arppu||0} /></Card></Col>
+          </Row>
+          <Divider />
+          <Row gutter={[16,16]}>
+            <Col span={8}><Card loading={loading}><Statistic title="D1 留存" value={data?.d1||0} suffix="%" /></Card></Col>
+            <Col span={8}><Card loading={loading}><Statistic title="D7 留存" value={data?.d7||0} suffix="%" /></Card></Col>
+            <Col span={8}><Card loading={loading}><Statistic title="D30 留存" value={data?.d30||0} suffix="%" /></Card></Col>
+          </Row>
+          <Divider />
+          <Row gutter={[16,16]}>
+            <Col span={8}><Card size="small" title="每日新增（曲线）"><Spark data={data?.series?.new_users||[]} /></Card></Col>
+            <Col span={8}><Card size="small" title="每日峰值在线（曲线）"><Spark data={data?.series?.peak_online||[]} /></Card></Col>
+            <Col span={8}><Card size="small" title="每日充值(分)（曲线）"><Spark data={data?.series?.revenue_cents||[]} /></Card></Col>
+          </Row>
         </Space>
-      }>
-        <Row gutter={[16,16]}>
-          <Col span={4}><Card loading={loading}><Statistic title="DAU" value={data?.dau||0} /></Card></Col>
-          <Col span={4}><Card loading={loading}><Statistic title="WAU" value={data?.wau||0} /></Card></Col>
-          <Col span={4}><Card loading={loading}><Statistic title="MAU" value={data?.mau||0} /></Card></Col>
-          <Col span={4}><Card loading={loading}><Statistic title="新增" value={data?.new_users||0} /></Card></Col>
-          <Col span={4}><Card loading={loading}><Statistic title="注册用户总数" value={data?.registered_total||0} /></Card></Col>
-          <Col span={4}><Card loading={loading}><Statistic title="收入(分)" value={data?.revenue_cents||0} /></Card></Col>
-        </Row>
-        <Row gutter={[16,16]} style={{ marginTop: 12 }}>
-          <Col span={8}><Card loading={loading}><Statistic title="付费率" suffix="%" value={data?.pay_rate||0} /></Card></Col>
-          <Col span={8}><Card loading={loading}><Statistic title="ARPU" value={data?.arpu||0} /></Card></Col>
-          <Col span={8}><Card loading={loading}><Statistic title="ARPPU" value={data?.arppu||0} /></Card></Col>
-        </Row>
-        <Divider />
-        <Row gutter={[16,16]}>
-          <Col span={8}><Card loading={loading}><Statistic title="D1 留存" value={data?.d1||0} suffix="%" /></Card></Col>
-          <Col span={8}><Card loading={loading}><Statistic title="D7 留存" value={data?.d7||0} suffix="%" /></Card></Col>
-          <Col span={8}><Card loading={loading}><Statistic title="D30 留存" value={data?.d30||0} suffix="%" /></Card></Col>
-        </Row>
-        <Divider />
-        <Row gutter={[16,16]}>
-          <Col span={8}><Card size="small" title="每日新增（曲线）"><Spark data={data?.series?.new_users||[]} /></Card></Col>
-          <Col span={8}><Card size="small" title="每日峰值在线（曲线）"><Spark data={data?.series?.peak_online||[]} /></Card></Col>
-          <Col span={8}><Card size="small" title="每日充值(分)（曲线）"><Spark data={data?.series?.revenue_cents||[]} /></Card></Col>
-        </Row>
       </Card>
-    </div>
+    </PageContainer>
   );
 }
