@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Form, Input, InputNumber, Switch, Select, DatePicker, TimePicker, Rate, Slider, Cascader, TreeSelect, Checkbox, Radio, Upload, Button, Space, Typography, Card, Alert, Divider } from 'antd';
+import { Form, Input, InputNumber, Switch, Select, DatePicker, TimePicker, Rate, Slider, Cascader, TreeSelect, Checkbox, Radio, Upload, Button, Space, Typography, Card, Alert, Divider, Tabs } from 'antd';
 import { UploadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
 import type { FormInstance } from 'antd';
@@ -36,7 +36,7 @@ export type JSONSchema = {
 
 export type FormUISchema = {
   fields?: Record<string, XUISchemaField>;
-  'ui:layout'?: { type?: 'grid'; cols?: number };
+  'ui:layout'?: { type?: 'grid' | 'tabs'; cols?: number };
   'ui:groups'?: Array<{ title?: string; fields: string[] }>;
   'ui:order'?: string[];
 };
@@ -160,7 +160,83 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
     if (groups.length > 0) {
       // Grouped layout
       if (layoutType === 'tabs') {
-        // TODO: Implement tabs layout if needed
+        // Tabs layout implementation
+        const tabItems = groups.map((group, groupIndex) => {
+          const tabFields: React.ReactNode[] = [];
+
+          group.fields.forEach((fieldName) => {
+            if (props[fieldName]) {
+              tabFields.push(
+                renderXUIField(
+                  fieldName,
+                  props[fieldName],
+                  uiFields[fieldName] || {},
+                  formData,
+                  form,
+                  [fieldName],
+                  required.includes(fieldName),
+                  validateField
+                )
+              );
+            }
+          });
+
+          return {
+            key: `tab-${groupIndex}`,
+            label: group.title || `标签 ${groupIndex + 1}`,
+            children: (
+              <div style={{ paddingTop: 16 }}>
+                {tabFields}
+              </div>
+            ),
+          };
+        });
+
+        // Add remaining fields to a separate tab
+        const groupedFields = new Set(groups.flatMap(g => g.fields));
+        const remainingFields = fieldOrder.filter(field => !groupedFields.has(field));
+
+        if (remainingFields.length > 0) {
+          const remainingTabFields: React.ReactNode[] = [];
+
+          remainingFields.forEach((fieldName) => {
+            if (props[fieldName]) {
+              remainingTabFields.push(
+                renderXUIField(
+                  fieldName,
+                  props[fieldName],
+                  uiFields[fieldName] || {},
+                  formData,
+                  form,
+                  [fieldName],
+                  required.includes(fieldName),
+                  validateField
+                )
+              );
+            }
+          });
+
+          tabItems.push({
+            key: 'tab-remaining',
+            label: '其他参数',
+            children: (
+              <div style={{ paddingTop: 16 }}>
+                {remainingTabFields}
+              </div>
+            ),
+          });
+        }
+
+        // Render tabs
+        items.push(
+          <Tabs
+            key="form-tabs"
+            defaultActiveKey={tabItems[0]?.key}
+            items={tabItems}
+            size="small"
+            style={{ marginBottom: 16 }}
+          />
+        );
       } else {
         // Section groups
         groups.forEach((group, groupIndex) => {

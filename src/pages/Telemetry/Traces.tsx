@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Table, Space, Button, Input, Select, Tag, Typography, Timeline, Modal, Descriptions, Row, Col } from 'antd';
-import { SearchOutlined, EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Table, Space, Button, Input, Select, Tag, Typography, Timeline, Modal, Descriptions, Row, Col, Alert, Empty } from 'antd';
+import { SearchOutlined, EyeOutlined, ReloadOutlined, ExternalLinkOutlined } from '@ant-design/icons';
+import { fetchOpsConfig } from '@/services/croupier/ops';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -36,6 +37,8 @@ export default function TracesPage() {
     status: '',
     minDuration: '',
   });
+  const [config, setConfig] = useState<{ grafana_explore_url?: string }>({});
+  const [useRealData, setUseRealData] = useState(false);
 
   const mockTraces = [
     {
@@ -146,6 +149,21 @@ export default function TracesPage() {
   };
 
   useEffect(() => {
+    // 获取配置
+    fetchOpsConfig().then(res => {
+      if (res) {
+        setConfig(res);
+      }
+    }).catch(() => {
+      // 忽略错误，使用默认配置
+    });
+
+    // 当前仅使用演示数据
+    // 真实链路追踪集成需要：
+    // 1. 在服务中集成 OpenTelemetry
+    // 2. 部署 Jaeger 或兼容的追踪收集器
+    // 3. 实现后端 API 查询追踪数据
+    console.warn('Traces 页面目前为演示模式，暂未集成真实追踪数据');
     setTraces(mockTraces);
   }, []);
 
@@ -231,6 +249,12 @@ export default function TracesPage() {
     setModalVisible(true);
   };
 
+  const openGrafanaExplore = () => {
+    if (config.grafana_explore_url) {
+      window.open(config.grafana_explore_url, '_blank');
+    }
+  };
+
   const renderSpanTags = (tags: Record<string, any>) => (
     <Space wrap>
       {Object.entries(tags).map(([key, value]) => (
@@ -243,40 +267,70 @@ export default function TracesPage() {
 
   return (
     <Card
-      title="链路追踪"
-      extra={
+      title={
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => setTraces(mockTraces)}>
-            刷新
-          </Button>
-          <Select
-            placeholder="服务"
-            style={{ width: 120 }}
-            value={filters.service}
-            onChange={(value) => setFilters({ ...filters, service: value })}
-          >
-            <Option value="">全部服务</Option>
-            <Option value="croupier-server">Server</Option>
-            <Option value="croupier-agent">Agent</Option>
-          </Select>
-          <Select
-            placeholder="状态"
-            style={{ width: 100 }}
-            value={filters.status}
-            onChange={(value) => setFilters({ ...filters, status: value })}
-          >
-            <Option value="">全部</Option>
-            <Option value="success">成功</Option>
-            <Option value="error">错误</Option>
-          </Select>
-          <Search
-            placeholder="搜索操作或Trace ID"
-            style={{ width: 200 }}
-            onSearch={(value) => console.log('Search:', value)}
-          />
+          <span>链路追踪</span>
+          <Tag color="orange">演示模式</Tag>
         </Space>
       }
     >
+      <Alert
+        message="当前为演示模式"
+        description={
+          <div>
+            <p>此页面显示的是模拟数据，用于演示追踪功能。要启用真实链路追踪，需要：</p>
+            <ol>
+              <li>在服务中集成 OpenTelemetry SDK</li>
+              <li>部署 Jaeger 或兼容的追踪收集器（如 Tempo）</li>
+              <li>配置追踪数据收集和查询 API</li>
+            </ol>
+          </div>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Select
+          placeholder="服务"
+          style={{ width: 120 }}
+          value={filters.service}
+          onChange={(value) => setFilters({ ...filters, service: value })}
+        >
+          <Option value="">全部服务</Option>
+          <Option value="croupier-server">Server</Option>
+          <Option value="croupier-agent">Agent</Option>
+        </Select>
+        <Select
+          placeholder="状态"
+          style={{ width: 100 }}
+          value={filters.status}
+          onChange={(value) => setFilters({ ...filters, status: value })}
+        >
+          <Option value="">全部</Option>
+          <Option value="success">成功</Option>
+          <Option value="error">错误</Option>
+        </Select>
+        <Search
+          placeholder="搜索操作或Trace ID"
+          style={{ width: 200 }}
+          onSearch={(value) => console.log('Demo search:', value)}
+        />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={() => setTraces(mockTraces)}
+        >
+          刷新演示数据
+        </Button>
+        {config.grafana_explore_url && (
+          <Button
+            icon={<ExternalLinkOutlined />}
+            onClick={openGrafanaExplore}
+          >
+            Grafana Explore
+          </Button>
+        )}
+      </Space>
       <Table
         columns={columns}
         dataSource={traces}

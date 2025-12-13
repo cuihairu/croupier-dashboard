@@ -10,6 +10,7 @@ export default function AnalyticsAttributionPage() {
   const [channel, setChannel] = useState<string>('');
   const [campaign, setCampaign] = useState<string>('');
   const [data, setData] = useState<any>({ summary: {}, by_channel: [], by_campaign: [] });
+  const [availableChannels, setAvailableChannels] = useState<{label: string; value: string}[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -21,6 +22,21 @@ export default function AnalyticsAttributionPage() {
       if (campaign) params.campaign = campaign;
       const r = await fetchAnalyticsAttribution(params);
       setData(r||{ summary: {}, by_channel: [], by_campaign: [] });
+
+      // Extract unique channels from the response
+      if (r?.by_channel) {
+        const channels = r.by_channel
+          .filter((item: any) => item.channel)
+          .map((item: any) => ({
+            label: item.channel,
+            value: item.channel,
+          }));
+        // Remove duplicates
+        const uniqueChannels = channels.filter((channel: any, index: number, self: any[]) =>
+          index === self.findIndex((c: any) => c.value === channel.value)
+        );
+        setAvailableChannels(uniqueChannels);
+      }
     } finally { setLoading(false); }
   };
   useEffect(()=>{ /* not auto-load */ }, []);
@@ -29,7 +45,19 @@ export default function AnalyticsAttributionPage() {
     <PageContainer>
       <Card title="渠道投放" extra={<Space>
         <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
-        <Select allowClear placeholder="渠道" value={channel} onChange={setChannel} style={{ width: 160 }} options={[]} />
+        <Select
+          allowClear
+          showSearch
+          placeholder="渠道"
+          value={channel}
+          onChange={setChannel}
+          style={{ width: 160 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availableChannels}
+          notFoundContent="请输入渠道名称"
+        />
         <Input placeholder="活动/Campaign" value={campaign} onChange={(e)=> setCampaign(e.target.value)} style={{ width: 200 }} />
         <Button type="primary" onClick={load}>查询</Button>
       </Space>}>
@@ -50,8 +78,8 @@ export default function AnalyticsAttributionPage() {
         <div style={{ marginTop: 8 }}>
           <Button onClick={async ()=>{
             const rows = [['channel','installs','signups','rev_d0_cents','cpi_cents','roas_d1','roas_d7','roas_d30']].concat((data?.by_channel||[]).map((r:any)=>[r.channel,r.installs,r.signups,r.rev_d0_cents,r.cpi_cents,r.roas_d1,r.roas_d7,r.roas_d30]));
-            await exportToXLSX('attribution.xlsx', [{ sheet:'by_channel', rows }]);
-          }}>导出 Excel</Button>
+            await exportToXLSX('attribution.csv', [{ sheet:'by_channel', rows }]);
+          }}>导出 CSV</Button>
         </div>
       </Card>
     </PageContainer>

@@ -80,6 +80,11 @@ export default {
   'menu.Assignments': '功能分配',
   'menu.GameAssignments': '功能分配',
 
+  // 函数管理 - 新增独立页面
+  'menu.Functions': '函数管理',
+  'menu.Functions.FunctionList': '函数列表',
+  'menu.Functions.FunctionDetail': '函数详情',
+
   // Legacy menu items (保持向后兼容)
   'menu.GM': '运营',
   'menu.GM.Approvals': '审批',

@@ -110,96 +110,34 @@ export default function VirtualObjectManager() {
 
       const list = Array.isArray(data) ? data : (Array.isArray((data as any)?.entities) ? (data as any).entities : null);
 
-      // 如果API调用失败或返回错误格式，使用模拟数据
-      if (!response.ok || !list) {
-        console.warn('API返回格式错误或未授权，使用模拟数据');
-
-        // 模拟数据
-        const mockEntities: EntityDefinition[] = [
-          {
-            id: 'player-entity',
-            name: '玩家实体',
-            description: '游戏玩家的完整管理实体，包含账户、状态、经济等操作',
-            version: '1.0.0',
-            schema: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', title: '玩家ID' },
-                nickname: { type: 'string', title: '昵称' },
-                level: { type: 'integer', title: '等级' },
-                status: { type: 'string', enum: ['active', 'banned', 'suspended'], title: '状态' }
-              }
-            },
-            operations: {
-              'get': { function: 'player.get', description: '获取玩家信息' },
-              'ban': { function: 'player.ban', description: '封禁玩家' },
-              'unban': { function: 'player.unban', description: '解封玩家' },
-              'addGold': { function: 'economy.addGold', description: '增加金币' }
-            },
-            resources: {
-              'player-profile': {
-                title: '玩家档案',
-                functions: ['player.get', 'player.updateProfile']
-              },
-              'player-economy': {
-                title: '经济管理',
-                functions: ['economy.addGold', 'economy.deductGold']
-              }
-            },
-            relationships: {
-              'guild': { type: 'belongsTo', target: 'guild-entity', cardinality: 'one' }
-            },
-            createdAt: '2024-01-15T10:00:00Z',
-            updatedAt: '2024-01-20T15:30:00Z',
-            status: 'active',
-            usageCount: 1520
-          },
-          {
-            id: 'guild-entity',
-            name: '公会实体',
-            description: '公会管理实体，包含公会创建、成员管理、等级系统等',
-            version: '1.2.0',
-            schema: {
-              type: 'object',
-              properties: {
-                id: { type: 'string', title: '公会ID' },
-                name: { type: 'string', title: '公会名称' },
-                level: { type: 'integer', title: '公会等级' },
-                memberCount: { type: 'integer', title: '成员数量' }
-              }
-            },
-            operations: {
-              'create': { function: 'guild.create', description: '创建公会' },
-              'dissolve': { function: 'guild.dissolve', description: '解散公会' },
-              'addMember': { function: 'guild.addMember', description: '添加成员' },
-              'removeMember': { function: 'guild.removeMember', description: '移除成员' }
-            },
-            resources: {
-              'guild-management': {
-                title: '公会管理',
-                functions: ['guild.create', 'guild.dissolve', 'guild.levelUp']
-              },
-              'member-management': {
-                title: '成员管理',
-                functions: ['guild.addMember', 'guild.removeMember', 'guild.listMembers']
-              }
-            },
-            relationships: {
-              'members': { type: 'hasMany', target: 'player-entity', cardinality: 'many' },
-              'leader': { type: 'hasOne', target: 'player-entity', cardinality: 'one' }
-            },
-            createdAt: '2024-01-10T08:00:00Z',
-            updatedAt: '2024-01-25T12:45:00Z',
-            status: 'active',
-            usageCount: 850
-          }
-        ];
-
-        setEntities(mockEntities);
-      } else {
-        // API返回正确格式的数据
-        setEntities(list);
+      // 处理API响应
+      if (!response.ok) {
+        // HTTP错误处理
+        if (response.status === 401) {
+          message.error('未授权访问，请重新登录');
+          return;
+        } else if (response.status === 403) {
+          message.error('权限不足，无法访问虚拟对象数据');
+          return;
+        } else if (response.status === 404) {
+          message.warning('虚拟对象服务暂未启用或未配置');
+        } else {
+          message.error(`加载虚拟对象失败：${response.status} ${response.statusText}`);
+        }
+        setEntities([]);
+        return;
       }
+
+      if (!list) {
+        // 数据格式错误
+        console.error('API返回格式错误:', data);
+        message.error('服务器返回数据格式错误，请联系管理员');
+        setEntities([]);
+        return;
+      }
+
+      // API返回正确格式的数据
+      setEntities(list);
     } catch (error) {
       message.error('加载虚拟对象失败');
       console.error('Load entities error:', error);

@@ -50,8 +50,8 @@ export default function AnalyticsLevelsPage() {
           <div style={{ marginTop: 8 }}>
             <Button onClick={async ()=>{
               const rows = [['step','users','rate']].concat((data?.funnel||[]).map((x:any)=>[x.step,x.users,x.rate]));
-              await exportToXLSX('levels_funnel.xlsx', [{ sheet:'funnel', rows }]);
-            }}>导出 Excel</Button>
+              await exportToXLSX('levels_funnel.csv', [{ sheet:'funnel', rows }]);
+            }}>导出 CSV</Button>
           </div>
         </Card>
         <Card title="分关卡统计（胜率/难度/时长/复试）" extra={<Space>
@@ -81,8 +81,8 @@ export default function AnalyticsLevelsPage() {
               sheets.push(mk('new', segs['new']||[]));
               sheets.push(mk('returning', segs['returning']||[]));
               sheets.push(mk('payer', segs['payer']||[]));
-              await exportToXLSX('levels_stats.xlsx', sheets);
-            }}>导出 Excel</Button>
+              await exportToXLSX('levels_stats.csv', sheets);
+            }}>导出 CSV</Button>
           </div>
         </Card>
         <LevelsSegmentsChart data={data} />
@@ -168,7 +168,7 @@ const EpisodeFacets: React.FC<{ range: any }> = ({ range }) => {
         const rows = [['level','players','win_rate']].concat(((e.per_level||[]) as any[]).map((x:any)=> [x.level, x.players, x.win_rate]));
         sheets.push({ sheet: `ep_${String(e.episode||'')}`, rows });
       });
-      await exportToXLSX('levels_episodes.xlsx', sheets);
+      await exportToXLSX('levels_episodes.csv', sheets);
     } catch {}
   };
   return (
@@ -201,7 +201,7 @@ const MapFacets: React.FC<{ range: any }> = ({ range }) => {
     } finally { setLoading(false); }
   };
   const exportExcel = async () => {
-    try { const sheets:any[] = []; (maps||[]).forEach((e:any)=> { const rows = [['level','players','win_rate']].concat(((e.per_level||[]) as any[]).map((x:any)=> [x.level,x.players,x.win_rate])); sheets.push({ sheet:`map_${String(e.map||'')}`, rows }); }); await exportToXLSX('levels_maps.xlsx', sheets); } catch {}
+    try { const sheets:any[] = []; (maps||[]).forEach((e:any)=> { const rows = [['level','players','win_rate']].concat(((e.per_level||[]) as any[]).map((x:any)=> [x.level,x.players,x.win_rate])); sheets.push({ sheet:`map_${String(e.map||'')}`, rows }); }); await exportToXLSX('levels_maps.csv', sheets); } catch {}
   };
   return (
     <Card title="按地图分面" extra={<Space>

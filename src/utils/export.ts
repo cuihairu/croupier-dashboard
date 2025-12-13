@@ -1,3 +1,7 @@
+/**
+ * Export data to XLSX if available, otherwise fallback to CSV
+ * Note: Currently supports CSV export only as XLSX library is not included
+ */
 export async function exportToXLSX(fileName: string, sheets: { sheet: string; rows: any[][] }[]) {
   // Try to use a global XLSX if host page provides it (e.g., via CDN), otherwise fall back to CSV
   try {

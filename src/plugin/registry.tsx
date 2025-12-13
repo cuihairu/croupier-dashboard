@@ -82,20 +82,19 @@ export function registerBuiltins(): void {
 }
 
 /**
- * Load pack plugins (placeholder for future extension)
- * This would typically load renderers from external packs
+ * Load pack plugins from installed packs
+ * Currently, no external packs are configured, so this function does nothing.
+ * In the future, this will:
+ * 1. Fetch available packs from the pack registry API
+ * 2. Load pack-specific UI components and renderers
+ * 3. Register them in the renderers registry
+ *
+ * @returns Promise that resolves when all pack plugins are loaded
  */
 export async function loadPackPlugins(): Promise<void> {
-  // This is a placeholder for loading external pack plugins
-  // In a real implementation, this would:
-  // 1. Fetch available packs from an API
-  // 2. Load pack-specific renderers
-  // 3. Register them in the renderers registry
-  
-  console.log('Pack plugins loading placeholder - no external packs configured');
-  
-  // Simulate async loading
-  await new Promise(resolve => setTimeout(resolve, 100));
+  // TODO: Implement actual pack loading when pack system is ready
+  // For now, this function is a no-op since we only use built-in renderers
+  return Promise.resolve();
 }
 
 /**

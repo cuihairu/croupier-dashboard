@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Divider, Button, Space, Typography, App } from 'antd';
+import { Modal, Form, Input, Divider, Button, Space, Typography, App, Tabs } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import FormRender from 'form-render';
-import { CheckCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ExclamationCircleOutlined, EditOutlined, CodeOutlined } from '@ant-design/icons';
+import JSONSchemaEditor from '@/components/JSONSchemaEditor';
+import UISchemaEditor from '@/components/UISchemaEditor';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -231,42 +233,76 @@ export default function XEntityForm<T = any>({
       {/* Schema Editing Section */}
       {enableSchemaEditing && (
         <>
-          <Divider>{schemaLabel}</Divider>
-          {schemaFormSchema ? (
-            <FormRender
-              schema={schemaFormSchema}
-              formData={schemaData}
-              onChange={setSchemaData}
-              displayType="row"
-              labelWidth={100}
-            />
-          ) : (
-            <TextArea
-              rows={4}
-              value={JSON.stringify(schemaData, null, 2)}
-              onChange={(e) => {
-                try {
-                  setSchemaData(JSON.parse(e.target.value || '{}'));
-                } catch {
-                  // Ignore invalid JSON during typing
-                }
-              }}
-              placeholder={'{\n  "type": "object",\n  "properties": {\n    "field1": {"type": "string"}\n  }\n}'}
-            />
-          )}
+          <Divider orientation="left">
+            <Space>
+              <EditOutlined />
+              Schema & UI Configuration
+            </Space>
+          </Divider>
 
-          <Divider>{uiSchemaLabel}</Divider>
-          <TextArea
-            rows={4}
-            value={JSON.stringify(uiSchemaData, null, 2)}
-            onChange={(e) => {
-              try {
-                setUiSchemaData(JSON.parse(e.target.value || '{}'));
-              } catch {
-                // Ignore invalid JSON during typing
-              }
-            }}
-            placeholder={'{\n  "field1": {\n    "widget": "textarea",\n    "placeholder": "Enter text"\n  }\n}'}
+          <Tabs
+            defaultActiveKey="schema"
+            items={[
+              {
+                key: 'schema',
+                label: (
+                  <span>
+                    <EditOutlined />
+                    JSON Schema
+                  </span>
+                ),
+                children: (
+                  <JSONSchemaEditor
+                    value={schemaData}
+                    onChange={setSchemaData}
+                  />
+                ),
+              },
+              {
+                key: 'ui',
+                label: (
+                  <span>
+                    <FormOutlined />
+                    UI Schema
+                  </span>
+                ),
+                children: (
+                  <UISchemaEditor
+                    value={uiSchemaData}
+                    onChange={setUiSchemaData}
+                    jsonSchema={schemaData}
+                  />
+                ),
+              },
+              {
+                key: 'preview',
+                label: (
+                  <span>
+                    <CodeOutlined />
+                    Preview
+                  </span>
+                ),
+                children: (
+                  <Space direction="vertical" style={{ width: '100%' }}>
+                    <Alert
+                      message="Preview"
+                      description="This is how the form will appear with your schema configuration"
+                      type="info"
+                    />
+                    <Card size="small" title="JSON Schema">
+                      <pre style={{ fontSize: 12, background: '#f5f5f5', padding: 8 }}>
+                        {JSON.stringify(schemaData, null, 2)}
+                      </pre>
+                    </Card>
+                    <Card size="small" title="UI Schema">
+                      <pre style={{ fontSize: 12, background: '#f5f5f5', padding: 8 }}>
+                        {JSON.stringify(uiSchemaData, null, 2)}
+                      </pre>
+                    </Card>
+                  </Space>
+                ),
+              },
+            ]}
           />
         </>
       )}

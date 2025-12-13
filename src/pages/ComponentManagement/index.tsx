@@ -20,6 +20,7 @@ import GameSelector from '@/components/GameSelector';
 import { reloadPacks, listPacks } from '@/services/croupier/packs';
 import { createEntity, listEntities } from '@/services/croupier/entities';
 import { fetchRegistry, listDescriptors } from '@/services/croupier';
+import { listOpsJobs } from '@/services/croupier/ops';
 import { apiUrl } from '@/utils/api';
 
 const QUICK_ACTIONS = {
@@ -105,11 +106,12 @@ export default function ComponentManagement() {
     if (unauthorized) return;
 
     try {
-      const [descriptors, registry, packs, entities] = await Promise.all([
+      const [descriptors, registry, packs, entities, jobs] = await Promise.all([
         listDescriptors().catch(() => []),
         fetchRegistry().catch(() => ({} as any)),
         listPacks().catch(() => ({} as any)),
         listEntities().catch(() => []),
+        listOpsJobs({ status: 'running', page: 1, size: 1 }).catch(() => ({ total: 0 })),
       ]);
 
       const entityCount = Array.isArray(entities) ? entities.length : 0;
@@ -120,11 +122,12 @@ export default function ComponentManagement() {
         registry?.agents && Array.isArray(registry.agents)
           ? registry.agents.filter((a: any) => a?.connected).length
           : 0;
+      const runningJobsCount = jobs?.total || 0;
 
       setStats({
         totalFunctions: descriptorList.length,
         activeFunctions: descriptorList.filter((d: any) => d?.enabled).length,
-        runningJobs: 0, // TODO: 从job API获取
+        runningJobs: runningJobsCount,
         availablePackages: packCount,
         connectedAgents,
         virtualObjects: entityCount,

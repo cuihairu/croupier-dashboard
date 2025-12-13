@@ -22,8 +22,21 @@ export default function AnalyticsRetentionPage() {
   };
   useEffect(()=>{ load(); }, []);
 
-  // 展示简单表格：cohort_date, total, d1, d7, d30（占位）
-  const rowsData = (data?.cohorts || []).map((c:any, idx:number)=>({ key: idx, cohort_date: c.date, total: c.total, d1:c.d1, d7:c.d7, d30:c.d30 }));
+  // 处理后端返回的数据结构
+  const rowsData = (data?.cohorts || []).map((c:any, idx:number) => {
+    // retention 数组格式: [Day1, Day3, Day7, Day14, Day30]
+    const retention = c.retention || [];
+    return {
+      key: idx,
+      cohort: c.cohort,
+      users: c.users,
+      d1: retention[0] || null,
+      d3: retention[1] || null,
+      d7: retention[2] || null,
+      d14: retention[3] || null,
+      d30: retention[4] || null,
+    };
+  });
 
   return (
     <PageContainer>
@@ -33,18 +46,57 @@ export default function AnalyticsRetentionPage() {
           <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
           <Button type="primary" onClick={load}>查询</Button>
           <Button onClick={async ()=>{
-            const rows = [['cohort_date','total','d1','d7','d30']].concat(rowsData.map(r=>[r.cohort_date,r.total,r.d1,r.d7,r.d30]));
-            await exportToXLSX('retention.xlsx', [{ sheet:'retention', rows }]);
-          }}>导出 Excel</Button>
+            const rows = [['cohort','users','d1','d3','d7','d14','d30']].concat(
+              rowsData.map(r=>[r.cohort,r.users,r.d1,r.d3,r.d7,r.d14,r.d30])
+            );
+            await exportToXLSX('retention.csv', [{ sheet:'retention', rows }]);
+          }}>导出 CSV</Button>
         </Space>
       }>
         <Table loading={loading} dataSource={rowsData} pagination={{ pageSize: 10 }}
           columns={[
-            { title:'Cohort 日期', dataIndex:'cohort_date' },
-            { title:'基数', dataIndex:'total' },
-            { title:'D1', dataIndex:'d1', render:(v)=> v!=null? `${v}%`:'-' },
-            { title:'D7', dataIndex:'d7', render:(v)=> v!=null? `${v}%`:'-' },
-            { title:'D30', dataIndex:'d30', render:(v)=> v!=null? `${v}%`:'-' },
+            { title:'Cohort', dataIndex:'cohort', key: 'cohort' },
+            {
+              title:'用户数',
+              dataIndex:'users',
+              key: 'users',
+              render: (v: number) => v?.toLocaleString() || 0
+            },
+            {
+              title:'D1',
+              dataIndex:'d1',
+              key: 'd1',
+              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
+              sorter: (a: any, b: any) => (a.d1 || 0) - (b.d1 || 0)
+            },
+            {
+              title:'D3',
+              dataIndex:'d3',
+              key: 'd3',
+              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
+              sorter: (a: any, b: any) => (a.d3 || 0) - (b.d3 || 0)
+            },
+            {
+              title:'D7',
+              dataIndex:'d7',
+              key: 'd7',
+              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
+              sorter: (a: any, b: any) => (a.d7 || 0) - (b.d7 || 0)
+            },
+            {
+              title:'D14',
+              dataIndex:'d14',
+              key: 'd14',
+              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
+              sorter: (a: any, b: any) => (a.d14 || 0) - (b.d14 || 0)
+            },
+            {
+              title:'D30',
+              dataIndex:'d30',
+              key: 'd30',
+              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
+              sorter: (a: any, b: any) => (a.d30 || 0) - (b.d30 || 0)
+            },
           ]}
         />
       </Card>

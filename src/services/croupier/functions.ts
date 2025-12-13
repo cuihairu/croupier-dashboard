@@ -61,3 +61,55 @@ export async function fetchFunctionUiSchema(functionId: string) {
 export function openJobEventSource(jobId: string) {
   return createEventSource(`/api/v1/jobs/${jobId}/stream`);
 }
+
+// Batch operations
+export async function updateFunctionStatus(functionId: string, data: { enabled: boolean }) {
+  return request<void>(`/api/v1/functions/${functionId}/status`, {
+    method: 'PUT',
+    data,
+  });
+}
+
+export async function batchUpdateFunctions(data: { function_ids: string[]; enabled: boolean }) {
+  return request<{ updated: number; failed: string[] }>('/api/v1/functions/batch-update', {
+    method: 'POST',
+    data,
+  });
+}
+
+export async function copyFunction(functionId: string) {
+  return request<{ function_id: string; new_id: string }>(`/api/v1/functions/${functionId}/copy`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteFunction(functionId: string) {
+  return request<void>(`/api/v1/functions/${functionId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function getFunctionDetail(functionId: string) {
+  return request<FunctionDescriptor>(`/api/v1/functions/${functionId}`);
+}
+
+export async function getFunctionHistory(functionId: string) {
+  return request<Array<{
+    id: string;
+    action: string;
+    operator?: string;
+    timestamp: string;
+    details?: any;
+  }>>(`/api/v1/functions/${functionId}/history`);
+}
+
+export async function getFunctionAnalytics(functionId: string) {
+  return request<{
+    totalCalls: number;
+    successRate: number;
+    avgLatency: number;
+    callsToday: number;
+    callsThisWeek: number;
+    callsThisMonth: number;
+  }>(`/api/v1/functions/${functionId}/analytics`);
+}

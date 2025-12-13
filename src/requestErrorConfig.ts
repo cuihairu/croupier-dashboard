@@ -103,7 +103,13 @@ export const errorConfig: RequestConfig = {
               notiOpen(String(errorCode||''), errorMessage);
               break;
             case ErrorShowType.REDIRECT:
-              // TODO: redirect
+              // 根据错误类型决定跳转目标
+              const targetUrl = errorCode === 403 ? '/403' : '/user/login';
+              try {
+                localStorage.removeItem('token');
+              } catch {}
+              msgWarn(errorMessage || '需要登录，跳转中...');
+              history.push(targetUrl);
               break;
             default:
               msgError(errorMessage as any);

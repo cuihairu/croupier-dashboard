@@ -77,6 +77,11 @@ export default {
   'menu.Analytics.Attribution': 'Attribution',
   'menu.Analytics.Segments': 'Segments',
 
+  // Function Management - New independent pages
+  'menu.Functions': 'Function Management',
+  'menu.Functions.FunctionList': 'Function List',
+  'menu.Functions.FunctionDetail': 'Function Detail',
+
   // Legacy menu items (for backward compatibility)
   'menu.GameAssignments': 'Assignments',
   'menu.GM': 'Game Management',

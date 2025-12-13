@@ -21,6 +21,13 @@ export default function AnalyticsPaymentsPage() {
   const [gran, setGran] = useState<'minute'|'hour'>('hour');
   const [trend, setTrend] = useState<any[]>([]);
 
+  // Available options for filters
+  const [availableChannels, setAvailableChannels] = useState<{label: string; value: string}[]>([]);
+  const [availablePlatforms, setAvailablePlatforms] = useState<{label: string; value: string}[]>([]);
+  const [availableCountries, setAvailableCountries] = useState<{label: string; value: string}[]>([]);
+  const [availableRegions, setAvailableRegions] = useState<{label: string; value: string}[]>([]);
+  const [availableCities, setAvailableCities] = useState<{label: string; value: string}[]>([]);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -34,6 +41,80 @@ export default function AnalyticsPaymentsPage() {
       if (city) params.city = city;
       const s = await fetchAnalyticsPaymentsSummary(params);
       setSummary(s || { totals:{}, by_channel:[], by_platform:[], by_country:[], by_region:[], by_city:[], by_product:[] });
+
+      // Extract unique values for filters from the response
+      if (s) {
+        // Channels
+        if (s.by_channel) {
+          const channels = s.by_channel
+            .filter((item: any) => item.channel)
+            .map((item: any) => ({
+              label: item.channel,
+              value: item.channel,
+            }));
+          const uniqueChannels = channels.filter((channel: any, index: number, self: any[]) =>
+            index === self.findIndex((c: any) => c.value === channel.value)
+          );
+          setAvailableChannels(uniqueChannels);
+        }
+
+        // Platforms
+        if (s.by_platform) {
+          const platforms = s.by_platform
+            .filter((item: any) => item.platform)
+            .map((item: any) => ({
+              label: item.platform,
+              value: item.platform,
+            }));
+          const uniquePlatforms = platforms.filter((platform: any, index: number, self: any[]) =>
+            index === self.findIndex((p: any) => p.value === platform.value)
+          );
+          setAvailablePlatforms(uniquePlatforms);
+        }
+
+        // Countries
+        if (s.by_country) {
+          const countries = s.by_country
+            .filter((item: any) => item.country)
+            .map((item: any) => ({
+              label: `${item.country} (${item.country_code || ''})`,
+              value: item.country,
+            }));
+          const uniqueCountries = countries.filter((country: any, index: number, self: any[]) =>
+            index === self.findIndex((c: any) => c.value === country.value)
+          );
+          setAvailableCountries(uniqueCountries);
+        }
+
+        // Regions
+        if (s.by_region) {
+          const regions = s.by_region
+            .filter((item: any) => item.region)
+            .map((item: any) => ({
+              label: item.region,
+              value: item.region,
+            }));
+          const uniqueRegions = regions.filter((region: any, index: number, self: any[]) =>
+            index === self.findIndex((r: any) => r.value === region.value)
+          );
+          setAvailableRegions(uniqueRegions);
+        }
+
+        // Cities
+        if (s.by_city) {
+          const cities = s.by_city
+            .filter((item: any) => item.city)
+            .map((item: any) => ({
+              label: item.city,
+              value: item.city,
+            }));
+          const uniqueCities = cities.filter((city: any, index: number, self: any[]) =>
+            index === self.findIndex((c: any) => c.value === city.value)
+          );
+          setAvailableCities(uniqueCities);
+        }
+      }
+
       const t = await fetchAnalyticsTransactions(params);
       setTx(t || { transactions: [], total: 0 });
     } finally { setLoading(false); }
@@ -44,11 +125,71 @@ export default function AnalyticsPaymentsPage() {
     <PageContainer>
       <Card title="支付分析" extra={<Space>
         <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
-        <Select allowClear placeholder="渠道" value={channel} onChange={setChannel} style={{ width: 140 }} options={[]} />
-        <Select allowClear placeholder="平台" value={platform} onChange={setPlatform} style={{ width: 140 }} options={[]} />
-        <Select allowClear placeholder="国家" value={country} onChange={setCountry} style={{ width: 120 }} options={[]} />
-        <Select allowClear placeholder="省/区域" value={region} onChange={setRegion} style={{ width: 140 }} options={[]} />
-        <Select allowClear placeholder="城市" value={city} onChange={setCity} style={{ width: 140 }} options={[]} />
+        <Select
+          allowClear
+          showSearch
+          placeholder="渠道"
+          value={channel}
+          onChange={setChannel}
+          style={{ width: 140 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availableChannels}
+          notFoundContent="请输入渠道名称"
+        />
+        <Select
+          allowClear
+          showSearch
+          placeholder="平台"
+          value={platform}
+          onChange={setPlatform}
+          style={{ width: 140 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availablePlatforms}
+          notFoundContent="请输入平台名称"
+        />
+        <Select
+          allowClear
+          showSearch
+          placeholder="国家"
+          value={country}
+          onChange={setCountry}
+          style={{ width: 120 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availableCountries}
+          notFoundContent="请输入国家代码或名称"
+        />
+        <Select
+          allowClear
+          showSearch
+          placeholder="省/区域"
+          value={region}
+          onChange={setRegion}
+          style={{ width: 140 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availableRegions}
+          notFoundContent="请输入省/区域名称"
+        />
+        <Select
+          allowClear
+          showSearch
+          placeholder="城市"
+          value={city}
+          onChange={setCity}
+          style={{ width: 140 }}
+          filterOption={(input, option) =>
+            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+          }
+          options={availableCities}
+          notFoundContent="请输入城市名称"
+        />
         <Select value={geoDim} onChange={setGeoDim as any} style={{ width: 120 }} options={[{label:'按国家',value:'country'},{label:'按省/区域',value:'region'},{label:'按城市',value:'city'}]} />
         <Button type="primary" onClick={()=> { setPage(1); load(); }}>查询</Button>
         <Button onClick={async ()=>{
@@ -58,7 +199,7 @@ export default function AnalyticsPaymentsPage() {
           const rg = [['region','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_region||[]).map((r:any)=>[r.region,r.revenue_cents,r.success,r.total,r.success_rate]));
           const ct = [['city','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_city||[]).map((r:any)=>[r.city,r.revenue_cents,r.success,r.total,r.success_rate]));
           const pr = [['product_id','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_product||[]).map((r:any)=>[r.product_id,r.revenue_cents,r.success,r.total,r.success_rate]));
-          await exportToXLSX('payments_summary.xlsx', [
+          await exportToXLSX('payments_summary.csv', [
             { sheet:'by_channel', rows: ch },
             { sheet:'by_platform', rows: pf },
             { sheet:'by_country', rows: co },
@@ -66,7 +207,7 @@ export default function AnalyticsPaymentsPage() {
             { sheet:'by_city', rows: ct },
             { sheet:'by_product', rows: pr },
           ]);
-        }}>导出汇总 Excel</Button>
+        }}>导出汇总 CSV</Button>
       </Space>}>
         <Space size={16} wrap>
           <Tag color="blue">收入(分): {summary?.totals?.revenue_cents||0}</Tag>
@@ -161,8 +302,8 @@ export default function AnalyticsPaymentsPage() {
         <div style={{ marginTop: 8 }}>
           <Button onClick={async ()=>{
             const rows = [['time','order_id','user_id','amount_cents','status','channel','reason']].concat((tx?.transactions||[]).map((r:any)=>[r.time,r.order_id,r.user_id,r.amount_cents,r.status,r.channel,r.reason]));
-            await exportToXLSX('payments.xlsx', [{ sheet:'transactions', rows }]);
-          }}>导出 Excel</Button>
+            await exportToXLSX('payments.csv', [{ sheet:'transactions', rows }]);
+          }}>导出 CSV</Button>
         </div>
         <DeltaSection range={range} channel={channel} platform={platform} country={country} region={region} city={city} />
       </Card>

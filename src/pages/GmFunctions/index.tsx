@@ -5,7 +5,7 @@ import { getMessage } from '@/utils/antdApp';
 import GameSelector from '@/components/GameSelector';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
 import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/croupier';
-import { getRenderer, registerBuiltins, loadPackPlugins } from '@/plugin/registry';
+import { getRenderer, registerBuiltins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
 
 const { Text, Paragraph } = Typography;
@@ -328,7 +328,6 @@ export default function GmFunctionsPage() {
 
   useEffect(() => {
     registerBuiltins();
-    loadPackPlugins().catch(()=>{});
     listDescriptors().then((d) => {
       const raw = Array.isArray(d) ? d : Array.isArray((d as any)?.descriptors) ? (d as any).descriptors : [];
       const arr = Array.isArray(raw) ? raw : [];

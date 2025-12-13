@@ -72,8 +72,8 @@ export default function AnalyticsBehaviorPage() {
           <div style={{ marginTop: 8 }}>
             <Button onClick={async ()=>{
               const rowsOut = [['time','event','user_id']].concat((rows||[]).map((r:any)=>[r.time,r.event,r.user_id]));
-              await exportToXLSX('events.xlsx', [{ sheet:'events', rows: rowsOut }]);
-            }}>导出 Excel</Button>
+              await exportToXLSX('events.csv', [{ sheet:'events', rows: rowsOut }]);
+            }}>导出 CSV</Button>
           </div>
         </Card>
 
@@ -105,8 +105,8 @@ export default function AnalyticsBehaviorPage() {
           <div style={{ marginTop: 8 }}>
             <Button onClick={async ()=>{
               const rowsOut = [['step','users','rate']].concat((funnel||[]).map((s:any)=>[s.step,s.users,s.rate]));
-              await exportToXLSX('funnel.xlsx', [{ sheet:'funnel', rows: rowsOut }]);
-            }}>导出 Excel</Button>
+              await exportToXLSX('funnel.csv', [{ sheet:'funnel', rows: rowsOut }]);
+            }}>导出 CSV</Button>
           </div>
         </Card>
 
@@ -164,8 +164,8 @@ const PathControls: React.FC<{ range: any; currentSteps?: string[]; onUsePath?: 
         <Button type="primary" onClick={load} loading={loading}>计算路径</Button>
         <Button onClick={async ()=>{
           const rowsOut = [['path','groups']].concat((rows||[]).map((r:any)=>[r.path,r.groups]));
-          await exportToXLSX('paths.xlsx', [{ sheet:'paths', rows: rowsOut }]);
-        }}>导出 Excel</Button>
+          await exportToXLSX('paths.csv', [{ sheet:'paths', rows: rowsOut }]);
+        }}>导出 CSV</Button>
       </Space>
       {(() => {
         try {
@@ -379,8 +379,8 @@ const AdoptionControls: React.FC<{ range: any }> = ({ range }) => {
         <Button type="primary" onClick={load} loading={loading}>计算采用率</Button>
         <Button onClick={async ()=>{
           const rowsOut = [['feature','groups','rate(%)','baseline']].concat((rows||[]).map((r:any)=>[r.feature,r.groups,r.rate,baseline]));
-          await exportToXLSX('adoption.xlsx', [{ sheet:'adoption', rows: rowsOut }]);
-        }}>导出 Excel</Button>
+          await exportToXLSX('adoption.csv', [{ sheet:'adoption', rows: rowsOut }]);
+        }}>导出 CSV</Button>
       </Space>
       <div>基数（{per==='user'?'用户':'会话'}）：{baseline}</div>
       <Table size="small" loading={loading} rowKey={(r:any)=> r.feature}
@@ -393,8 +393,8 @@ const AdoptionControls: React.FC<{ range: any }> = ({ range }) => {
         <Button onClick={loadDim} loading={loading}>分层采用率</Button>
         <Button onClick={async ()=>{
           const rowsOut = [['dim','baseline','groups','rate(%)']].concat((rowsDim||[]).map((r:any)=>[r.dim,r.baseline,r.groups,r.rate]));
-          await exportToXLSX('adoption_breakdown.xlsx', [{ sheet:'adoption_breakdown', rows: rowsOut }]);
-        }}>导出 Excel</Button>
+          await exportToXLSX('adoption_breakdown.csv', [{ sheet:'adoption_breakdown', rows: rowsOut }]);
+        }}>导出 CSV</Button>
       </Space>
       <Table size="small" loading={loading} rowKey={(r:any)=> `${r.dim||''}|${r.baseline||''}|${r.groups||''}`}
         dataSource={rowsDim}

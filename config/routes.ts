@@ -379,6 +379,32 @@ export default [
     access: 'canFunctionsRead',
     component: './ComponentManagement',
   },
+  // 函数管理 - 新增独立页面
+  {
+    path: '/functions',
+    name: 'Functions',
+    icon: 'api',
+    access: 'canFunctionsRead',
+    routes: [
+      {
+        path: '/functions',
+        redirect: '/functions/list',
+      },
+      {
+        path: '/functions/list',
+        name: 'FunctionList',
+        access: 'canFunctionsRead',
+        component: './Functions',
+      },
+      {
+        path: '/functions/:id',
+        name: 'FunctionDetail',
+        access: 'canFunctionsRead',
+        component: './Functions/Detail',
+        hideInMenu: true,
+      },
+    ],
+  },
   // 后台组件分配，显式展示在主菜单
   {
     path: '/assignments',
@@ -386,6 +412,11 @@ export default [
     icon: 'branches',
     access: 'canAssignmentsRead',
     component: './Assignments',
+  },
+  {
+    path: '/403',
+    layout: false,
+    component: './403',
   },
   {
     path: '*',

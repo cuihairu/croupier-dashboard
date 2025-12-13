@@ -97,7 +97,7 @@ const ChannelModal: React.FC<{ open: boolean; value?: Channel; onClose: ()=>void
           <Input placeholder='如 ding_main' />
         </Form.Item>
         <Form.Item name='type' label='类型' rules={[{ required:true }]}>
-          <Select options={[{label:'DingTalk',value:'dingtalk'},{label:'Feishu',value:'feishu'},{label:'WeCom',value:'wechat'},{label:'Webhook',value:'webhook'},{label:'SMS(占位)',value:'sms'}]} />
+          <Select options={[{label:'DingTalk',value:'dingtalk'},{label:'Feishu',value:'feishu'},{label:'WeCom',value:'wechat'},{label:'Webhook',value:'webhook'}]} />
         </Form.Item>
         <Form.Item name='url' label='Webhook URL'>
           <Input placeholder='https://...' />

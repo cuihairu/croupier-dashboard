@@ -47,7 +47,7 @@ export default function AnalyticsOverviewPage() {
       const rv = ser?.revenue_cents?.[i]?.[1] ?? '';
       seriesRows.push([t, nu, po, rv]);
     }
-    await exportToXLSX('overview.xlsx', [
+    await exportToXLSX('overview.csv', [
       { sheet: 'summary', rows: summary },
       { sheet: 'series', rows: seriesRows },
     ]);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, DatePicker, Select, Button, Table, Tag } from 'antd';
+import { Card, Space, DatePicker, Select, Button, Table, Tag, Alert } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { fetchAnalyticsSegments } from '@/services/croupier/analytics';
 
@@ -28,6 +28,13 @@ export default function AnalyticsSegmentsPage() {
         <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
         <Button type="primary" onClick={load}>查询</Button>
       </Space>}>
+        <Alert
+          message="功能开发中"
+          description="人群分层功能正在开发中，暂无后端数据支持。当前页面仅作为占位展示。"
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
         <Table size="small" loading={loading} rowKey={(r:any)=> String(r.name ?? r.segment ?? '')}
           dataSource={data?.segments||[]}
           columns={[{title:'Segment',dataIndex:'name',render:(v:any)=> <Tag>{String(v)}</Tag>},{title:'人数',dataIndex:'users'},{title:'占比',dataIndex:'ratio',render:(v:any)=> v!=null? `${v}%`:'-'},{title:'ARPU',dataIndex:'arpu'}]}
