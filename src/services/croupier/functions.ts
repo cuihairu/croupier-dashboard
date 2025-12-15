@@ -113,3 +113,16 @@ export async function getFunctionAnalytics(functionId: string) {
     callsThisMonth: number;
   }>(`/api/v1/functions/${functionId}/analytics`);
 }
+
+export async function updateFunction(functionId: string, data: {
+  name?: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  enabled?: boolean;
+}) {
+  return request<void>(`/api/v1/functions/${functionId}`, {
+    method: 'PUT',
+    data,
+  });
+}
