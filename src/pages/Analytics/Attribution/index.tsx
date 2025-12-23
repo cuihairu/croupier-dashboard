@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, DatePicker, Input, Select, Button, Table, Tag } from 'antd';
+import { Alert, Card, Space, DatePicker, Input, Select, Button, Table, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
 import { fetchAnalyticsAttribution } from '@/services/croupier/analytics';
@@ -43,6 +43,13 @@ export default function AnalyticsAttributionPage() {
 
   return (
     <PageContainer>
+      <Alert
+        type="warning"
+        showIcon
+        message="Attribution 后端接口尚未实现"
+        description="当前页面仅保留 UI 骨架；后端未提供 /api/v1/analytics/attribution，查询将返回空数据。"
+        style={{ marginBottom: 12 }}
+      />
       <Card title="渠道投放" extra={<Space>
         <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
         <Select

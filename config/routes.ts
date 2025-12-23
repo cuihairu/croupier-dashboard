@@ -24,8 +24,8 @@ export default [
       { path: '/analytics/behavior', name: 'Behavior', access: 'canAnalyticsRead', component: './Analytics/Behavior' },
       { path: '/analytics/payments', name: 'Payments', access: 'canAnalyticsRead', component: './Analytics/Payments' },
       { path: '/analytics/levels', name: 'Levels', access: 'canAnalyticsRead', component: './Analytics/Levels' },
-      { path: '/analytics/attribution', name: 'Attribution', access: 'canAnalyticsRead', component: './Analytics/Attribution' },
-      { path: '/analytics/segments', name: 'Segments', access: 'canAnalyticsRead', component: './Analytics/Segments' },
+      { path: '/analytics/attribution', name: 'Attribution', access: 'canAnalyticsRead', component: './Analytics/Attribution', hideInMenu: true },
+      { path: '/analytics/segments', name: 'Segments', access: 'canAnalyticsRead', component: './Analytics/Segments', hideInMenu: true },
     ],
   },
   // Move 运营管理 (Operations) to second position in the menu

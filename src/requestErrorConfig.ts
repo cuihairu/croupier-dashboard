@@ -58,6 +58,11 @@ export const errorConfig: RequestConfig = {
       const rawUrl: string | undefined = error?.response?.config?.url || error?.request?.url;
       const url = normalizeApiUrl(rawUrl);
       const status: number | undefined = error?.response?.status;
+      if (status === 403) {
+        msgWarn('无权限访问该资源');
+        if (history.location?.pathname !== '/403') history.push('/403');
+        return;
+      }
       // Silence expected 401s during boot/login for current-user + messages endpoints
       if (status === 401 && url) {
         if (url.includes(`${API_V1_PREFIX}/users/current`) || url.includes(`${API_V1_PREFIX}/messages`)) {
@@ -82,6 +87,12 @@ export const errorConfig: RequestConfig = {
         const generic = new Set(['', 'unauthorized','forbidden','bad request','internal error','not found','service unavailable','conflict','too many login attempts','method not allowed','not implemented','bad gateway','request too large','invalid payload']);
         if (!message || generic.has(message.toLowerCase())) message = zh[code] || message || '请求失败';
         if (status === 401) msgWarn(message); else msgError(message);
+        if (code === 'unauthorized') {
+          try { localStorage.removeItem('token'); } catch {}
+          history.push('/user/login');
+        } else if (code === 'forbidden') {
+          if (history.location?.pathname !== '/403') history.push('/403');
+        }
         return;
       }
       // 我们的 errorThrower 抛出的错误。

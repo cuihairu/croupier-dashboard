@@ -1,422 +1,105 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Table, Space, Button, Input, Select, Tag, Typography, Timeline, Modal, Descriptions, Row, Col, Alert, Empty } from 'antd';
-import { SearchOutlined, EyeOutlined, ReloadOutlined, ExternalLinkOutlined } from '@ant-design/icons';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Card, Empty, Input, Space, Typography } from 'antd';
+import { PageContainer } from '@ant-design/pro-components';
+import { LinkOutlined, ReloadOutlined } from '@ant-design/icons';
 import { fetchOpsConfig } from '@/services/croupier/ops';
 
-const { Search } = Input;
 const { Text } = Typography;
-const { Option } = Select;
 
-interface SpanData {
-  spanId: string;
-  operationName: string;
-  startTime: number;
-  duration: number;
-  status: 'success' | 'error';
-  tags: Record<string, any>;
-}
+type OpsConfig = { grafana_explore_url?: string; jaeger_url?: string };
 
-interface TraceDetail {
-  traceId: string;
-  serviceName: string;
-  startTime: string;
-  duration: number;
-  totalSpans: number;
-  errorSpans: number;
-  spans: SpanData[];
+function normalizeBaseUrl(url?: string) {
+  return (url || '').trim().replace(/\/+$/, '');
 }
 
 export default function TracesPage() {
   const [loading, setLoading] = useState(false);
-  const [traces, setTraces] = useState<any[]>([]);
-  const [selectedTrace, setSelectedTrace] = useState<TraceDetail | null>(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [filters, setFilters] = useState({
-    service: '',
-    operation: '',
-    status: '',
-    minDuration: '',
-  });
-  const [config, setConfig] = useState<{ grafana_explore_url?: string }>({});
-  const [useRealData, setUseRealData] = useState(false);
+  const [config, setConfig] = useState<OpsConfig>({});
+  const [traceId, setTraceId] = useState('');
 
-  const mockTraces = [
-    {
-      traceId: 'trace_abc123',
-      serviceName: 'croupier-server',
-      operation: 'session.start',
-      startTime: new Date().toISOString(),
-      duration: 124,
-      spans: 5,
-      status: 'success',
-      errorCount: 0,
-      userId: 'user123',
-      gameId: 'tower-defense',
-    },
-    {
-      traceId: 'trace_def456',
-      serviceName: 'croupier-server',
-      operation: 'level.complete',
-      startTime: new Date(Date.now() - 60000).toISOString(),
-      duration: 256,
-      spans: 8,
-      status: 'success',
-      errorCount: 0,
-      userId: 'user456',
-      gameId: 'tower-defense',
-    },
-    {
-      traceId: 'trace_ghi789',
-      serviceName: 'croupier-agent',
-      operation: 'function.invoke',
-      startTime: new Date(Date.now() - 120000).toISOString(),
-      duration: 1024,
-      spans: 12,
-      status: 'error',
-      errorCount: 2,
-      userId: 'user789',
-      gameId: 'card-game',
-    },
-  ];
+  const jaegerTraceUrl = useMemo(() => {
+    const base = normalizeBaseUrl(config.jaeger_url);
+    const id = traceId.trim();
+    if (!base || !id) return '';
+    return `${base}/trace/${encodeURIComponent(id)}`;
+  }, [config.jaeger_url, traceId]);
 
-  const mockTraceDetail: TraceDetail = {
-    traceId: 'trace_abc123',
-    serviceName: 'croupier-server',
-    startTime: new Date().toISOString(),
-    duration: 124,
-    totalSpans: 5,
-    errorSpans: 0,
-    spans: [
-      {
-        spanId: 'span_1',
-        operationName: 'HTTP GET /api/session/start',
-        startTime: 0,
-        duration: 124,
-        status: 'success',
-        tags: {
-          'http.method': 'GET',
-          'http.url': '/api/session/start',
-          'http.status_code': 200,
-          'game.user_id': 'user123',
-          'game.session_id': 'session456',
-        },
-      },
-      {
-        spanId: 'span_2',
-        operationName: 'telemetry.start_user_session',
-        startTime: 5,
-        duration: 15,
-        status: 'success',
-        tags: {
-          'game.platform': 'ios',
-          'game.region': 'us-east',
-          'game.type': 'tower_defense',
-        },
-      },
-      {
-        spanId: 'span_3',
-        operationName: 'analytics.send_event',
-        startTime: 25,
-        duration: 45,
-        status: 'success',
-        tags: {
-          'event.type': 'session.start',
-          'analytics.bridge.enabled': true,
-        },
-      },
-      {
-        spanId: 'span_4',
-        operationName: 'redis.xadd',
-        startTime: 30,
-        duration: 35,
-        status: 'success',
-        tags: {
-          'redis.command': 'XADD',
-          'redis.key': 'game:events:session.start',
-        },
-      },
-      {
-        spanId: 'span_5',
-        operationName: 'response.send',
-        startTime: 100,
-        duration: 24,
-        status: 'success',
-        tags: {
-          'response.size': 156,
-        },
-      },
-    ],
-  };
-
-  useEffect(() => {
-    // 获取配置
-    fetchOpsConfig().then(res => {
-      if (res) {
-        setConfig(res);
-      }
-    }).catch(() => {
-      // 忽略错误，使用默认配置
-    });
-
-    // 当前仅使用演示数据
-    // 真实链路追踪集成需要：
-    // 1. 在服务中集成 OpenTelemetry
-    // 2. 部署 Jaeger 或兼容的追踪收集器
-    // 3. 实现后端 API 查询追踪数据
-    console.warn('Traces 页面目前为演示模式，暂未集成真实追踪数据');
-    setTraces(mockTraces);
-  }, []);
-
-  const columns = [
-    {
-      title: 'Trace ID',
-      dataIndex: 'traceId',
-      key: 'traceId',
-      render: (traceId: string) => (
-        <Space>
-          <Text code copyable style={{ fontSize: '12px' }}>
-            {traceId}
-          </Text>
-          <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => showTraceDetail(traceId)}
-          />
-        </Space>
-      ),
-    },
-    {
-      title: 'Service',
-      dataIndex: 'serviceName',
-      key: 'serviceName',
-      render: (service: string) => <Tag color="blue">{service}</Tag>,
-    },
-    {
-      title: 'Operation',
-      dataIndex: 'operation',
-      key: 'operation',
-      render: (operation: string) => <Tag>{operation}</Tag>,
-    },
-    {
-      title: 'Duration',
-      dataIndex: 'duration',
-      key: 'duration',
-      render: (duration: number) => `${duration}ms`,
-      sorter: (a: any, b: any) => a.duration - b.duration,
-    },
-    {
-      title: 'Spans',
-      dataIndex: 'spans',
-      key: 'spans',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string, record: any) => {
-        const color = status === 'success' ? 'green' : 'red';
-        const errorText = record.errorCount > 0 ? ` (${record.errorCount} errors)` : '';
-        return (
-          <Tag color={color}>
-            {status.toUpperCase()}{errorText}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'User',
-      dataIndex: 'userId',
-      key: 'userId',
-      render: (userId: string) => <Text code>{userId}</Text>,
-    },
-    {
-      title: 'Game',
-      dataIndex: 'gameId',
-      key: 'gameId',
-      render: (gameId: string) => <Tag color="orange">{gameId}</Tag>,
-    },
-    {
-      title: 'Start Time',
-      dataIndex: 'startTime',
-      key: 'startTime',
-      render: (time: string) => new Date(time).toLocaleString(),
-    },
-  ];
-
-  const showTraceDetail = (traceId: string) => {
-    setSelectedTrace(mockTraceDetail);
-    setModalVisible(true);
-  };
-
-  const openGrafanaExplore = () => {
-    if (config.grafana_explore_url) {
-      window.open(config.grafana_explore_url, '_blank');
+  const loadConfig = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchOpsConfig();
+      setConfig(res || {});
+    } finally {
+      setLoading(false);
     }
   };
 
-  const renderSpanTags = (tags: Record<string, any>) => (
-    <Space wrap>
-      {Object.entries(tags).map(([key, value]) => (
-        <Tag key={key} color="geekblue">
-          {key}: {String(value)}
-        </Tag>
-      ))}
-    </Space>
-  );
+  useEffect(() => {
+    loadConfig().catch(() => {});
+  }, []);
+
+  const openGrafanaExplore = () => {
+    if (!config.grafana_explore_url) return;
+    window.open(config.grafana_explore_url, '_blank', 'noopener,noreferrer');
+  };
+
+  const openJaegerTrace = () => {
+    if (!jaegerTraceUrl) return;
+    window.open(jaegerTraceUrl, '_blank', 'noopener,noreferrer');
+  };
 
   return (
-    <Card
-      title={
-        <Space>
-          <span>链路追踪</span>
-          <Tag color="orange">演示模式</Tag>
-        </Space>
-      }
-    >
-      <Alert
-        message="当前为演示模式"
-        description={
-          <div>
-            <p>此页面显示的是模拟数据，用于演示追踪功能。要启用真实链路追踪，需要：</p>
-            <ol>
-              <li>在服务中集成 OpenTelemetry SDK</li>
-              <li>部署 Jaeger 或兼容的追踪收集器（如 Tempo）</li>
-              <li>配置追踪数据收集和查询 API</li>
-            </ol>
-          </div>
-        }
-        type="info"
-        showIcon
-        style={{ marginBottom: 16 }}
-      />
-      <Space wrap style={{ marginBottom: 16 }}>
-        <Select
-          placeholder="服务"
-          style={{ width: 120 }}
-          value={filters.service}
-          onChange={(value) => setFilters({ ...filters, service: value })}
-        >
-          <Option value="">全部服务</Option>
-          <Option value="croupier-server">Server</Option>
-          <Option value="croupier-agent">Agent</Option>
-        </Select>
-        <Select
-          placeholder="状态"
-          style={{ width: 100 }}
-          value={filters.status}
-          onChange={(value) => setFilters({ ...filters, status: value })}
-        >
-          <Option value="">全部</Option>
-          <Option value="success">成功</Option>
-          <Option value="error">错误</Option>
-        </Select>
-        <Search
-          placeholder="搜索操作或Trace ID"
-          style={{ width: 200 }}
-          onSearch={(value) => console.log('Demo search:', value)}
-        />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={() => setTraces(mockTraces)}
-        >
-          刷新演示数据
-        </Button>
-        {config.grafana_explore_url && (
-          <Button
-            icon={<ExternalLinkOutlined />}
-            onClick={openGrafanaExplore}
-          >
-            Grafana Explore
+    <PageContainer>
+      <Card
+        title="链路追踪"
+        extra={
+          <Button icon={<ReloadOutlined />} onClick={loadConfig} loading={loading}>
+            刷新配置
           </Button>
-        )}
-      </Space>
-      <Table
-        columns={columns}
-        dataSource={traces}
-        rowKey="traceId"
-        loading={loading}
-        pagination={{ pageSize: 20 }}
-        size="small"
-      />
-
-      {/* Trace详情模态框 */}
-      <Modal
-        title={`Trace详情 - ${selectedTrace?.traceId}`}
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        footer={null}
-        width={1000}
+        }
       >
-        {selectedTrace && (
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {/* 基本信息 */}
-            <Descriptions title="基本信息" column={3} bordered size="small">
-              <Descriptions.Item label="Trace ID">{selectedTrace.traceId}</Descriptions.Item>
-              <Descriptions.Item label="Service">{selectedTrace.serviceName}</Descriptions.Item>
-              <Descriptions.Item label="Duration">{selectedTrace.duration}ms</Descriptions.Item>
-              <Descriptions.Item label="Total Spans">{selectedTrace.totalSpans}</Descriptions.Item>
-              <Descriptions.Item label="Error Spans">{selectedTrace.errorSpans}</Descriptions.Item>
-              <Descriptions.Item label="Start Time">
-                {new Date(selectedTrace.startTime).toLocaleString()}
-              </Descriptions.Item>
-            </Descriptions>
+        <Alert
+          type="info"
+          showIcon
+          message="当前版本不提供 Trace 列表/详情查询"
+          description={
+            <div>
+              <div>请配置外部追踪系统并从这里跳转：</div>
+              <div style={{ marginTop: 4 }}>
+                <Text code>CROUPIER_GRAFANA_EXPLORE_URL</Text> / <Text code>CROUPIER_JAEGER_URL</Text>
+              </div>
+            </div>
+          }
+          style={{ marginBottom: 16 }}
+        />
 
-            {/* Span时间线 */}
-            <Card size="small" title="Span时间线">
-              <Timeline mode="left">
-                {selectedTrace.spans.map((span, index) => (
-                  <Timeline.Item
-                    key={span.spanId}
-                    color={span.status === 'success' ? 'green' : 'red'}
-                    label={`+${span.startTime}ms`}
-                  >
-                    <div>
-                      <Text strong>{span.operationName}</Text>
-                      <br />
-                      <Text type="secondary">Duration: {span.duration}ms</Text>
-                      <br />
-                      <Text type="secondary">Status: </Text>
-                      <Tag color={span.status === 'success' ? 'green' : 'red'}>
-                        {span.status}
-                      </Tag>
-                      <br />
-                      <div style={{ marginTop: 8 }}>
-                        {renderSpanTags(span.tags)}
-                      </div>
-                    </div>
-                  </Timeline.Item>
-                ))}
-              </Timeline>
-            </Card>
-
-            {/* Span列表 */}
-            <Card size="small" title="Span详情">
-              <Table
-                size="small"
-                dataSource={selectedTrace.spans}
-                rowKey="spanId"
-                columns={[
-                  { title: 'Span ID', dataIndex: 'spanId', key: 'spanId', width: 100 },
-                  { title: 'Operation', dataIndex: 'operationName', key: 'operationName' },
-                  { title: 'Start', dataIndex: 'startTime', key: 'startTime', render: (t: number) => `+${t}ms`, width: 80 },
-                  { title: 'Duration', dataIndex: 'duration', key: 'duration', render: (d: number) => `${d}ms`, width: 80 },
-                  {
-                    title: 'Status',
-                    dataIndex: 'status',
-                    key: 'status',
-                    width: 80,
-                    render: (status: string) => (
-                      <Tag color={status === 'success' ? 'green' : 'red'}>{status}</Tag>
-                    ),
-                  },
-                ]}
-                pagination={false}
-              />
-            </Card>
+        <Space direction="vertical" style={{ width: '100%' }} size={16}>
+          <Space wrap>
+            <Input
+              placeholder="输入 Trace ID（用于跳转）"
+              value={traceId}
+              onChange={(e) => setTraceId(e.target.value)}
+              style={{ width: 380 }}
+            />
+            <Button
+              icon={<LinkOutlined />}
+              onClick={openGrafanaExplore}
+              disabled={!config.grafana_explore_url}
+            >
+              打开 Grafana Explore
+            </Button>
+            <Button
+              icon={<LinkOutlined />}
+              onClick={openJaegerTrace}
+              disabled={!jaegerTraceUrl}
+            >
+              在 Jaeger 中打开
+            </Button>
           </Space>
-        )}
-      </Modal>
-    </Card>
+
+          <Empty description="请从 Job/调用日志中获取 trace_id，然后跳转到 Grafana/Jaeger 查看" />
+        </Space>
+      </Card>
+    </PageContainer>
   );
 }

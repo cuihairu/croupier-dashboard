@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Space, DatePicker, Select, Button, Table, Tag } from 'antd';
+import { AutoComplete, Card, Space, DatePicker, Select, Button, Table, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
 import { fetchAnalyticsPaymentsSummary, fetchAnalyticsTransactions, fetchProductTrend } from '@/services/croupier/analytics';
@@ -121,78 +121,73 @@ export default function AnalyticsPaymentsPage() {
   };
   useEffect(()=>{ load(); }, [page, size]);
 
-  return (
-    <PageContainer>
-      <Card title="支付分析" extra={<Space>
-        <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
-        <Select
-          allowClear
-          showSearch
-          placeholder="渠道"
-          value={channel}
-          onChange={setChannel}
-          style={{ width: 140 }}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          options={availableChannels}
-          notFoundContent="请输入渠道名称"
-        />
-        <Select
-          allowClear
-          showSearch
-          placeholder="平台"
-          value={platform}
-          onChange={setPlatform}
-          style={{ width: 140 }}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          options={availablePlatforms}
-          notFoundContent="请输入平台名称"
-        />
-        <Select
-          allowClear
-          showSearch
-          placeholder="国家"
-          value={country}
-          onChange={setCountry}
-          style={{ width: 120 }}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          options={availableCountries}
-          notFoundContent="请输入国家代码或名称"
-        />
-        <Select
-          allowClear
-          showSearch
-          placeholder="省/区域"
-          value={region}
-          onChange={setRegion}
-          style={{ width: 140 }}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          options={availableRegions}
-          notFoundContent="请输入省/区域名称"
-        />
-        <Select
-          allowClear
-          showSearch
-          placeholder="城市"
-          value={city}
-          onChange={setCity}
-          style={{ width: 140 }}
-          filterOption={(input, option) =>
-            (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-          }
-          options={availableCities}
-          notFoundContent="请输入城市名称"
-        />
-        <Select value={geoDim} onChange={setGeoDim as any} style={{ width: 120 }} options={[{label:'按国家',value:'country'},{label:'按省/区域',value:'region'},{label:'按城市',value:'city'}]} />
-        <Button type="primary" onClick={()=> { setPage(1); load(); }}>查询</Button>
-        <Button onClick={async ()=>{
+	  return (
+	    <PageContainer>
+	      <Card title="支付分析" extra={<Space>
+	        <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
+	        <AutoComplete
+	          allowClear
+	          placeholder="渠道"
+	          value={channel}
+	          onChange={setChannel}
+	          style={{ width: 140 }}
+	          options={availableChannels}
+	          filterOption={(input, option: any) => {
+	            const needle = (input || '').toLowerCase();
+	            return String(option?.value ?? '').toLowerCase().includes(needle) || String(option?.label ?? '').toLowerCase().includes(needle);
+	          }}
+	        />
+	        <AutoComplete
+	          allowClear
+	          placeholder="平台"
+	          value={platform}
+	          onChange={setPlatform}
+	          style={{ width: 140 }}
+	          options={availablePlatforms}
+	          filterOption={(input, option: any) => {
+	            const needle = (input || '').toLowerCase();
+	            return String(option?.value ?? '').toLowerCase().includes(needle) || String(option?.label ?? '').toLowerCase().includes(needle);
+	          }}
+	        />
+	        <AutoComplete
+	          allowClear
+	          placeholder="国家"
+	          value={country}
+	          onChange={setCountry}
+	          style={{ width: 120 }}
+	          options={availableCountries}
+	          filterOption={(input, option: any) => {
+	            const needle = (input || '').toLowerCase();
+	            return String(option?.value ?? '').toLowerCase().includes(needle) || String(option?.label ?? '').toLowerCase().includes(needle);
+	          }}
+	        />
+	        <AutoComplete
+	          allowClear
+	          placeholder="省/区域"
+	          value={region}
+	          onChange={setRegion}
+	          style={{ width: 140 }}
+	          options={availableRegions}
+	          filterOption={(input, option: any) => {
+	            const needle = (input || '').toLowerCase();
+	            return String(option?.value ?? '').toLowerCase().includes(needle) || String(option?.label ?? '').toLowerCase().includes(needle);
+	          }}
+	        />
+	        <AutoComplete
+	          allowClear
+	          placeholder="城市"
+	          value={city}
+	          onChange={setCity}
+	          style={{ width: 140 }}
+	          options={availableCities}
+	          filterOption={(input, option: any) => {
+	            const needle = (input || '').toLowerCase();
+	            return String(option?.value ?? '').toLowerCase().includes(needle) || String(option?.label ?? '').toLowerCase().includes(needle);
+	          }}
+	        />
+	        <Select value={geoDim} onChange={setGeoDim as any} style={{ width: 120 }} options={[{label:'按国家',value:'country'},{label:'按省/区域',value:'region'},{label:'按城市',value:'city'}]} />
+	        <Button type="primary" onClick={()=> { setPage(1); load(); }}>查询</Button>
+	        <Button onClick={async ()=>{
           const ch = [['channel','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_channel||[]).map((r:any)=>[r.channel,r.revenue_cents,r.success,r.total,r.success_rate]));
           const pf = [['platform','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_platform||[]).map((r:any)=>[r.platform,r.revenue_cents,r.success,r.total,r.success_rate]));
           const co = [['country','revenue_cents','success','total','success_rate(%)']].concat((summary?.by_country||[]).map((r:any)=>[r.country,r.revenue_cents,r.success,r.total,r.success_rate]));

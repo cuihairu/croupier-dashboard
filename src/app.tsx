@@ -12,6 +12,7 @@ import { fetchCurrentUser } from '@/services/croupier';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
+import { loadPackPlugins } from './plugin/registry';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 
@@ -67,6 +68,11 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     useEffect(() => {
       setAppApi({ message: inst.message, notification: inst.notification });
     }, [inst]);
+    useEffect(() => {
+      if (initialState?.currentUser) {
+        loadPackPlugins().catch(() => {});
+      }
+    }, [initialState?.currentUser]);
     return null;
   };
   const isAuthed = !!initialState?.currentUser;

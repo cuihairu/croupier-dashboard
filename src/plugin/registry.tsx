@@ -1,5 +1,7 @@
 // Renderer registry for GM functions views
 import React from 'react';
+import { listPacks } from '@/services/croupier/packs';
+import { apiUrl } from '@/utils/api';
 
 // Renderer function type
 type Renderer = (props: { data: any; options?: any }) => React.ReactNode;
@@ -73,12 +75,52 @@ export function registerBuiltins(): void {
   renderers['text.view'] = TextView;
   renderers['number.view'] = NumberView;
   renderers['table.view'] = TableView;
+  renderers['table.basic'] = TableView;
   
   // Aliases for backward compatibility
   renderers['json'] = JsonView;
   renderers['text'] = TextView;
   renderers['number'] = NumberView;
   renderers['table'] = TableView;
+}
+
+type PackPluginEntry = { packId: string; path: string; updatedAt?: string };
+
+let pluginsLoaded = false;
+let pluginsLoading: Promise<void> | null = null;
+
+async function importPluginModule(url: string): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  return import(/* webpackIgnore: true */ url);
+}
+
+function normalizePluginPath(path: string): string {
+  const p = String(path || '').trim().replace(/\\/g, '/');
+  return p.startsWith('/') ? p.slice(1) : p;
+}
+
+function extractPackPlugins(packsResponse: any): PackPluginEntry[] {
+  const packs: any[] =
+    (packsResponse?.packs && Array.isArray(packsResponse.packs) && packsResponse.packs) ||
+    (packsResponse?.packages && Array.isArray(packsResponse.packages) && packsResponse.packages) ||
+    (packsResponse?.manifest?.packs && Array.isArray(packsResponse.manifest.packs) && packsResponse.manifest.packs) ||
+    [];
+
+  const plugins: PackPluginEntry[] = [];
+  for (const p of packs) {
+    const packId = String(p?.id || '').trim();
+    if (!packId) continue;
+    const manifest = p?.manifest && typeof p.manifest === 'object' ? p.manifest : {};
+    const updatedAt = typeof p?.updated_at === 'string' ? p.updated_at : undefined;
+    const webPlugins = Array.isArray(manifest?.web_plugins) ? manifest.web_plugins : [];
+    for (const rel of webPlugins) {
+      const pluginPath = normalizePluginPath(String(rel || ''));
+      if (!pluginPath) continue;
+      plugins.push({ packId, path: pluginPath, updatedAt });
+    }
+  }
+  return plugins;
 }
 
 /**
@@ -92,9 +134,40 @@ export function registerBuiltins(): void {
  * @returns Promise that resolves when all pack plugins are loaded
  */
 export async function loadPackPlugins(): Promise<void> {
-  // TODO: Implement actual pack loading when pack system is ready
-  // For now, this function is a no-op since we only use built-in renderers
-  return Promise.resolve();
+  if (pluginsLoaded) return;
+  if (pluginsLoading) return pluginsLoading;
+
+  pluginsLoading = (async () => {
+    const res: any = await listPacks();
+    const plugins = extractPackPlugins(res);
+    if (!plugins.length) return;
+
+    await Promise.allSettled(
+      plugins.map(async (p) => {
+        const u = new URL(apiUrl('/api/v1/packs/plugin'), window.location.origin);
+        u.searchParams.set('pack', p.packId);
+        u.searchParams.set('path', p.path);
+        if (p.updatedAt) u.searchParams.set('v', p.updatedAt);
+        const token = localStorage.getItem('token');
+        if (token) u.searchParams.set('token', token);
+
+        const mod = await importPluginModule(u.toString());
+        const reg = mod?.default || mod?.register || mod;
+        if (typeof reg === 'function') {
+          await reg({ registerRenderer, React });
+        }
+      }),
+    );
+  })()
+    .catch(() => {
+      // no-op: plugin loading is best-effort
+    })
+    .finally(() => {
+      pluginsLoaded = true;
+      pluginsLoading = null;
+    });
+
+  return pluginsLoading;
 }
 
 /**

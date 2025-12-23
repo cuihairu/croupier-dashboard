@@ -98,7 +98,7 @@ export async function deleteSilence(id: string) {
   return request<void>(`/api/v1/ops/silences/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 export async function fetchOpsConfig() {
-  return request<{ alertmanager_url?: string; grafana_explore_url?: string }>("/api/ops/config");
+  return request<{ alertmanager_url?: string; grafana_explore_url?: string; jaeger_url?: string }>("/api/ops/config");
 }
 
 export async function updateAgentMeta(agent_id: string, data: { region?: string; zone?: string }) {

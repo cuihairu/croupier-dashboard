@@ -1,34 +1,26 @@
 /**
- * Export data to XLSX if available, otherwise fallback to CSV
- * Note: Currently supports CSV export only as XLSX library is not included
+ * Export data as CSV (multi-sheet supported by downloading multiple CSV files).
+ *
+ * The project currently does not bundle XLSX libraries; callers may still use
+ * this function name for historical reasons.
  */
 export async function exportToXLSX(fileName: string, sheets: { sheet: string; rows: any[][] }[]) {
-  // Try to use a global XLSX if host page provides it (e.g., via CDN), otherwise fall back to CSV
-  try {
-    // @ts-ignore
-    const XLSX = (typeof window !== 'undefined' && (window as any).XLSX) ? (window as any).XLSX : null;
-    if (!XLSX) throw new Error('xlsx not available');
-    const wb = XLSX.utils.book_new();
-    for (const s of sheets) {
-      const ws = XLSX.utils.aoa_to_sheet(s.rows);
-      XLSX.utils.book_append_sheet(wb, ws, s.sheet || 'Sheet1');
-    }
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = fileName || 'export.xlsx'; a.click(); URL.revokeObjectURL(url);
+  if (!sheets || sheets.length === 0) return;
+  const baseName = (fileName || 'export').replace(/\.(xlsx|csv)$/i, '');
+  if (sheets.length === 1) {
+    exportToCSV(`${baseName}.csv`, sheets[0].rows);
     return;
-  } catch (e) {
-    // Fallback to CSV export using the first sheet
   }
-  try {
-    const first = sheets[0];
-    const csv = first.rows.map(r => r.map(x => {
-      const s = String(x ?? '');
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-    }).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = (fileName||'export') + '.csv'; a.click(); URL.revokeObjectURL(url);
-  } catch {}
+
+  // Multi-sheet: trigger multiple downloads (one CSV per sheet).
+  for (const s of sheets) {
+    const safeSheet = String(s.sheet || 'sheet')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'sheet';
+    exportToCSV(`${baseName}_${safeSheet}.csv`, s.rows);
+  }
 }
 
 export function exportToCSV(fileName: string, rows: any[][]) {
