@@ -36,7 +36,7 @@ export async function startJob(
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
-  return request<{ job_id: string }>(`/api/v1/functions/${function_id}/invoke`, { method: 'POST', data });
+  return request<{ job_id: string }>(`/api/v1/functions/${function_id}/invoke?mode=job`, { method: 'POST', data });
 }
 
 export async function cancelJob(job_id: string) {

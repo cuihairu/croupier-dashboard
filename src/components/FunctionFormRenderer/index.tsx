@@ -56,6 +56,7 @@ export interface FunctionFormRendererProps {
   resetText?: string;
   showReset?: boolean;
   extra?: React.ReactNode;
+  enableRawJson?: boolean;
 }
 
 export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
@@ -72,15 +73,28 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   submitText = '执行函数',
   resetText = '重置',
   showReset = true,
-  extra
+  extra,
+  enableRawJson = true
 }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] = useState(initialValues);
+  const [inputMode, setInputMode] = useState<'form' | 'json'>('form');
+  const [rawJson, setRawJson] = useState<string>('');
+  const [rawJsonError, setRawJsonError] = useState<string>('');
 
   useEffect(() => {
     form.setFieldsValue(initialValues);
     setFormData(initialValues);
   }, [initialValues, form]);
+
+  useEffect(() => {
+    const hasFields = schema?.properties && Object.keys(schema.properties || {}).length > 0;
+    if (enableRawJson && !hasFields) {
+      setInputMode('json');
+    } else if (!enableRawJson) {
+      setInputMode('form');
+    }
+  }, [schema, enableRawJson]);
 
   const handleValuesChange = useCallback((changedFields: any, allValues: any) => {
     setFormData(allValues);
@@ -88,12 +102,30 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   }, [onChange]);
 
   const handleFinish = useCallback((values: any) => {
+    if (enableRawJson && inputMode === 'json') {
+      const text = (rawJson || '').trim();
+      if (!text) {
+        setRawJsonError('请输入 JSON 参数（或切换回表单模式）');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(text);
+        setRawJsonError('');
+        onSubmit?.(parsed);
+      } catch (e: any) {
+        setRawJsonError(e?.message || 'JSON 解析失败');
+      }
+      return;
+    }
+    setRawJsonError('');
     onSubmit?.(values);
-  }, [onSubmit]);
+  }, [enableRawJson, inputMode, rawJson, onSubmit]);
 
   const handleReset = useCallback(() => {
     form.resetFields();
     setFormData(initialValues);
+    setRawJson('');
+    setRawJsonError('');
   }, [form, initialValues]);
 
   const validateField = useCallback((rule: any, value: any, property: JSONSchemaProperty) => {
@@ -336,7 +368,47 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
         requiredMark={showValidationErrors}
         validateTrigger={validateTrigger}
       >
-        {renderFormItems()}
+        {enableRawJson ? (
+          <Tabs
+            activeKey={inputMode}
+            onChange={(k) => { setInputMode(k as any); setRawJsonError(''); }}
+            size="small"
+            items={[
+              {
+                key: 'form',
+                label: '表单',
+                children: renderFormItems(),
+              },
+              {
+                key: 'json',
+                label: 'JSON',
+                children: (
+                  <div>
+                    <Text type="secondary">直接输入要发送的请求参数（JSON）。</Text>
+                    <TextArea
+                      rows={10}
+                      placeholder='例如：{"player_id":"123","reason":"test"}'
+                      value={rawJson}
+                      onChange={(e) => { setRawJson(e.target.value); setRawJsonError(''); }}
+                      style={{ marginTop: 8, fontFamily: 'monospace' }}
+                    />
+                    {rawJsonError && (
+                      <Alert
+                        style={{ marginTop: 8 }}
+                        type="error"
+                        showIcon
+                        message="JSON 无效"
+                        description={rawJsonError}
+                      />
+                    )}
+                  </div>
+                ),
+              },
+            ]}
+          />
+        ) : (
+          renderFormItems()
+        )}
 
         {extra && (
           <div style={{ marginTop: 16 }}>
