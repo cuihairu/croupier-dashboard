@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Input, Select, Modal, Form } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { listFeedback, createFeedback, updateFeedback, deleteFeedback, createTicket } from '@/services/croupier/support';
+import { listFeedback, createFeedback, updateFeedback, deleteFeedback, createTicket } from '@/services/api/support';
 import { getMessage } from '@/utils/antdApp';
 import { useAccess } from '@umijs/max';
 

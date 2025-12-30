@@ -21,5 +21,5 @@ export async function listUserGameEnvs(userId: number, gameId: string) {
 // 设置用户游戏环境的兼容函数（已弃用，使用 setUserGames）
 export async function setUserGameEnvs(userId: number, gameId: string, envs: string[]) {
   // 这个需要根据实际 API 实现，暂时返回成功
-  return Promise.resolve<void>();
+  return Promise.resolve();
 }

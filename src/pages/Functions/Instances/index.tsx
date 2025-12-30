@@ -9,8 +9,7 @@ import {
   ExclamationCircleOutlined,
   InfoCircleOutlined
 } from '@ant-design/icons';
-import { request } from '@umijs/max';
-import { listFunctionInstances } from '@/services/croupier';
+import { getFunctionInstances } from '@/services/api';
 
 const { Text, Title } = Typography;
 
@@ -43,7 +42,7 @@ export default () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await request('/api/function_instances');
+      const res = await getFunctionInstances();
       setInstances(res?.instances || []);
 
       // Calculate coverage statistics

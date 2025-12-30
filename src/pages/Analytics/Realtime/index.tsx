@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Space, Button, Row, Col, Statistic, DatePicker } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
-import { fetchAnalyticsRealtime, fetchRealtimeSeries } from '@/services/croupier/analytics';
+import { fetchAnalyticsRealtime, fetchRealtimeSeries } from '@/services/api/analytics';
 
 export default function AnalyticsRealtimePage() {
   const intl = useIntl();

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { PageContainer, Card, Row, Col, Divider, Space, Typography, Alert, Spin, Empty } from 'antd';
 import { PlayCircleOutlined, FunctionOutlined, HistoryOutlined } from '@ant-design/icons';
 import { history, useLocation } from '@umijs/max';
-import { listDescriptors, invokeFunction, startJob, FunctionDescriptor } from '@/services/croupier';
+import { listDescriptors, invokeFunction, startJob, FunctionDescriptor } from '@/services/api';
 import FunctionFormRenderer from '@/components/FunctionFormRenderer';
 import FunctionListTable from '@/components/FunctionListTable';
 import FunctionDetailPanel from '@/components/FunctionDetailPanel';

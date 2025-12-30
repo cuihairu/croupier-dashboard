@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Tag, Select, Input, Button, App, Modal } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { request } from '@umijs/max';
-import { fetchRegistry, type ServerAgent as RegistryAgent } from '@/services/croupier/registry';
+import { drainOpsNode, listOpsNodes, restartOpsNode, undrainOpsNode } from '@/services/api/ops';
+import { fetchRegistry, type ServerAgent as RegistryAgent } from '@/services/api/registry';
 
 export default function OpsNodesPage() {
   const { message } = App.useApp();
@@ -18,7 +18,7 @@ export default function OpsNodesPage() {
     setLoading(true);
     try {
       try {
-        const r = await request<any>('/api/ops/nodes');
+        const r = await listOpsNodes();
         const nodes = (r?.nodes||[]) as any[];
         // map to RegistryAgent-like rows
         const mapped = nodes.map(n=> ({
@@ -57,14 +57,14 @@ export default function OpsNodesPage() {
   }, [rows, q, healthy, env, game]);
 
   const drain = async (id: string) => {
-    try { await request.post(`/api/ops/nodes/${encodeURIComponent(id)}/drain`); message.success('已下线'); load(); } catch(e:any){ message.error(e?.message||'操作失败'); }
+    try { await drainOpsNode(id); message.success('已下线'); load(); } catch(e:any){ message.error(e?.message||'操作失败'); }
   };
   const undrain = async (id: string) => {
-    try { await request.post(`/api/ops/nodes/${encodeURIComponent(id)}/undrain`); message.success('已取消下线'); load(); } catch(e:any){ message.error(e?.message||'操作失败'); }
+    try { await undrainOpsNode(id); message.success('已取消下线'); load(); } catch(e:any){ message.error(e?.message||'操作失败'); }
   };
   const restart = async (id: string) => {
     Modal.confirm({ title:'重启节点', content:`确认重启 ${id} ?`, onOk: async ()=>{
-      try { await request.post(`/api/ops/nodes/${encodeURIComponent(id)}/restart`); message.success('已下发重启'); } catch(e:any){ message.error(e?.message||'操作失败'); }
+      try { await restartOpsNode(id); message.success('已下发重启'); } catch(e:any){ message.error(e?.message||'操作失败'); }
     }});
   };
 

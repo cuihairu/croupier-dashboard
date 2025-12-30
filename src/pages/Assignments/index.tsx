@@ -4,7 +4,7 @@ import { PageContainer } from '@ant-design/pro-components';
 import { useModel } from '@umijs/max';
 import { useIntl } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
-import { listDescriptors, fetchAssignments, setAssignments, FunctionDescriptor } from '@/services/croupier';
+import { listDescriptors, fetchAssignments, setAssignments, FunctionDescriptor } from '@/services/api';
 
 export default function AssignmentsPage() {
   const { message } = App.useApp();

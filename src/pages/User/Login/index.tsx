@@ -1,5 +1,5 @@
 import { Footer } from '@/components';
-import { createSession } from '@/services/croupier';
+import { createSession } from '@/services/api';
 import {
   LockOutlined,
   UserOutlined,

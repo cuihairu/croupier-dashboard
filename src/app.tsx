@@ -8,7 +8,7 @@ import { history, Link } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { fetchCurrentUser } from '@/services/croupier';
+import { fetchCurrentUser } from '@/services/api';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';

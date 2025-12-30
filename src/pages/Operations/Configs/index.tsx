@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Tag, Select, Input, Button, App, Modal, Form, Input as AntInput } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { listConfigs, getConfig, saveConfig, validateConfig, listVersions, getVersion } from '@/services/croupier/configs';
+import { listConfigs, getConfig, saveConfig, validateConfig, listVersions, getVersion } from '@/services/api/configs';
 import { CodeEditor, DiffEditor as MonacoDiff } from '@/components/MonacoDynamic';
 
 export default function OperationsConfigsPage() {

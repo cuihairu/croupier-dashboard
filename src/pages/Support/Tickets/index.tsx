@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Input, Select, Tag, Modal, Form, Dropdown } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { MenuProps } from 'antd';
-import { listUsers } from '@/services/croupier';
-import { updateTicket as updateTicketAPI } from '@/services/croupier/support';
+import { listUsers } from '@/services/api';
+import { updateTicket as updateTicketAPI } from '@/services/api/support';
 import { history } from '@umijs/max';
-import { listTickets, createTicket, updateTicket, deleteTicket, transitionTicket } from '@/services/croupier/support';
+import { listTickets, createTicket, updateTicket, deleteTicket, transitionTicket } from '@/services/api/support';
 import { useAccess } from '@umijs/max';
 
 export default function SupportTicketsPage() {

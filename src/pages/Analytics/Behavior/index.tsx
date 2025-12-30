@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Space, DatePicker, Input, Button, Table, Select, Switch, InputNumber, Checkbox, Tag, Modal } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsEvents, fetchAnalyticsFunnel, fetchAnalyticsPaths, fetchAnalyticsAdoption, fetchAnalyticsAdoptionBreakdown } from '@/services/croupier/analytics';
+import { fetchAnalyticsEvents, fetchAnalyticsFunnel, fetchAnalyticsPaths, fetchAnalyticsAdoption, fetchAnalyticsAdoptionBreakdown } from '@/services/api/analytics';
 
 export default function AnalyticsBehaviorPage() {
   const [loading, setLoading] = useState(false);

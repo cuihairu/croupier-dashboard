@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Input, Switch, Modal, Form } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { listFAQ, createFAQ, updateFAQ, deleteFAQ } from '@/services/croupier/support';
+import { listFAQ, createFAQ, updateFAQ, deleteFAQ } from '@/services/api/support';
 import { useAccess } from '@umijs/max';
 
 export default function SupportFAQPage() {

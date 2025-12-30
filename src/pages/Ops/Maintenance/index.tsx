@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Tag, Modal, Form, Input, DatePicker, Switch, App } from 'antd';
-import { request } from '@umijs/max';
+import { fetchOpsMaintenance, saveOpsMaintenance } from '@/services/api/ops';
 
 type Window = { id:string; game_id?:string; env?:string; start?:string; end?:string; message?:string; block_writes?:boolean };
 
@@ -8,12 +8,12 @@ export default function OpsMaintenancePage(){
   const { message } = App.useApp();
   const [rows, setRows] = useState<Window[]>([]);
   const [loading, setLoading] = useState(false);
-  const load = async ()=>{ setLoading(true); try{ const r = await request('/api/ops/maintenance'); setRows(r.windows||[]);} finally{ setLoading(false);} };
+  const load = async ()=>{ setLoading(true); try{ const r = await fetchOpsMaintenance(); setRows(r.windows||[]);} finally{ setLoading(false);} };
   useEffect(()=>{ load(); }, []);
 
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm<Window & { range?: any }>();
-  const saveAll = async (ws:Window[])=>{ await request('/api/ops/maintenance', { method:'PUT', data:{ windows: ws } }); message.success('已保存'); load(); };
+  const saveAll = async (ws:Window[])=>{ await saveOpsMaintenance({ windows: ws }); message.success('已保存'); load(); };
   const onSubmit = async ()=>{
     try{
       const v = await form.validateFields();
@@ -60,4 +60,3 @@ export default function OpsMaintenancePage(){
     </div>
   );
 }
-

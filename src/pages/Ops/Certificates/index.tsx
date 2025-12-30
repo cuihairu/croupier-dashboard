@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Tag, App, Select, Modal, Form, Input, InputNumber, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { listCertificates, addCertificate, checkCertificate, checkAllCertificates, deleteCertificate, type Certificate } from '@/services/croupier/ops';
+import { listCertificates, addCertificate, checkCertificate, checkAllCertificates, deleteCertificate, type Certificate } from '@/services/api/ops';
 
 export default function OpsCertificatesPage() {
   const { message } = App.useApp();

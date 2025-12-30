@@ -9,7 +9,7 @@ import {
   ReloadOutlined,
   RedoOutlined
 } from '@ant-design/icons';
-import { request } from '@umijs/max';
+import { listFunctionCalls, rerunFunctionCall } from '@/services/api';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -28,6 +28,12 @@ export type FunctionCall = {
   game_id?: string;
   env?: string;
   job_id?: string;
+};
+
+type FunctionCallView = FunctionCall & {
+  durationText: string;
+  startedText: string;
+  completedText: string;
 };
 
 export interface FunctionCallHistoryProps {
@@ -56,7 +62,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
   const [calls, setCalls] = useState<FunctionCall[]>([]);
   const [loading, setLoading] = useState(false);
   const [detailVisible, setDetailVisible] = useState(false);
-  const [selectedCall, setSelectedCall] = useState<FunctionCall | null>(null);
+  const [selectedCall, setSelectedCall] = useState<FunctionCallView | null>(null);
 
   const fetchCalls = async () => {
     setLoading(true);
@@ -66,7 +72,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
       if (userId) params.user_id = userId;
       if (gameId) params.game_id = gameId;
 
-      const res: any = await request('/api/function_calls', { params });
+      const res = await listFunctionCalls(params);
       setCalls(res?.calls || []);
     } catch (error) {
       console.error('Failed to fetch function calls:', error);
@@ -84,7 +90,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
   };
 
   const handleViewDetail = (call: FunctionCall) => {
-    setSelectedCall(call);
+    setSelectedCall(decorateCall(call));
     setDetailVisible(true);
     onViewDetail?.(call);
   };
@@ -92,11 +98,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
   const handleRerun = (call: FunctionCall) => {
     if (call.job_id) {
       // Try to rerun the job
-      request(`/api/function_calls/${call.id}/rerun`, { method: 'POST' })
-        .then(() => {
-          handleRefresh();
-        })
-        .catch(console.error);
+      rerunFunctionCall(call.id).then(handleRefresh).catch(console.error);
     }
     onRerun?.(call);
   };
@@ -143,13 +145,15 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
     return new Date(dateString).toLocaleString('zh-CN');
   };
 
+  const decorateCall = (call: FunctionCall): FunctionCallView => ({
+    ...call,
+    durationText: formatDuration(call.duration),
+    startedText: formatDate(call.started_at),
+    completedText: call.completed_at ? formatDate(call.completed_at) : '-',
+  });
+
   const processedCalls = useMemo(() => {
-    return calls.map(call => ({
-      ...call,
-      durationText: formatDuration(call.duration),
-      startedText: formatDate(call.started_at),
-      completedText: call.completed_at ? formatDate(call.completed_at) : '-'
-    }));
+    return calls.map(decorateCall);
   }, [calls]);
 
   if (calls.length === 0 && !loading) {
@@ -236,9 +240,9 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
                   )}
                   {(call.game_id || call.env || call.agent_id) && (
                     <Space wrap>
-                      {call.game_id && <Tag size="small">Game: {call.game_id}</Tag>}
-                      {call.env && <Tag size="small">Env: {call.env}</Tag>}
-                      {call.agent_id && <Tag size="small">Agent: {call.agent_id}</Tag>}
+                      {call.game_id && <Tag>Game: {call.game_id}</Tag>}
+                      {call.env && <Tag>Env: {call.env}</Tag>}
+                      {call.agent_id && <Tag>Agent: {call.agent_id}</Tag>}
                     </Space>
                   )}
                 </Space>

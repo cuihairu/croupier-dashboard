@@ -17,11 +17,10 @@ import PackageCenter from './components/PackageCenter';
 import ExecutionMonitor from './components/ExecutionMonitor';
 import VirtualObjectManager from './components/VirtualObjectManager';
 import GameSelector from '@/components/GameSelector';
-import { reloadPacks, listPacks } from '@/services/croupier/packs';
-import { createEntity, listEntities } from '@/services/croupier/entities';
-import { fetchRegistry, listDescriptors } from '@/services/croupier';
-import { listOpsJobs } from '@/services/croupier/ops';
-import { apiUrl } from '@/utils/api';
+import { getPacksExportUrl, reloadPacks, listPacks } from '@/services/api/packs';
+import { createEntity, listEntities } from '@/services/api/entities';
+import { fetchRegistry, listDescriptors } from '@/services/api';
+import { listOpsJobs } from '@/services/api/ops';
 
 const QUICK_ACTIONS = {
   importPack: {
@@ -185,7 +184,7 @@ export default function ComponentManagement() {
         await loadStats();
       } else if (actionModal.key === 'exportConfig') {
         const link = document.createElement('a');
-        link.href = apiUrl('/api/packs/export');
+        link.href = getPacksExportUrl();
         link.target = '_blank';
         link.rel = 'noopener';
         link.click();

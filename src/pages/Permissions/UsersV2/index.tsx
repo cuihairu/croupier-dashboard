@@ -3,9 +3,9 @@ import { Card, Table, Button, Modal, Form, Input, Switch, Select, Tag, Space, Po
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { getMessage } from '@/utils/antdApp';
-import { listUsers, createUser, updateUser, deleteUser, setUserPassword, listRoles, listUserGames, setUserGames, listUserGameEnvs, setUserGameEnvs, type UserRecord } from '@/services/croupier';
-import { listGamesMeta, type Game as GameMeta } from '@/services/croupier';
-import { listGameEnvs } from '@/services/croupier/envs';
+import { listUsers, createUser, updateUser, deleteUser, setUserPassword, listRoles, listUserGames, setUserGames, listUserGameEnvs, setUserGameEnvs, type UserRecord } from '@/services/api';
+import { listGamesMeta, type Game as GameMeta } from '@/services/api';
+import { listGameEnvs } from '@/services/api/envs';
 
 export default function UsersV2() {
   const [users, setUsers] = useState<UserRecord[]>([]);

@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { PageContainer, ProTable, ProColumns, ModalForm, ProFormSelect, ProFormText, ProFormGroup } from '@ant-design/pro-components';
 import { App, Space, Tag } from 'antd';
-import { request, useIntl } from '@umijs/max';
-import { getFunctionSummary } from '@/services/croupier/functions-enhanced';
+import { useIntl } from '@umijs/max';
+import { getAdminFunctionPermissions, setAdminFunctionPermissions } from '@/services/api/admin';
+import { getFunctionSummary } from '@/services/api/functions-enhanced';
 
 type PermissionSpec = { verbs?: string[]; scopes?: string[]; defaults?: { role: string; verbs: string[] }[]; i18n_zh?: Record<string, string> };
 type FuncRow = { id: string; permissions?: PermissionSpec; display_name?: { zh?: string } };
@@ -14,11 +15,10 @@ const fetchSummary = async (): Promise<FuncRow[]> => {
 };
 
 const fetchPermissions = async (fid: string): Promise<PermissionSpec> => {
-  const res = await request(`/api/admin/functions/${encodeURIComponent(fid)}/permissions`, { method: 'GET' });
-  return res?.permissions || {};
+  return getAdminFunctionPermissions(fid);
 };
 const savePermissions = async (fid: string, perm: PermissionSpec) => {
-  await request(`/api/admin/functions/${encodeURIComponent(fid)}/permissions`, { method: 'PUT', data: perm });
+  await setAdminFunctionPermissions(fid, perm);
 };
 
 const PermissionsPage: React.FC = () => {

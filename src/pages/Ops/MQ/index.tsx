@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Button, Descriptions, Tag } from 'antd';
-import { request } from '@umijs/max';
+import { fetchOpsMQ } from '@/services/api/ops';
 
 export default function OpsMQPage() {
   const [loading, setLoading] = useState(false);
   const [info, setInfo] = useState<any>({});
   const load = async () => {
     setLoading(true);
-    try { const r = await request('/api/ops/mq'); setInfo(r||{}); } finally { setLoading(false); }
+    try { const r = await fetchOpsMQ(); setInfo(r||{}); } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);
 

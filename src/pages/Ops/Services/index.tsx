@@ -3,7 +3,7 @@ import { Card, Table, Space, Tag, Select, Input, Button, App, Drawer } from 'ant
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import GameSelector from '@/components/GameSelector';
-import { fetchOpsServices, updateAgentMeta, type OpsService } from '@/services/croupier/ops';
+import { fetchOpsServices, updateAgentMeta, type OpsService } from '@/services/api/ops';
 
 export default function OpsServicesPage() {
   const { message } = App.useApp();

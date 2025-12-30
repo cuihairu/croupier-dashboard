@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { AppstoreOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { Empty, Select, Spin } from "antd";
 import classNames from "classnames";
-import { listMyGames, type Game, type GameEnvMeta } from "@/services/croupier";
+import { listMyGames, type Game, type GameEnvMeta } from "@/services/api";
 import styles from "./index.less";
 
 type GameSelectorProps = {

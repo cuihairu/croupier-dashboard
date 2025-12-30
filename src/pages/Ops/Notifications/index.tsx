@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Button, App, Table, Tag, Modal, Form, Input, Select, InputNumber } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { request } from '@umijs/max';
+import { fetchOpsNotifications, saveOpsNotifications } from '@/services/api/ops';
 
 type Channel = { id: string; type: string; url?: string; secret?: string };
 type Rule = { event: string; channels: string[]; threshold_days?: number };
@@ -17,7 +17,7 @@ export default function OpsNotificationsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const r = await request('/api/ops/notifications');
+      const r = await fetchOpsNotifications();
       setChannels(r?.channels||[]); setRules(r?.rules||[]);
     } catch { message.error('加载失败'); }
     finally { setLoading(false); }
@@ -26,7 +26,7 @@ export default function OpsNotificationsPage() {
 
   const save = async () => {
     setLoading(true);
-    try { await request('/api/ops/notifications', { method:'PUT', data: { channels, rules } }); message.success('已保存'); }
+    try { await saveOpsNotifications({ channels, rules }); message.success('已保存'); }
     catch { message.error('保存失败'); }
     finally { setLoading(false); }
   };

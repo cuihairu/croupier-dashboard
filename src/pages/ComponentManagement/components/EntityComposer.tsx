@@ -9,7 +9,8 @@ import {
   ApartmentOutlined, SettingOutlined, SaveOutlined, PlayCircleOutlined,
   EyeOutlined, ArrowRightOutlined, ApiOutlined, CodeOutlined
 } from '@ant-design/icons';
-import { apiUrl } from '@/utils/api';
+import { getLegacyDescriptorsMap } from '@/services/api';
+import { listEntities } from '@/services/api/entities';
 
 const { Step } = Steps;
 const { TextArea } = Input;
@@ -127,22 +128,9 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
     form.resetFields();
   };
 
-  const authHeaders = () => {
-    const headers: Record<string, string> = {};
-    const token = localStorage.getItem('token');
-    const gid = localStorage.getItem('game_id');
-    const env = localStorage.getItem('env');
-    const isASCII = (s?: string | null) => !!s && /^[\x00-\x7F]*$/.test(s);
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (isASCII(gid)) headers['X-Game-ID'] = gid as string;
-    if (isASCII(env)) headers['X-Env'] = env as string;
-    return headers;
-  };
-
   const loadAvailableFunctions = async () => {
     try {
-      const response = await fetch(apiUrl('/api/descriptors'), { credentials: 'include', headers: authHeaders() });
-      const data = await response.json();
+      const data = await getLegacyDescriptorsMap();
 
       const functions: FunctionInfo[] = Object.entries(data || {}).map(([key, desc]: [string, any]) => ({
         key,
@@ -160,9 +148,7 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
 
   const loadAvailableEntities = async () => {
     try {
-      const response = await fetch(apiUrl('/api/entities'), { credentials: 'include', headers: authHeaders() });
-      const data = await response.json();
-      const list = Array.isArray(data) ? data : (Array.isArray(data?.entities) ? data.entities : []);
+      const list = await listEntities();
       setAvailableEntities(list.map((e: any) => e.id) || []);
     } catch (error) {
       console.error('Failed to load entities:', error);

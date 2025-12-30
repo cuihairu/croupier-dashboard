@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Tag, Select, Input, Button, App } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import GameSelector from '@/components/GameSelector';
-import { fetchRegistry, type ServerAgent } from '@/services/croupier/registry';
+import { fetchRegistry, type ServerAgent } from '@/services/api/registry';
 
 export default function ServersPage() {
   const { message } = App.useApp();

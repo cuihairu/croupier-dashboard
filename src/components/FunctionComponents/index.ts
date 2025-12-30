@@ -25,7 +25,7 @@ export type { RegistryService, RegistryStats, RegistryViewerProps } from './Regi
 // Re-export commonly used types for convenience
 export type {
   FunctionDescriptor
-} from '@/services/croupier';
+} from '@/services/api';
 
 // Component utilities
 export * from './utils/validators';

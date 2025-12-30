@@ -3,7 +3,7 @@ import { Card, Table, Space, Button, Modal, Form, InputNumber, Select, Input, Ap
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import type { ColumnsType } from 'antd/es/table';
-import { listRateLimits, putRateLimits, deleteRateLimit, type RateLimitRule, listOpsFunctions, fetchOpsServices, previewRateLimit } from '@/services/croupier/ops';
+import { listRateLimits, putRateLimits, deleteRateLimit, type RateLimitRule, listOpsFunctions, fetchOpsServices, previewRateLimit } from '@/services/api/ops';
 
 export default function OpsRateLimitsPage() {
   const { message } = App.useApp();

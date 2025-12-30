@@ -36,7 +36,7 @@ export async function getEntity(id: string, params?: { game_id?: string; env?: s
 }
 
 // Create new entity definition
-export async function createEntity(entity: Omit<EntityDefinition, 'id' | 'created_at' | 'updated_at'>, params?: { game_id?: string; env?: string }) {
+export async function createEntity(entity: Partial<EntityDefinition>, params?: { game_id?: string; env?: string }) {
   return request<EntityDefinition>('/api/v1/entities', {
     method: 'POST',
     data: entity,
@@ -57,6 +57,18 @@ export async function updateEntity(id: string, entity: Partial<EntityDefinition>
 export async function deleteEntity(id: string, params?: { game_id?: string; env?: string }) {
   return request<void>(`/api/v1/entities/${encodeURIComponent(id)}`, {
     method: 'DELETE',
+    params,
+  });
+}
+
+export async function updateEntityStatus(
+  id: string,
+  data: { status: 'active' | 'inactive' | string },
+  params?: { game_id?: string; env?: string },
+) {
+  return request<void>(`/api/v1/entities/${encodeURIComponent(id)}/status`, {
+    method: 'PUT',
+    data,
     params,
   });
 }

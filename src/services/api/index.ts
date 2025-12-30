@@ -17,5 +17,9 @@ export * from './permissions';
 export * from './players';
 export * from './alerts';
 export * from './nodes';
+export * from './approvals';
+export * from './admin';
+export * from './function-calls';
+export * from './legacy';
 // Types are colocated with each API module (functions/games/audit).
 // No separate shared types barrel to avoid duplicate exports.

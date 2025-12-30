@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, Tag, Button, Descriptions, Divider, List, Input, Upload, Modal, Select, Form } from 'antd';
 import { useParams, history, useModel } from '@umijs/max';
-import { uploadAsset } from '@/services/croupier/storage';
+import { uploadAsset } from '@/services/api/storage';
 import { getMessage } from '@/utils/antdApp';
-import { updateTicket, deleteTicket, getTicket, listTicketComments, addTicketComment, transitionTicket } from '@/services/croupier/support';
+import { updateTicket, deleteTicket, getTicket, listTicketComments, addTicketComment, transitionTicket } from '@/services/api/support';
 
 export default function TicketDetailPage() {
   const { id } = useParams() as any;

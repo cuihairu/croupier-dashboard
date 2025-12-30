@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
-import { openMessagesStream, unreadCount } from '@/services/croupier';
+import { openMessagesStream, unreadCount } from '@/services/api';
 import { history } from '@umijs/max';
 
 export default function MessagesBell() {

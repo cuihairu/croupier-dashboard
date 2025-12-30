@@ -4,7 +4,7 @@ import FormRender from 'form-render';
 import { getMessage } from '@/utils/antdApp';
 import GameSelector from '@/components/GameSelector';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
-import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/croupier';
+import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/api';
 import { getRenderer, registerBuiltins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
 

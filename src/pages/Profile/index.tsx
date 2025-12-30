@@ -35,15 +35,16 @@ import { PageContainer } from '@ant-design/pro-components';
 import { useIntl, useLocation, useNavigate } from '@umijs/max';
 import {
   changeMyPassword,
+  getMyAvatarUploadUrl,
   getMyGames,
   getMyPermissions,
   getMyProfile,
   updateMyProfile,
   ProfileGame,
   ProfilePermission,
-} from '@/services/croupier/me';
-import { listAudit, AuditEvent } from '@/services/croupier/audit';
-import { listMessages, MessageItem } from '@/services/croupier/messages';
+} from '@/services/api/me';
+import { listAudit, AuditEvent } from '@/services/api/audit';
+import { listMessages, MessageItem } from '@/services/api/messages';
 import './index.less';
 
 const { Title, Text } = Typography;
@@ -472,7 +473,7 @@ export default function Profile() {
                   listType="picture-card"
                   className="avatar-uploader"
                   showUploadList={false}
-                  action="/api/v1/me/avatar"
+                  action={getMyAvatarUploadUrl()}
                   beforeUpload={() => false}
                   onChange={handleAvatarChange}
                   headers={{

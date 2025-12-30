@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Space, Select, Button, Switch, Tag, message, InputNumber, Tooltip } from 'antd';
-import { request } from '@umijs/max';
+import { fetchAnalyticsFilters, saveAnalyticsFilters } from '@/services/api/analytics';
+import { listGameEnvs } from '@/services/api/envs';
+import { listGamesMeta } from '@/services/api/games';
 
 export default function AnalyticsFiltersPage() {
   const [games, setGames] = useState<any[]>([]);
@@ -16,8 +18,8 @@ export default function AnalyticsFiltersPage() {
   useEffect(()=>{
     (async ()=>{
       try {
-        const r = await request('/api/games');
-        const arr = (r?.games||[]).map((g:any)=> ({ id: String(g.id), name: g.name||g.id }));
+        const r = await listGamesMeta();
+        const arr = (r?.games||[]).map((g:any)=> ({ id: String(g.id), name: g.display_name || g.name || String(g.id) }));
         setGames(arr);
       } catch {}
     })();
@@ -29,7 +31,7 @@ export default function AnalyticsFiltersPage() {
       setEnv(''); setEnvs([]);
       if (!gameId) return;
       try {
-        const r = await request(`/api/games/${gameId}/envs`);
+        const r = await listGameEnvs(Number(gameId));
         const arr = (r?.envs||[]).map((e:any)=> e.env || e.name).filter(Boolean);
         setEnvs(arr);
       } catch {}
@@ -42,7 +44,7 @@ export default function AnalyticsFiltersPage() {
     if (!canQuery) return;
     setLoading(true);
     try {
-      const r = await request('/api/analytics/filters', { params: { game_id: gameId, env } });
+      const r = await fetchAnalyticsFilters({ game_id: gameId, env });
       setEvents((r?.events||[]).map((x:any)=> String(x)));
       setPaymentsEnabled(r?.payments_enabled !== false);
       if (r?.sample_global != null) setSampleGlobal(Number(r.sample_global)); else setSampleGlobal(100);
@@ -55,7 +57,7 @@ export default function AnalyticsFiltersPage() {
     if (!canQuery) { message.warning('请选择游戏与环境'); return; }
     setLoading(true);
     try {
-      await request('/api/analytics/filters', { method: 'POST', data: { game_id: gameId, env, events, payments_enabled: paymentsEnabled, sample_global: sampleGlobal } });
+      await saveAnalyticsFilters({ game_id: gameId, env, events, payments_enabled: paymentsEnabled, sample_global: sampleGlobal });
       message.success('已保存');
     } catch {
       message.error('保存失败（需要 analytics:manage 权限）');

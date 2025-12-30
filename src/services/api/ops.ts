@@ -1,4 +1,5 @@
 import { request } from '@umijs/max';
+import { buildDownloadUrl } from '../core/http';
 
 export type OpsAgent = {
   agent_id: string;
@@ -105,7 +106,7 @@ export async function updateAgentMeta(agent_id: string, data: { region?: string;
   return request<void>(`/api/ops/agents/${encodeURIComponent(agent_id)}/meta`, { method: 'PUT', data });
 }
 
-// Registry API 已在 services/croupier/registry.ts 提供，避免重复导出导致冲突
+// Registry API 已在 services/api/registry.ts 提供，避免重复导出导致冲突
 
 // --- Certificates (HTTPS) ---
 export type Certificate = {
@@ -144,4 +145,89 @@ export async function checkAllCertificates() {
 }
 export async function deleteCertificate(id: number) {
   return request(`/api/certificates/${id}`, { method: 'DELETE' });
+}
+
+// --- Ops (legacy pages) ---
+export type OpsBackup = {
+  id: string;
+  kind?: string;
+  target?: string;
+  path?: string;
+  size?: number;
+  status?: string;
+  error?: string;
+  created_at?: string;
+  message?: string;
+};
+export async function listOpsBackups() {
+  return request<{ backups?: OpsBackup[] }>('/api/ops/backups');
+}
+export async function createOpsBackup(data: any) {
+  return request<void>('/api/ops/backups', { method: 'POST', data });
+}
+export async function deleteOpsBackup(id: string) {
+  return request<void>(`/api/ops/backups/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+export function getOpsBackupDownloadUrl(id: string) {
+  return buildDownloadUrl(`/api/ops/backups/${encodeURIComponent(id)}/download`);
+}
+
+export async function fetchOpsHealth() {
+  return request<{ checks?: any[]; status?: any[] }>('/api/ops/health');
+}
+export async function saveOpsHealthChecks(checks: any[]) {
+  return request<void>('/api/ops/health', { method: 'PUT', data: { checks } });
+}
+export async function runOpsHealthCheck(id?: string) {
+  return request<void>('/api/ops/health/run', { method: 'POST', params: { id } });
+}
+
+export async function fetchOpsMQ() {
+  return request<any>('/api/ops/mq');
+}
+
+export async function fetchOpsMaintenance() {
+  return request<{ windows?: any[] }>('/api/ops/maintenance');
+}
+export async function saveOpsMaintenance(data: { windows: any[] }) {
+  return request<void>('/api/ops/maintenance', { method: 'PUT', data });
+}
+
+export async function fetchOpsNotifications() {
+  return request<any>('/api/ops/notifications');
+}
+export async function saveOpsNotifications(data: { channels: any; rules: any }) {
+  return request<void>('/api/ops/notifications', { method: 'PUT', data });
+}
+
+export async function fetchOpsAlerts() {
+  return request<{ alerts?: any[] }>('/api/ops/alerts');
+}
+
+export async function silenceOpsAlert(data: { matchers: Record<string, string>; duration: string; comment?: string }) {
+  return request<void>('/api/ops/alerts/silence', {
+    method: 'POST',
+    data: {
+      Matchers: data.matchers,
+      Duration: data.duration,
+      Comment: data.comment || '',
+      Creator: 'ui',
+    },
+  });
+}
+
+export async function listOpsNodes() {
+  return request<{ nodes?: any[] }>('/api/ops/nodes');
+}
+
+export async function drainOpsNode(id: string) {
+  return request<void>(`/api/ops/nodes/${encodeURIComponent(id)}/drain`, { method: 'POST' });
+}
+
+export async function undrainOpsNode(id: string) {
+  return request<void>(`/api/ops/nodes/${encodeURIComponent(id)}/undrain`, { method: 'POST' });
+}
+
+export async function restartOpsNode(id: string) {
+  return request<void>(`/api/ops/nodes/${encodeURIComponent(id)}/restart`, { method: 'POST' });
 }

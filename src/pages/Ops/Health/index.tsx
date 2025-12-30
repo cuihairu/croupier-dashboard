@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Tag, Modal, Form, Input, InputNumber, Select, App } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { request } from '@umijs/max';
+import { fetchOpsHealth, runOpsHealthCheck, saveOpsHealthChecks } from '@/services/api/ops';
 
 type HealthCheck = { id: string; kind: string; target: string; expect?: string; interval_sec?: number; timeout_ms?: number; region?: string };
 type HealthStatus = { id: string; ok: boolean; latency_ms: number; error?: string; checked_at?: string };
@@ -13,7 +13,7 @@ export default function OpsHealthPage() {
   const [status, setStatus] = useState<HealthStatus[]>([]);
   const load = async ()=> {
     setLoading(true);
-    try { const r = await request('/api/ops/health'); setChecks(r.checks||[]); setStatus(r.status||[]); } finally { setLoading(false); }
+    try { const r = await fetchOpsHealth(); setChecks(r.checks||[]); setStatus(r.status||[]); } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);
 
@@ -21,12 +21,12 @@ export default function OpsHealthPage() {
   const [form] = Form.useForm<HealthCheck>();
   const save = async ()=> {
     try { const rows = checks.slice(); const v = await form.validateFields(); const idx = rows.findIndex(x=> x.id===v.id); if (idx>=0) rows[idx]=v; else rows.push(v);
-      await request('/api/ops/health', { method:'PUT', data:{ checks: rows } }); message.success('已保存'); setOpen(false); load(); } catch {}
+      await saveOpsHealthChecks(rows); message.success('已保存'); setOpen(false); load(); } catch {}
   };
   const remove = async (id:string)=>{
-    try { const rows = checks.filter(x=> x.id!==id); await request('/api/ops/health', { method:'PUT', data:{ checks: rows } }); message.success('已保存'); load(); } catch(e:any){ message.error(e?.message||'失败'); }
+    try { const rows = checks.filter(x=> x.id!==id); await saveOpsHealthChecks(rows); message.success('已保存'); load(); } catch(e:any){ message.error(e?.message||'失败'); }
   };
-  const runNow = async (id?:string)=>{ try { await request('/api/ops/health/run', { method:'POST', params:{ id } }); message.success('已下发'); } catch(e:any){ message.error(e?.message||'失败'); } };
+  const runNow = async (id?:string)=>{ try { await runOpsHealthCheck(id); message.success('已下发'); } catch(e:any){ message.error(e?.message||'失败'); } };
 
   return (
     <PageContainer>

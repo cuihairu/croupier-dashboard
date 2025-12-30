@@ -12,7 +12,7 @@ import {
   validateEntity,
   previewEntity,
   EntityDefinition,
-} from '@/services/croupier';
+} from '@/services/api';
 
 export default function EntitiesPage() {
   const [entities, setEntities] = useState<EntityDefinition[]>([]);

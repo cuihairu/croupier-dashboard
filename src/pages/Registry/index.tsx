@@ -3,7 +3,7 @@ import { Card, Table, Space, Typography, Button, Tag, Switch, Select } from 'ant
 import { getMessage } from '@/utils/antdApp';
 import { useModel } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
-import { fetchRegistry } from '@/services/croupier';
+import { fetchRegistry } from '@/services/api';
 
 export default function RegistryPage() {
   const [loading, setLoading] = useState(false);

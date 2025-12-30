@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Button, Card, Empty, Input, Space, Typography } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { LinkOutlined, ReloadOutlined } from '@ant-design/icons';
-import { fetchOpsConfig } from '@/services/croupier/ops';
+import { fetchOpsConfig } from '@/services/api/ops';
 
 const { Text } = Typography;
 

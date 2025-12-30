@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Form, Input, Select, Button, Space, AutoComplete } from 'antd';
 import { getMessage } from '@/utils/antdApp';
-import { addGame, listGames, GameEntry } from '@/services/croupier';
+import { addGame, listGames, GameEntry } from '@/services/api';
 import GameSelector from '@/components/GameSelector';
 
 export default function GameManagePage() {

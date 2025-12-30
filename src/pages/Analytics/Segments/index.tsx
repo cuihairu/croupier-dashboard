@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Space, DatePicker, Select, Button, Table, Tag, Alert } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { fetchAnalyticsSegments } from '@/services/croupier/analytics';
+import { fetchAnalyticsSegments } from '@/services/api/analytics';
 
 export default function AnalyticsSegmentsPage() {
   const [loading, setLoading] = useState(false);

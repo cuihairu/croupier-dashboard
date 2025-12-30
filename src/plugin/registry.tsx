@@ -1,7 +1,6 @@
 // Renderer registry for GM functions views
 import React from 'react';
-import { listPacks } from '@/services/croupier/packs';
-import { apiUrl } from '@/utils/api';
+import { buildPackPluginUrl, listPacks } from '@/services/api/packs';
 
 // Renderer function type
 type Renderer = (props: { data: any; options?: any }) => React.ReactNode;
@@ -144,14 +143,10 @@ export async function loadPackPlugins(): Promise<void> {
 
     await Promise.allSettled(
       plugins.map(async (p) => {
-        const u = new URL(apiUrl('/api/v1/packs/plugin'), window.location.origin);
-        u.searchParams.set('pack', p.packId);
-        u.searchParams.set('path', p.path);
-        if (p.updatedAt) u.searchParams.set('v', p.updatedAt);
         const token = localStorage.getItem('token');
-        if (token) u.searchParams.set('token', token);
-
-        const mod = await importPluginModule(u.toString());
+        const mod = await importPluginModule(
+          buildPackPluginUrl({ pack: p.packId, path: p.path, v: p.updatedAt, token: token || undefined }),
+        );
         const reg = mod?.default || mod?.register || mod;
         if (typeof reg === 'function') {
           await reg({ registerRenderer, React });

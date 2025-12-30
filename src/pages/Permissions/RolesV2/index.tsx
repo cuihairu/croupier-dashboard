@@ -3,7 +3,7 @@ import { Card, Table, Button, Modal, Form, Input, Tag, Space, Popconfirm, Select
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { getMessage } from '@/utils/antdApp';
-import { listRoles, createRole, updateRole, deleteRole, setRolePerms, type RoleRecord } from '@/services/croupier';
+import { listRoles, createRole, updateRole, deleteRole, setRolePerms, type RoleRecord } from '@/services/api';
 
 export default function RolesV2() {
   const [roles, setRoles] = useState<RoleRecord[]>([]);

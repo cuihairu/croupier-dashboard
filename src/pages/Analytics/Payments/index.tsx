@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AutoComplete, Card, Space, DatePicker, Select, Button, Table, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsPaymentsSummary, fetchAnalyticsTransactions, fetchProductTrend } from '@/services/croupier/analytics';
+import { fetchAnalyticsPaymentsSummary, fetchAnalyticsTransactions, fetchProductTrend } from '@/services/api/analytics';
 
 export default function AnalyticsPaymentsPage() {
   const [loading, setLoading] = useState(false);

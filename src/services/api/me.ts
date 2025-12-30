@@ -1,4 +1,5 @@
 import { request } from '@umijs/max';
+import { apiUrl } from '@/utils/api';
 
 export type MeProfile = {
   id?: number;
@@ -53,4 +54,8 @@ export async function updateMyProfile(body: { display_name?: string; email?: str
 
 export async function changeMyPassword(body: { current: string; password: string }) {
   return request<void>('/api/v1/profile/password', { method: 'PUT', data: body });
+}
+
+export function getMyAvatarUploadUrl() {
+  return apiUrl('/api/v1/me/avatar');
 }

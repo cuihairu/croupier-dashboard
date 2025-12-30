@@ -3,8 +3,8 @@ import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components'
 import { App, Button, Space, Tag, Card, Descriptions, Drawer, Badge, Tooltip, Typography } from 'antd';
 import { EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
 import { history } from '@umijs/max';
-import { listDescriptors, listFunctionInstances } from '@/services/croupier';
-import { getFunctionSummary } from '@/services/croupier/functions-enhanced';
+import { listDescriptors, listFunctionInstances } from '@/services/api';
+import { getFunctionSummary } from '@/services/api/functions-enhanced';
 
 const { Text } = Typography;
 

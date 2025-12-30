@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
 import { App, Button, Space, Tag } from 'antd';
-import { request } from '@umijs/max';
+import { listPendingFunctions, publishPendingFunction } from '@/services/api';
 
 type PendingRow = {
   function_id: string;
@@ -11,11 +11,10 @@ type PendingRow = {
 };
 
 const fetchPending = async (): Promise<PendingRow[]> => {
-  const res = await request('/api/admin/pending', { method: 'GET' });
-  return res?.pending || [];
+  return listPendingFunctions();
 };
 const publish = async (fid: string) => {
-  await request(`/api/admin/functions/${encodeURIComponent(fid)}/publish`, { method: 'POST' });
+  await publishPendingFunction(fid);
 };
 
 export default () => {
@@ -82,4 +81,3 @@ export default () => {
     </PageContainer>
   );
 };
-

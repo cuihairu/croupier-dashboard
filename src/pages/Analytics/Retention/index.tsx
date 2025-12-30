@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Space, DatePicker, Select, Button, Table } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsRetention } from '@/services/croupier/analytics';
+import { fetchAnalyticsRetention } from '@/services/api/analytics';
 
 export default function AnalyticsRetentionPage() {
   const [loading, setLoading] = useState(false);

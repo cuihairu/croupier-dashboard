@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Table, Space, Tag, Button, Select, Input, App, Drawer, Typography } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { listOpsJobs, type OpsJob, listOpsFunctions } from '@/services/croupier/ops';
-import { cancelJob, fetchJobResult, openJobEventSource } from '@/services/croupier/functions';
+import { listOpsJobs, type OpsJob, listOpsFunctions } from '@/services/api/ops';
+import { cancelJob, fetchJobResult, openJobEventSource } from '@/services/api/functions';
 const { Paragraph, Text } = Typography;
 
 export default function OpsJobsPage() {

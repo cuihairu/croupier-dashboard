@@ -3,7 +3,7 @@ import { Card, Table, Space, Input, Select, Button, Typography, Switch, Tag, Dat
 import { PageContainer } from '@ant-design/pro-components';
 import { getMessage } from '@/utils/antdApp';
 import { useModel } from '@umijs/max';
-import { listAudit, AuditEvent } from '@/services/croupier';
+import { listAudit, AuditEvent } from '@/services/api';
 import GameSelector from '@/components/GameSelector';
 
 export default function AuditPage(){

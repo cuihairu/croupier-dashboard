@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Space, Select, Button, Table, Modal, Form, Input, App, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { listGamesMeta, type Game as GameMeta } from '@/services/croupier';
-import { listGameEnvs, addGameEnv, updateGameEnv, deleteGameEnv, type GameEnv } from '@/services/croupier/envs';
+import { listGamesMeta, type Game as GameMeta } from '@/services/api';
+import { listGameEnvs, addGameEnv, updateGameEnv, deleteGameEnv, type GameEnv } from '@/services/api/envs';
 
 export default function GamesEnvsPage() {
   const { message } = App.useApp();

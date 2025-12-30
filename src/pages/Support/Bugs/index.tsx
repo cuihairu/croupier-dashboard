@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Input, Select, Tag, Modal, Form } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { listTickets, createTicket, updateTicket, deleteTicket } from '@/services/croupier/support';
+import { listTickets, createTicket, updateTicket, deleteTicket } from '@/services/api/support';
 import { history, useAccess } from '@umijs/max';
-import { listUsers } from '@/services/croupier';
+import { listUsers } from '@/services/api';
 
 export default function SupportBugsPage() {
   const [list, setList] = useState<any[]>([]);

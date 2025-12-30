@@ -2,19 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Tag, Button, Select, Input, App, Modal, Drawer, Typography } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { request } from '@umijs/max';
-import { listSilences, deleteSilence, fetchOpsConfig } from '@/services/croupier/ops';
+import { deleteSilence, fetchOpsAlerts, fetchOpsConfig, listSilences, silenceOpsAlert } from '@/services/api/ops';
 
 type AlertRow = {
   severity?: string; instance?: string; service?: string; summary?: string;
   starts_at?: string; ends_at?: string; silenced?: boolean; duration?: string;
   labels?: Record<string, any>; annotations?: Record<string, any>;
 };
-
-async function fetchAlerts() { return request<{ alerts: AlertRow[] }>("/api/ops/alerts"); }
-async function silenceAlert(matchers: Record<string,string>, duration: string, comment?: string) {
-  return request<void>("/api/ops/alerts/silence", { method:'POST', data: { Matchers: matchers, Duration: duration, Comment: comment||'', Creator: 'ui' } });
-}
 
 export default function OpsAlertsPage() {
   const { message } = App.useApp();
@@ -31,7 +25,7 @@ export default function OpsAlertsPage() {
 
   const load = async ()=>{
     setLoading(true);
-    try { const r = await fetchAlerts(); setRows(r.alerts||[]); } catch(e:any){ message.error(e?.message||'加载失败'); } finally { setLoading(false); }
+    try { const r = await fetchOpsAlerts(); setRows((r as any)?.alerts||[]); } catch(e:any){ message.error(e?.message||'加载失败'); } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);
   useEffect(()=>{ (async()=>{ try { const s = await listSilences(); setSilences(s.silences||[]);} catch{} })(); (async()=>{ try { const c = await fetchOpsConfig(); setCfg(c);} catch{} })(); }, []);
@@ -65,12 +59,12 @@ export default function OpsAlertsPage() {
       <Space>
         {!r.silenced && <Button size='small' onClick={()=>{
           Modal.confirm({ title:'静默告警', content:'静默 1 小时？', onOk: async()=>{
-            try { await silenceAlert(r.labels||{}, '1h', r.summary||''); message.success('已静默'); load(); } catch(e:any){ message.error(e?.message||'静默失败'); }
+            try { await silenceOpsAlert({ matchers: r.labels||{}, duration: '1h', comment: r.summary||'' }); message.success('已静默'); load(); } catch(e:any){ message.error(e?.message||'静默失败'); }
           }});
         }}>静默1h</Button>}
         {!r.silenced && <Button size='small' onClick={()=>{
           Modal.confirm({ title:'静默告警', content:'静默 24 小时？', onOk: async()=>{
-            try { await silenceAlert(r.labels||{}, '24h', r.summary||''); message.success('已静默'); load(); } catch(e:any){ message.error(e?.message||'静默失败'); }
+            try { await silenceOpsAlert({ matchers: r.labels||{}, duration: '24h', comment: r.summary||'' }); message.success('已静默'); load(); } catch(e:any){ message.error(e?.message||'静默失败'); }
           }});
         }}>静默1d</Button>}
       </Space>
@@ -131,9 +125,9 @@ export default function OpsAlertsPage() {
               </div>
             </div>
             <Space>
-              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 1 小时', onOk: async()=>{ try { await silenceAlert(detail.labels||{}, '1h', detail.summary||''); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默1h</Button>}
-              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 6 小时', onOk: async()=>{ try { await silenceAlert(detail.labels||{}, '6h', detail.summary||''); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默6h</Button>}
-              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 24 小时', onOk: async()=>{ try { await silenceAlert(detail.labels||{}, '24h', detail.summary||''); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默1d</Button>}
+              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 1 小时', onOk: async()=>{ try { await silenceOpsAlert({ matchers: detail.labels||{}, duration: '1h', comment: detail.summary||'' }); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默1h</Button>}
+              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 6 小时', onOk: async()=>{ try { await silenceOpsAlert({ matchers: detail.labels||{}, duration: '6h', comment: detail.summary||'' }); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默6h</Button>}
+              {!detail.silenced && <Button onClick={()=> Modal.confirm({ title:'静默 24 小时', onOk: async()=>{ try { await silenceOpsAlert({ matchers: detail.labels||{}, duration: '24h', comment: detail.summary||'' }); message.success('已静默'); load(); setDetail(null); } catch(e:any){ message.error(e?.message||'失败'); } } })}>静默1d</Button>}
               {((detail.annotations||{}) as any).runbook_url && <Button onClick={()=> window.open(String((detail.annotations as any).runbook_url), '_blank')}>打开 Runbook</Button>}
               {cfg.grafana_explore_url && <Button onClick={()=> window.open(cfg.grafana_explore_url!, '_blank')}>打开 Grafana</Button>}
             </Space>

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Space, Input, Button, DatePicker, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { listAudit, type AuditEvent } from '@/services/croupier';
+import { listAudit, type AuditEvent } from '@/services/api';
 
 export default function LoginLogsPage() {
   const [rows, setRows] = useState<AuditEvent[]>([]);

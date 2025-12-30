@@ -20,7 +20,7 @@ import {
   batchUpdateFunctions,
   copyFunction,
   deleteFunction
-} from '@/services/croupier/functions';
+} from '@/services/api/functions';
 import GameSelector from '@/components/GameSelector';
 
 const { Search } = Input;

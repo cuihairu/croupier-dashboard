@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Space, DatePicker, Input, Button, Table, Tag, Select } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsLevels, fetchAnalyticsLevelsEpisodes, fetchAnalyticsLevelsMaps } from '@/services/croupier/analytics';
+import { fetchAnalyticsLevels, fetchAnalyticsLevelsEpisodes, fetchAnalyticsLevelsMaps } from '@/services/api/analytics';
 
 export default function AnalyticsLevelsPage() {
   const [loading, setLoading] = useState(false);

@@ -3,7 +3,7 @@ import { Card, Space, DatePicker, Select, Button, Row, Col, Statistic, Divider, 
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl } from '@umijs/max';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsOverview } from '@/services/croupier/analytics';
+import { fetchAnalyticsOverview } from '@/services/api/analytics';
 
 export default function AnalyticsOverviewPage() {
   const intl = useIntl();

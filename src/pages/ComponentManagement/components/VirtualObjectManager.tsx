@@ -31,7 +31,8 @@ import {
   PlayCircleOutlined,
   PauseCircleOutlined
 } from '@ant-design/icons';
-import { apiUrl } from '@/utils/api';
+import { getLegacyDescriptorsMap } from '@/services/api';
+import { createEntity, deleteEntity, listEntities, updateEntityStatus } from '@/services/api/entities';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -85,18 +86,6 @@ export default function VirtualObjectManager() {
   const [selectedEntity, setSelectedEntity] = useState<EntityDefinition | null>(null);
   const [form] = Form.useForm();
 
-  const authHeaders = () => {
-    const headers: Record<string, string> = {};
-    const token = localStorage.getItem('token');
-    const gid = localStorage.getItem('game_id');
-    const env = localStorage.getItem('env');
-    const isASCII = (s?: string | null) => !!s && /^[\x00-\x7F]*$/.test(s);
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (isASCII(gid)) headers['X-Game-ID'] = gid as string;
-    if (isASCII(env)) headers['X-Env'] = env as string;
-    return headers;
-  };
-
   useEffect(() => {
     loadEntities();
     loadFunctions();
@@ -105,39 +94,8 @@ export default function VirtualObjectManager() {
   const loadEntities = async () => {
     setLoading(true);
     try {
-      const response = await fetch(apiUrl('/api/entities'), { credentials: 'include', headers: authHeaders() });
-      const data = await response.json();
-
-      const list = Array.isArray(data) ? data : (Array.isArray((data as any)?.entities) ? (data as any).entities : null);
-
-      // 处理API响应
-      if (!response.ok) {
-        // HTTP错误处理
-        if (response.status === 401) {
-          message.error('未授权访问，请重新登录');
-          return;
-        } else if (response.status === 403) {
-          message.error('权限不足，无法访问虚拟对象数据');
-          return;
-        } else if (response.status === 404) {
-          message.warning('虚拟对象服务暂未启用或未配置');
-        } else {
-          message.error(`加载虚拟对象失败：${response.status} ${response.statusText}`);
-        }
-        setEntities([]);
-        return;
-      }
-
-      if (!list) {
-        // 数据格式错误
-        console.error('API返回格式错误:', data);
-        message.error('服务器返回数据格式错误，请联系管理员');
-        setEntities([]);
-        return;
-      }
-
-      // API返回正确格式的数据
-      setEntities(list);
+      const list = await listEntities();
+      setEntities(list as any);
     } catch (error) {
       message.error('加载虚拟对象失败');
       console.error('Load entities error:', error);
@@ -149,10 +107,8 @@ export default function VirtualObjectManager() {
 
   const loadFunctions = async () => {
     try {
-      const response = await fetch(apiUrl('/api/descriptors'), { credentials: 'include', headers: authHeaders() });
-      const data = await response.json();
-
-      if (!response.ok || !data || typeof data !== 'object') {
+      const data = await getLegacyDescriptorsMap();
+      if (!data || typeof data !== 'object') {
         console.warn('无法获取函数列表，使用空数组');
         setFunctions([]);
         return;
@@ -184,22 +140,11 @@ export default function VirtualObjectManager() {
         updatedAt: new Date().toISOString(),
         usageCount: 0
       };
-
-      const response = await fetch(apiUrl('/api/entities'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        credentials: 'include',
-        body: JSON.stringify(entityData)
-      });
-
-      if (response.ok) {
-        message.success('虚拟对象创建成功');
-        setComposerVisible(false);
-        form.resetFields();
-        loadEntities();
-      } else {
-        throw new Error('创建失败');
-      }
+      await createEntity(entityData as any);
+      message.success('虚拟对象创建成功');
+      setComposerVisible(false);
+      form.resetFields();
+      loadEntities();
     } catch (error) {
       message.error('虚拟对象创建失败');
     }
@@ -207,18 +152,9 @@ export default function VirtualObjectManager() {
 
   const handleDeleteEntity = async (entityId: string) => {
     try {
-      const response = await fetch(apiUrl(`/api/entities/${entityId}`), {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: authHeaders(),
-      });
-
-      if (response.ok) {
-        message.success('虚拟对象删除成功');
-        loadEntities();
-      } else {
-        throw new Error('删除失败');
-      }
+      await deleteEntity(entityId);
+      message.success('虚拟对象删除成功');
+      loadEntities();
     } catch (error) {
       message.error('虚拟对象删除失败');
     }
@@ -226,19 +162,9 @@ export default function VirtualObjectManager() {
 
   const handleToggleStatus = async (entityId: string, enabled: boolean) => {
     try {
-      const response = await fetch(apiUrl(`/api/entities/${entityId}/status`), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...authHeaders() },
-        credentials: 'include',
-        body: JSON.stringify({ status: enabled ? 'active' : 'inactive' })
-      });
-
-      if (response.ok) {
-        message.success(`虚拟对象${enabled ? '激活' : '停用'}成功`);
-        loadEntities();
-      } else {
-        throw new Error('状态更新失败');
-      }
+      await updateEntityStatus(entityId, { status: enabled ? 'active' : 'inactive' });
+      message.success(`虚拟对象${enabled ? '激活' : '停用'}成功`);
+      loadEntities();
     } catch (error) {
       message.error('状态更新失败');
     }

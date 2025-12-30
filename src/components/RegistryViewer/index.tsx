@@ -10,7 +10,7 @@ import {
   ApiOutlined,
   DatabaseOutlined
 } from '@ant-design/icons';
-import { request } from '@umijs/max';
+import { getRegistryServices } from '@/services/api';
 
 const { Text, Title, Paragraph } = Typography;
 
@@ -69,7 +69,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
       if (gameId) params.game_id = gameId;
       if (env) params.env = env;
 
-      const res: any = await request('/api/registry/services', { params });
+      const res = await getRegistryServices(params);
       const serviceList = res?.services || [];
 
       setServices(serviceList);

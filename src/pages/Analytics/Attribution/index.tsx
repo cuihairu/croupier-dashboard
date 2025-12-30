@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Card, Space, DatePicker, Input, Select, Button, Table, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import { exportToXLSX } from '@/utils/export';
-import { fetchAnalyticsAttribution } from '@/services/croupier/analytics';
+import { fetchAnalyticsAttribution } from '@/services/api/analytics';
 
 export default function AnalyticsAttributionPage() {
   const [loading, setLoading] = useState(false);

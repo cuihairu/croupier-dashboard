@@ -65,6 +65,20 @@ export async function fetchProductTrend(params: any) {
   try { return await request('/api/v1/analytics/payments/product-trend', { params }); } catch { return { products: [] }; }
 }
 
+export async function fetchAnalyticsFilters(params: { game_id: string; env: string }) {
+  return request<any>('/api/analytics/filters', { params });
+}
+
+export async function saveAnalyticsFilters(data: {
+  game_id: string;
+  env: string;
+  events: string[];
+  payments_enabled: boolean;
+  sample_global: number;
+}) {
+  return request<any>('/api/analytics/filters', { method: 'POST', data });
+}
+
 // Attribution & Segments - 注意：这些端点在后端不存在，暂时保留但会返回空数据
 export async function fetchAnalyticsAttribution(params?: any) {
   console.warn('API /api/v1/analytics/attribution 在后端不存在');

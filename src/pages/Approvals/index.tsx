@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Table, Tag, Space, Button, Drawer, Descriptions, Select, Input, Modal } from 'antd';
 import { getMessage } from '@/utils/antdApp';
-import { request } from '@umijs/max';
+import {
+  approveApproval,
+  getApproval,
+  listApprovals,
+  listLegacyDescriptors,
+  rejectApproval,
+} from '@/services/api';
 
 type Approval = {
   ID: string;
@@ -75,7 +81,7 @@ export default function ApprovalsPage() {
     if (completedOnly) qs.set('completed_only', '1');
     let json: any;
     try {
-      json = await request('/api/approvals', { params: Object.fromEntries(qs as any) });
+      json = await listApprovals(Object.fromEntries(qs as any));
     } catch (e: any) { getMessage()?.error(e?.message || '加载失败'); setLoading(false); return; }
     setData(json.approvals || []);
     setTotal(json.total || 0);
@@ -103,7 +109,7 @@ export default function ApprovalsPage() {
 
   async function view(id: string) {
     let json: any;
-    try { json = await request('/api/approvals/get', { params: { id } }); } catch (e: any) { getMessage()?.error(e?.message || '加载失败'); return; }
+    try { json = await getApproval(id); } catch (e: any) { getMessage()?.error(e?.message || '加载失败'); return; }
     setCurrent(json);
     setPreview(json.payload_preview || '');
     setOpen(true);
@@ -120,7 +126,7 @@ export default function ApprovalsPage() {
       if ((a?.FunctionID || '') && text.trim() !== a?.FunctionID) { getMessage()?.warning('确认文本不匹配'); return; }
     }
     const otp = window.prompt('动态验证码（若未开启可留空）') || '';
-    try { await request('/api/approvals/approve', { method: 'POST', data: { id, otp } }); } catch (e: any) { getMessage()?.error(e?.message || '批准失败'); return; }
+    try { await approveApproval({ id, otp }); } catch (e: any) { getMessage()?.error(e?.message || '批准失败'); return; }
     getMessage()?.success('已批准');
     await list();
     await view(id);
@@ -128,7 +134,7 @@ export default function ApprovalsPage() {
 
   async function reject(id: string) {
     const reason = window.prompt('请输入拒绝原因') || '';
-    try { await request('/api/approvals/reject', { method: 'POST', data: { id, reason } }); } catch (e: any) { getMessage()?.error(e?.message || '拒绝失败'); return; }
+    try { await rejectApproval({ id, reason }); } catch (e: any) { getMessage()?.error(e?.message || '拒绝失败'); return; }
     getMessage()?.success('已拒绝');
     await list();
     await view(id);
@@ -168,7 +174,7 @@ export default function ApprovalsPage() {
   };
 
   useEffect(() => { list(); }, [page, size, state]);
-  useEffect(() => { request('/api/descriptors').then((d)=>setDescs(d||[])).catch(()=>{}); }, []);
+  useEffect(() => { listLegacyDescriptors().then((d)=>setDescs(d||[])).catch(()=>{}); }, []);
 
   return (
     <Card title="审批管理">

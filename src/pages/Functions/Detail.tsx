@@ -43,7 +43,7 @@ import {
   getFunctionAnalytics,
   deleteFunction,
   copyFunction
-} from '@/services/croupier/functions';
+} from '@/services/api/functions';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;

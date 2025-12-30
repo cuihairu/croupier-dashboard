@@ -1,22 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Table, Space, Button, Tag, Modal, Form, Input, Select, App } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
-import { request } from '@umijs/max';
-import { apiUrl } from '@/utils/api';
+import { createOpsBackup, deleteOpsBackup, getOpsBackupDownloadUrl, listOpsBackups } from '@/services/api/ops';
 
-type Backup = { id:string; kind:string; target?:string; path:string; size:number; status:string; error?:string; created_at:string };
+type Backup = { id:string; kind?:string; target?:string; path?:string; size?:number; status?:string; error?:string; created_at?:string };
 
 export default function OpsBackupsPage() {
   const { message } = App.useApp();
   const [rows, setRows] = useState<Backup[]>([]);
   const [loading, setLoading] = useState(false);
-  const load = async ()=>{ setLoading(true); try{ const r = await request('/api/ops/backups'); setRows(r.backups||[]);} finally{ setLoading(false);} };
+  const load = async ()=>{ setLoading(true); try{ const r = await listOpsBackups(); setRows(r.backups||[]);} finally{ setLoading(false);} };
   useEffect(()=>{ load(); }, []);
 
   const [open, setOpen] = useState(false);
   const [form] = Form.useForm<{ kind:string; target?:string }>();
-  const create = async ()=>{ try{ const v = await form.validateFields(); await request('/api/ops/backups', { method:'POST', data:v }); message.success('已创建'); setOpen(false); setTimeout(load, 500);} catch{} };
-  const del = async (r:Backup)=>{ try{ await request(`/api/ops/backups/${r.id}`, { method:'DELETE' }); message.success('已删除'); load(); } catch(e:any){ message.error(e?.message||'失败'); } };
+  const create = async ()=>{ try{ const v = await form.validateFields(); await createOpsBackup(v); message.success('已创建'); setOpen(false); setTimeout(load, 500);} catch{} };
+  const del = async (r:Backup)=>{ try{ await deleteOpsBackup(r.id); message.success('已删除'); load(); } catch(e:any){ message.error(e?.message||'失败'); } };
 
   return (
     <PageContainer>
@@ -35,7 +34,7 @@ export default function OpsBackupsPage() {
             { title:'时间', dataIndex:'created_at' },
             { title:'操作', render: (_:any, r:Backup)=> (
               <Space>
-                <a href={apiUrl(`/api/ops/backups/${encodeURIComponent(r.id)}/download`)} target='_blank' rel='noreferrer'>下载</a>
+                <a href={getOpsBackupDownloadUrl(r.id)} target='_blank' rel='noreferrer'>下载</a>
                 <Button size='small' danger onClick={()=> Modal.confirm({ title:'删除备份', onOk: ()=> del(r) })}>删除</Button>
               </Space>
             ) },

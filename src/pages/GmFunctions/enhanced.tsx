@@ -9,7 +9,7 @@ import {
   SettingOutlined
 } from '@ant-design/icons';
 import { useLocation, history } from '@umijs/max';
-import { listDescriptors, invokeFunction, startJob, FunctionDescriptor } from '@/services/croupier';
+import { listDescriptors, invokeFunction, startJob, FunctionDescriptor } from '@/services/api';
 import GameSelector from '@/components/GameSelector';
 import {
   FunctionFormRenderer,
@@ -17,7 +17,7 @@ import {
   FunctionCallHistory,
   FunctionListTable
 } from '@/components/FunctionComponents';
-import { getFunctionSummary } from '@/services/croupier/functions-enhanced';
+import { getFunctionSummary } from '@/services/api/functions-enhanced';
 
 const { Title, Text } = Typography;
 
