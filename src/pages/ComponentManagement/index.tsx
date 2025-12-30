@@ -119,7 +119,7 @@ export default function ComponentManagement() {
         packs?.packages && Array.isArray(packs.packages) ? packs.packages.length : packs?.counts?.descriptors || 0;
       const connectedAgents =
         registry?.agents && Array.isArray(registry.agents)
-          ? registry.agents.filter((a: any) => a?.connected).length
+          ? registry.agents.filter((a: any) => a?.connected ?? a?.Healthy ?? a?.healthy).length
           : 0;
       const runningJobsCount = jobs?.total || 0;
 
