@@ -54,7 +54,10 @@ export default function OpsRateLimitsPage() {
         setFunctions(funcs);
       } catch {}
       // 载入 agent 列表
-      try { const s2 = await fetchOpsServices(); setAgents(((s2.agents||[]) as any[]).map(a=> a.agent_id)); } catch {}
+      try {
+        const s2 = await fetchOpsServices();
+        setAgents(((s2.services || []) as any[]).filter((s) => s?.type === 'agent').map((s) => s?.id).filter(Boolean));
+      } catch {}
     } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);

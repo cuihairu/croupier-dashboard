@@ -36,7 +36,20 @@ export type OpsService = {
   labels?: Record<string, string>;
   functionsCount?: number;
   lastSeen?: string;
-  metadata?: Record<string, any>;
+  metadata?: {
+    processes?: AgentProcess[];
+    processesCount?: number;
+    [k: string]: any;
+  };
+};
+
+export type AgentProcess = {
+  service_id: string;
+  addr?: string;
+  version?: string;
+  last_seen_unix?: number;
+  function_ids?: string[];
+  functions?: number;
 };
 
 export type OpsServicesResponse = {

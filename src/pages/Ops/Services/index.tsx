@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Space, Tag, Select, Input, Button, App, Drawer } from 'antd';
+import { Card, Table, Space, Tag, Select, Input, Button, App, Drawer, Typography } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import GameSelector from '@/components/GameSelector';
-import { fetchOpsServices, updateAgentMeta, type OpsService } from '@/services/api/ops';
+import { fetchOpsServices, updateAgentMeta, type OpsService, type AgentProcess } from '@/services/api/ops';
 
 export default function OpsServicesPage() {
   const { message } = App.useApp();
@@ -12,6 +12,7 @@ export default function OpsServicesPage() {
   const [filter, setFilter] = useState<{ game?: string; env?: string; healthy?: string; q?: string }>({});
   const [qValue, setQValue] = useState<string>('');
   const [detail, setDetail] = useState<OpsService | null>(null);
+  const [processes, setProcesses] = useState<AgentProcess[]>([]);
 
   const load = async () => {
     setLoading(true);
@@ -64,6 +65,7 @@ export default function OpsServicesPage() {
     { title: 'Zone', dataIndex: 'zone', width: 80 },
     { title: 'Version', dataIndex: 'version', width: 100, ellipsis: true },
     { title: 'Functions', dataIndex: 'functionsCount', width: 80, render: (v) => v || 0 },
+    { title: 'Processes', width: 90, render: (_: any, r) => (r?.metadata?.processesCount ?? r?.metadata?.processes?.length ?? 0) },
     { title: 'Last Seen', dataIndex: 'lastSeen', width: 160, render: (v) => v ? new Date(v).toLocaleString() : '-' },
   ];
 
@@ -101,7 +103,7 @@ export default function OpsServicesPage() {
           size='small'
           scroll={{ x: 1200 }}
           tableLayout='fixed'
-          onRow={(rec)=> ({ onClick: ()=> setDetail(rec) })}
+          onRow={(rec)=> ({ onClick: ()=> { setDetail(rec); setProcesses((rec?.metadata?.processes || []) as any); } })}
           pagination={{ pageSize: 10 }}
         />
       </Card>
@@ -125,6 +127,33 @@ export default function OpsServicesPage() {
             <div><b>Region/Zone:</b> {detail.region || '-'} / {detail.zone || '-'}</div>
             <div><b>Version:</b> {detail.version || '-'}</div>
             <div><b>Functions:</b> {detail.functionsCount || 0}</div>
+            <div>
+              <b>Processes:</b> {detail?.metadata?.processesCount ?? processes.length}
+              {processes.length > 0 && (
+                <Table<AgentProcess>
+                  size="small"
+                  rowKey={(r) => r.service_id}
+                  style={{ marginTop: 8 }}
+                  dataSource={processes}
+                  pagination={false}
+                  columns={[
+                    { title: 'service_id', dataIndex: 'service_id', width: 200, ellipsis: true },
+                    { title: 'addr', dataIndex: 'addr', width: 180, ellipsis: true },
+                    { title: 'version', dataIndex: 'version', width: 100, ellipsis: true, render: (v) => v || '-' },
+                    { title: 'functions', dataIndex: 'functions', width: 90, render: (v: any, r: any) => v ?? (r?.function_ids?.length || 0) },
+                    { title: 'last_seen', dataIndex: 'last_seen_unix', width: 150, render: (v) => v ? new Date(Number(v) * 1000).toLocaleString() : '-' },
+                  ]}
+                  expandable={{
+                    expandedRowRender: (r) => (
+                      <Typography.Text type="secondary">
+                        {(r?.function_ids || []).join(', ') || '-'}
+                      </Typography.Text>
+                    ),
+                    rowExpandable: (r) => Array.isArray(r?.function_ids) && r.function_ids.length > 0,
+                  }}
+                />
+              )}
+            </div>
             <div><b>Labels:</b> {detail.labels ? JSON.stringify(detail.labels) : '-'}</div>
             <div><b>最后活跃:</b> {detail.lastSeen ? new Date(detail.lastSeen).toLocaleString() : '-'}</div>
           </Space>
