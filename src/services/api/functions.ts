@@ -26,6 +26,8 @@ export type FunctionPermission = {
   resource: string;
   actions: string[];
   roles: string[];
+  gameId?: string;
+  env?: string;
 };
 
 export async function listDescriptors() {
@@ -35,9 +37,19 @@ export async function listDescriptors() {
 export async function invokeFunction(
   function_id: string,
   payload: any,
-  opts?: { route?: 'lb' | 'broadcast' | 'targeted' | 'hash'; target_service_id?: string; hash_key?: string },
+  opts?: {
+    route?: 'lb' | 'broadcast' | 'targeted' | 'hash';
+    target_service_id?: string;
+    hash_key?: string;
+    game_id?: string;
+    env?: string;
+  },
 ) {
   const data: any = { function_id, payload };
+  const game_id = opts?.game_id ?? (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
+  const env = opts?.env ?? (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
+  if (game_id) data.game_id = game_id;
+  if (env) data.env = env;
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
@@ -47,9 +59,19 @@ export async function invokeFunction(
 export async function startJob(
   function_id: string,
   payload: any,
-  opts?: { route?: 'lb' | 'broadcast' | 'targeted' | 'hash'; target_service_id?: string; hash_key?: string },
+  opts?: {
+    route?: 'lb' | 'broadcast' | 'targeted' | 'hash';
+    target_service_id?: string;
+    hash_key?: string;
+    game_id?: string;
+    env?: string;
+  },
 ) {
   const data: any = { function_id, payload };
+  const game_id = opts?.game_id ?? (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
+  const env = opts?.env ?? (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
+  if (game_id) data.game_id = game_id;
+  if (env) data.env = env;
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;

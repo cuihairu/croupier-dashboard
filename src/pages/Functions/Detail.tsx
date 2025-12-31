@@ -524,7 +524,7 @@ export default function FunctionDetailPage() {
                             }
                           >
                             <Row gutter={16}>
-                              <Col span={8}>
+                              <Col span={6}>
                                 <Form.Item
                                   {...field}
                                   label="resource"
@@ -534,7 +534,7 @@ export default function FunctionDetailPage() {
                                   <Input placeholder="function" />
                                 </Form.Item>
                               </Col>
-                              <Col span={8}>
+                              <Col span={6}>
                                 <Form.Item
                                   {...field}
                                   label="actions"
@@ -544,7 +544,7 @@ export default function FunctionDetailPage() {
                                   <Select mode="tags" placeholder="invoke / execute" />
                                 </Form.Item>
                               </Col>
-                              <Col span={8}>
+                              <Col span={6}>
                                 <Form.Item
                                   {...field}
                                   label="roles"
@@ -552,6 +552,16 @@ export default function FunctionDetailPage() {
                                   rules={[{ required: true, message: 'roles 必填（至少 1 个）' }]}
                                 >
                                   <Select mode="tags" placeholder="例如：ops / admin / functions:manage" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={3}>
+                                <Form.Item {...field} label="gameId" name={[field.name, 'gameId']}>
+                                  <Input placeholder="(all)" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={3}>
+                                <Form.Item {...field} label="env" name={[field.name, 'env']}>
+                                  <Input placeholder="(all)" />
                                 </Form.Item>
                               </Col>
                             </Row>
