@@ -21,5 +21,7 @@ export * from './approvals';
 export * from './admin';
 export * from './function-calls';
 export * from './legacy';
+// Selective re-exports from enhanced APIs to avoid name conflicts.
+export { getFunctionInstances } from './functions-enhanced';
 // Types are colocated with each API module (functions/games/audit).
 // No separate shared types barrel to avoid duplicate exports.
