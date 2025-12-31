@@ -19,7 +19,8 @@ import {
   Row,
   Col,
   Statistic,
-  Modal
+  Modal,
+  Select
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -42,7 +43,10 @@ import {
   getFunctionHistory,
   getFunctionAnalytics,
   deleteFunction,
-  copyFunction
+  copyFunction,
+  getFunctionPermissions,
+  updateFunctionPermissions,
+  type FunctionPermission
 } from '@/services/api/functions';
 
 const { TabPane } = Tabs;
@@ -85,11 +89,15 @@ interface AnalyticsData {
 
 export default function FunctionDetailPage() {
   const intl = useIntl();
-  const params = useParams<{ id: string }();
+  const params = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
   const [functionDetail, setFunctionDetail] = useState<FunctionDetail | null>(null);
   const [editing, setEditing] = useState(false);
   const [form] = Form.useForm();
+  const [permLoading, setPermLoading] = useState(false);
+  const [permSaving, setPermSaving] = useState(false);
+  const [permError, setPermError] = useState<string>('');
+  const [permForm] = Form.useForm();
 
   // Load function detail
   const loadDetail = async () => {
@@ -105,6 +113,23 @@ export default function FunctionDetailPage() {
         category: detail.category,
         tags: detail.tags?.join(', '),
       });
+
+      setPermError('');
+      setPermLoading(true);
+      try {
+        const res = await getFunctionPermissions(params.id);
+        const items = Array.isArray(res?.items) ? res!.items! : [];
+        permForm.setFieldsValue({
+          items: items.length
+            ? items
+            : [{ resource: 'function', actions: ['invoke'], roles: [] } as FunctionPermission],
+        });
+      } catch (e: any) {
+        permForm.setFieldsValue({ items: [] });
+        setPermError(e?.message || '加载函数权限失败');
+      } finally {
+        setPermLoading(false);
+      }
     } catch (error) {
       message.error('加载函数详情失败');
     } finally {
@@ -472,13 +497,97 @@ export default function FunctionDetailPage() {
             <TabPane tab="权限" key="permissions">
               <Alert
                 message="权限配置"
-                description="函数的访问权限配置"
+                description="用于控制哪些角色可以调用该函数（actions 建议使用 invoke/execute；roles 填角色名）。"
                 type="info"
                 showIcon
               />
-              <pre style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
-                {JSON.stringify(functionDetail?.permissions || {}, null, 2)}
-              </pre>
+
+              {permError && (
+                <Alert style={{ marginTop: 16 }} type="error" showIcon message="无法读取权限" description={permError} />
+              )}
+
+              <Card style={{ marginTop: 16 }} loading={permLoading} size="small" title="函数权限规则">
+                <Form form={permForm} layout="vertical">
+                  <Form.List name="items">
+                    {(fields, { add, remove }) => (
+                      <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                        {fields.map((field) => (
+                          <Card
+                            key={field.key}
+                            size="small"
+                            type="inner"
+                            title={`规则 #${field.name + 1}`}
+                            extra={
+                              <Button danger size="small" onClick={() => remove(field.name)}>
+                                删除
+                              </Button>
+                            }
+                          >
+                            <Row gutter={16}>
+                              <Col span={8}>
+                                <Form.Item
+                                  {...field}
+                                  label="resource"
+                                  name={[field.name, 'resource']}
+                                  rules={[{ required: true, message: 'resource 必填' }]}
+                                >
+                                  <Input placeholder="function" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  {...field}
+                                  label="actions"
+                                  name={[field.name, 'actions']}
+                                  rules={[{ required: true, message: 'actions 必填' }]}
+                                >
+                                  <Select mode="tags" placeholder="invoke / execute" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  {...field}
+                                  label="roles"
+                                  name={[field.name, 'roles']}
+                                  rules={[{ required: true, message: 'roles 必填（至少 1 个）' }]}
+                                >
+                                  <Select mode="tags" placeholder="例如：ops / admin / functions:manage" />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+                          </Card>
+                        ))}
+
+                        <Space>
+                          <Button onClick={() => add({ resource: 'function', actions: ['invoke'], roles: [] })}>
+                            添加规则
+                          </Button>
+                          <Button
+                            type="primary"
+                            loading={permSaving}
+                            onClick={async () => {
+                              if (!params.id) return;
+                              try {
+                                setPermSaving(true);
+                                const values = await permForm.validateFields();
+                                const items = (values?.items || []) as FunctionPermission[];
+                                await updateFunctionPermissions(params.id, items);
+                                message.success('权限已更新');
+                              } catch (e: any) {
+                                message.error(e?.message || '更新失败');
+                              } finally {
+                                setPermSaving(false);
+                              }
+                            }}
+                          >
+                            保存权限
+                          </Button>
+                        </Space>
+                      </Space>
+                    )}
+                  </Form.List>
+                </Form>
+              </Card>
             </TabPane>
 
             <TabPane tab="调用历史" key="history">

@@ -22,6 +22,12 @@ export type FunctionDescriptor = {
   outputs?: any;
 };
 
+export type FunctionPermission = {
+  resource: string;
+  actions: string[];
+  roles: string[];
+};
+
 export async function listDescriptors() {
   return request<FunctionDescriptor[]>('/api/v1/functions/descriptors');
 }
@@ -67,6 +73,19 @@ export async function listFunctionInstances(params: { game_id?: string; function
 
 export async function fetchFunctionUiSchema(functionId: string) {
   return request<{ uiSchema?: any; uischema?: any }>(`/api/v1/functions/${functionId}/ui`, { method: 'GET' });
+}
+
+export async function getFunctionPermissions(functionId: string) {
+  return request<{ items?: FunctionPermission[] }>(`/api/v1/functions/${encodeURIComponent(functionId)}/permissions`, {
+    method: 'GET',
+  });
+}
+
+export async function updateFunctionPermissions(functionId: string, permissions: FunctionPermission[]) {
+  return request<{ items?: FunctionPermission[] }>(`/api/v1/functions/${encodeURIComponent(functionId)}/permissions`, {
+    method: 'PUT',
+    data: { permissions },
+  });
 }
 
 export function openJobEventSource(jobId: string) {
