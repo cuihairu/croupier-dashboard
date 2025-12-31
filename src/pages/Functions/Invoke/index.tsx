@@ -1,15 +1,14 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { PageContainer, Card, Row, Col, Divider, Space, Typography, Alert, Spin, Empty } from 'antd';
+import { PageContainer, Card, Row, Col, Space, Typography, Alert, Spin, Empty } from 'antd';
 import { PlayCircleOutlined, FunctionOutlined, HistoryOutlined } from '@ant-design/icons';
-import { history, useLocation } from '@umijs/max';
+import { useLocation } from '@umijs/max';
 import { listDescriptors, invokeFunction, startJob, FunctionDescriptor } from '@/services/api';
 import FunctionFormRenderer from '@/components/FunctionFormRenderer';
 import FunctionListTable from '@/components/FunctionListTable';
 import FunctionDetailPanel from '@/components/FunctionDetailPanel';
 import FunctionCallHistory from '@/components/FunctionCallHistory';
-import GameSelector from '@/components/GameSelector';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export default () => {
   const location = useLocation();
@@ -20,8 +19,6 @@ export default () => {
   const [selectedFunction, setSelectedFunction] = useState<FunctionDescriptor | null>(null);
   const [loading, setLoading] = useState(false);
   const [executing, setExecuting] = useState(false);
-  const [gameId, setGameId] = useState<string>('');
-  const [env, setEnv] = useState<string>('');
   const [executionResult, setExecutionResult] = useState<any>(null);
   const [executionError, setExecutionError] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'invoke' | 'catalog' | 'history'>('invoke');
@@ -66,11 +63,7 @@ export default () => {
     setExecutionError('');
 
     try {
-      const result = await invokeFunction(
-        selectedFunction.id,
-        values,
-        { game_id: gameId, env }
-      );
+      const result = await invokeFunction(selectedFunction.id, values);
       setExecutionResult(result);
     } catch (error: any) {
       setExecutionError(error?.message || '执行失败');
@@ -87,11 +80,7 @@ export default () => {
     setExecutionError('');
 
     try {
-      const result = await startJob(
-        selectedFunction.id,
-        values,
-        { game_id: gameId, env }
-      );
+      const result = await startJob(selectedFunction.id, values);
       setExecutionResult(result);
     } catch (error: any) {
       setExecutionError(error?.message || '启动任务失败');
@@ -139,16 +128,12 @@ export default () => {
           <FunctionFormRenderer
             schema={selectedFunction.params || { type: 'object', properties: {} }}
             onSubmit={handleExecute}
+            onSecondarySubmit={handleStartJob}
             loading={executing}
+            secondaryLoading={executing}
             submitText={executing ? '执行中...' : '执行函数'}
+            secondarySubmitText="作为任务执行"
             resetText="重置参数"
-            extra={
-              <Space>
-                <Button onClick={() => handleStartJob({})}>
-                  作为任务执行
-                </Button>
-              </Space>
-            }
           />
         </Col>
         <Col span={10}>
@@ -209,12 +194,6 @@ export default () => {
     <PageContainer
       title="函数调用"
       subTitle="执行系统函数并查看结果"
-      extra={
-        <Space>
-          <GameSelector value={gameId} onChange={setGameId} />
-          {env && <Tag color="blue">环境: {env}</Tag>}
-        </Space>
-      }
       tabList={[
         {
           key: 'invoke',

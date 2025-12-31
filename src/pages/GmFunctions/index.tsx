@@ -7,6 +7,7 @@ import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
 import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/api';
 import { getRenderer, registerBuiltins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
+import { useLocation } from '@umijs/max';
 
 const { Text, Paragraph } = Typography;
 
@@ -305,6 +306,7 @@ function renderFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | un
 }
 
 export default function GmFunctionsPage() {
+  const location = useLocation();
   const [descs, setDescs] = useState<FunctionDescriptor[]>([]);
   const [filteredDescs, setFilteredDescs] = useState<FunctionDescriptor[]>([]);
   const [currentId, setCurrentId] = useState<string>();
@@ -341,18 +343,38 @@ export default function GmFunctionsPage() {
           const fns = Object.values(m).flat();
           const dd = Array.isArray(arr) ? arr : [];
           const filt = (fns && fns.length>0) ? dd.filter(x => fns.includes(x.id)) : dd;
-          setFilteredDescs(filt);
-          if (filt?.length) setCurrentId(filt[0].id);
+          const fid = new URLSearchParams(location.search).get('fid') || undefined;
+          let final = filt;
+          if (fid && dd.some((x) => x.id === fid) && !final.some((x) => x.id === fid)) {
+            const picked = dd.find((x) => x.id === fid);
+            if (picked) final = [picked, ...final];
+          }
+          setFilteredDescs(final);
+          if (fid && dd.some((x) => x.id === fid)) setCurrentId(fid);
+          else if (final?.length) setCurrentId(final[0].id);
         }).catch(()=>{ setFilteredDescs(arr); if (arr?.length) setCurrentId(arr[0].id); });
       } else {
+        const fid = new URLSearchParams(location.search).get('fid') || undefined;
         setFilteredDescs(arr);
-        if (arr?.length) setCurrentId(arr[0].id);
+        if (fid && arr.some((x) => x.id === fid)) setCurrentId(fid);
+        else if (arr?.length) setCurrentId(arr[0].id);
       }
     });
     return () => {
       if (esRef.current) esRef.current.close();
     };
   }, []);
+
+  useEffect(() => {
+    const fid = new URLSearchParams(location.search).get('fid') || undefined;
+    if (fid && fid !== currentId && descs.some((d) => d.id === fid)) {
+      setCurrentId(fid);
+      if (!filteredDescs.some((d) => d.id === fid)) {
+        const picked = descs.find((d) => d.id === fid);
+        if (picked) setFilteredDescs([picked, ...filteredDescs]);
+      }
+    }
+  }, [location.search, descs, filteredDescs, currentId]);
 
   useEffect(() => {
     // reset form when function changes; only touch antd Form when it is mounted

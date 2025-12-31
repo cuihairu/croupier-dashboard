@@ -46,13 +46,16 @@ export interface FunctionFormRendererProps {
   uiSchema?: FormUISchema;
   initialValues?: Record<string, any>;
   onSubmit?: (values: any) => void;
+  onSecondarySubmit?: (values: any) => void;
   onChange?: (changedFields: any, allValues: any) => void;
   loading?: boolean;
+  secondaryLoading?: boolean;
   disabled?: boolean;
   compact?: boolean;
   showValidationErrors?: boolean;
   validateTrigger?: 'onChange' | 'onBlur' | 'onSubmit';
   submitText?: string;
+  secondarySubmitText?: string;
   resetText?: string;
   showReset?: boolean;
   extra?: React.ReactNode;
@@ -64,13 +67,16 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   uiSchema,
   initialValues = {},
   onSubmit,
+  onSecondarySubmit,
   onChange,
   loading = false,
+  secondaryLoading = false,
   disabled = false,
   compact = false,
   showValidationErrors = true,
   validateTrigger = 'onChange',
   submitText = '执行函数',
+  secondarySubmitText = '作为任务执行',
   resetText = '重置',
   showReset = true,
   extra,
@@ -120,6 +126,38 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
     setRawJsonError('');
     onSubmit?.(values);
   }, [enableRawJson, inputMode, rawJson, onSubmit]);
+
+  const buildPayloadFromCurrent = useCallback(async (): Promise<any | undefined> => {
+    if (enableRawJson && inputMode === 'json') {
+      const text = (rawJson || '').trim();
+      if (!text) {
+        setRawJsonError('请输入 JSON 参数（或切换回表单模式）');
+        return undefined;
+      }
+      try {
+        const parsed = JSON.parse(text);
+        setRawJsonError('');
+        return parsed;
+      } catch (e: any) {
+        setRawJsonError(e?.message || 'JSON 解析失败');
+        return undefined;
+      }
+    }
+    setRawJsonError('');
+    const values = await form.validateFields();
+    return values;
+  }, [enableRawJson, inputMode, rawJson, form]);
+
+  const handleSecondaryClick = useCallback(async () => {
+    if (!onSecondarySubmit) return;
+    try {
+      const payload = await buildPayloadFromCurrent();
+      if (payload === undefined) return;
+      onSecondarySubmit(payload);
+    } catch {
+      // antd Form will show field errors
+    }
+  }, [onSecondarySubmit, buildPayloadFromCurrent]);
 
   const handleReset = useCallback(() => {
     form.resetFields();
@@ -426,6 +464,15 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
             >
               {submitText}
             </Button>
+            {onSecondarySubmit && (
+              <Button
+                onClick={handleSecondaryClick}
+                loading={secondaryLoading}
+                disabled={disabled || loading}
+              >
+                {secondarySubmitText}
+              </Button>
+            )}
             {showReset && (
               <Button
                 onClick={handleReset}

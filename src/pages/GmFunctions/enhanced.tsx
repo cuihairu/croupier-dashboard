@@ -86,11 +86,7 @@ export default function EnhancedGmFunctions() {
     setExecutionError('');
 
     try {
-      const result = await invokeFunction(
-        selectedFunction.id,
-        values,
-        { game_id: gameId, env }
-      );
+      const result = await invokeFunction(selectedFunction.id, values);
       setExecutionResult(result);
     } catch (error: any) {
       setExecutionError(error?.message || '执行失败');
@@ -107,11 +103,7 @@ export default function EnhancedGmFunctions() {
     setExecutionError('');
 
     try {
-      const result = await startJob(
-        selectedFunction.id,
-        values,
-        { game_id: gameId, env }
-      );
+      const result = await startJob(selectedFunction.id, values);
       setExecutionResult(result);
     } catch (error: any) {
       setExecutionError(error?.message || '启动任务失败');
@@ -179,20 +171,16 @@ export default function EnhancedGmFunctions() {
           <FunctionFormRenderer
             schema={selectedFunction.params || { type: 'object', properties: {} }}
             onSubmit={handleExecute}
+            onSecondarySubmit={handleStartJob}
             onChange={() => {
               setExecutionResult(null);
               setExecutionError('');
             }}
             loading={executing}
+            secondaryLoading={executing}
             submitText={executing ? '执行中...' : '执行函数'}
+            secondarySubmitText="作为任务执行"
             resetText="重置参数"
-            extra={
-              <Space>
-                <Button onClick={() => handleStartJob({})} loading={executing}>
-                  作为任务执行
-                </Button>
-              </Space>
-            }
           />
         </Col>
         <Col span={8}>

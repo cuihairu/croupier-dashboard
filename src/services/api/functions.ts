@@ -5,6 +5,17 @@ export type FunctionDescriptor = {
   id: string;
   version?: string;
   category?: string;
+  description?: string;
+  display_name?: { zh?: string; en?: string };
+  summary?: { zh?: string; en?: string };
+  tags?: string[];
+  menu?: {
+    section?: string;
+    group?: string;
+    path?: string;
+    order?: number;
+    hidden?: boolean;
+  };
   params?: any;
   auth?: Record<string, any>;
   // Optional outputs schema for UI rendering (views/layout); present in generated descriptors
