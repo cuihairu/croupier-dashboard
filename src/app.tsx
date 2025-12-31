@@ -8,7 +8,7 @@ import { history, Link } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { fetchCurrentUser, listDescriptors, type FunctionDescriptor } from '@/services/api';
+import { fetchCurrentUser, getMyPermissions, listDescriptors, type FunctionDescriptor } from '@/services/api';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
@@ -32,14 +32,24 @@ export async function getInitialState(): Promise<{
       const token = localStorage.getItem('token');
       if (!token) return undefined;
       const currentUser = await fetchCurrentUser();
-      const roles = (currentUser.roles || []).map((role) =>
+      const roleNames = (currentUser.roles || []).map((role) =>
         typeof role === 'string' ? role.toLowerCase() : role,
       );
+      let permissionIDs: string[] = [];
+      try {
+        const perms = await getMyPermissions();
+        permissionIDs = (perms as any)?.permissionIds || (perms as any)?.permission_ids || [];
+      } catch {
+        permissionIDs = [];
+      }
+      const accessTokens = Array.from(new Set([...(permissionIDs || []), ...(roleNames || [])]))
+        .map((t) => String(t || '').trim().toLowerCase())
+        .filter(Boolean);
       return {
         name: currentUser.username,
         userid: currentUser.username,
-        access: roles.join(','),
-        roles,
+        access: accessTokens.join(','),
+        roles: roleNames,
       } as any;
     } catch (error) {
       history.push(loginPath);

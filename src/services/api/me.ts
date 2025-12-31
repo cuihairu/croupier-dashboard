@@ -42,7 +42,13 @@ export async function getMyGames() {
 }
 
 export async function getMyPermissions(params?: { game_id?: string; env?: string }) {
-  return request<{ permissions: ProfilePermission[]; admin?: boolean; roles?: string[] }>(
+  return request<{
+    permissions: ProfilePermission[];
+    admin?: boolean;
+    roles?: string[];
+    permissionIds?: string[];
+    permission_ids?: string[];
+  }>(
     '/api/v1/profile/permissions',
     { params },
   );
