@@ -20,6 +20,8 @@ yarn.lock
 package-lock.json
 *bak
 .vscode
+!.vscode/
+!.vscode/launch.json
 
 
 # visual studio code
