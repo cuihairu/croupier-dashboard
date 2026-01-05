@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Divider, Button, Space, Typography, App, Tabs } from 'antd';
+import { Modal, Form, Input, Divider, Button, Space, Typography, App, Tabs, Alert, Card } from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import FormRender from 'form-render';
-import { CheckCircleOutlined, ExclamationCircleOutlined, EditOutlined, CodeOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ExclamationCircleOutlined, EditOutlined, CodeOutlined, FormOutlined } from '@ant-design/icons';
 import JSONSchemaEditor from '@/components/JSONSchemaEditor';
 import UISchemaEditor from '@/components/UISchemaEditor';
 
@@ -93,6 +93,7 @@ export default function XEntityForm<T = any>({
   const [uiSchemaData, setUiSchemaData] = useState<any>({});
   const [validationResult, setValidationResult] = useState<EntityValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<Record<string, any>>({});
 
   const isEditing = !!entity;
 
@@ -118,6 +119,7 @@ export default function XEntityForm<T = any>({
       }
 
       setValidationResult(null);
+      setPreviewData({});
     }
   }, [visible, entity, form, getInitialValues, getSchemaData, getUiSchemaData]);
 
@@ -193,6 +195,25 @@ export default function XEntityForm<T = any>({
       {submitButtonText || (isEditing ? 'Update' : 'Create')}
     </Button>,
   ];
+
+  const resolveUISchema = (data: any) => {
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+    if (data.fields && typeof data.fields === 'object') {
+      return data.fields;
+    }
+    if (data.properties && typeof data.properties === 'object') {
+      return data.properties;
+    }
+    return data;
+  };
+  const previewSchema = schemaData && typeof schemaData === 'object' ? schemaData : {};
+  const previewSchemaProperties = previewSchema?.properties && typeof previewSchema.properties === 'object'
+    ? previewSchema.properties
+    : {};
+  const hasPreviewFields = Object.keys(previewSchemaProperties || {}).length > 0;
+  const previewUISchema = resolveUISchema(uiSchemaData);
 
   return (
     <Modal
@@ -289,6 +310,25 @@ export default function XEntityForm<T = any>({
                       description="This is how the form will appear with your schema configuration"
                       type="info"
                     />
+                    <Card size="small" title="Form Preview">
+                      {hasPreviewFields ? (
+                        <FormRender
+                          schema={previewSchema}
+                          uiSchema={previewUISchema || {}}
+                          formData={previewData}
+                          onChange={setPreviewData}
+                          displayType="row"
+                          labelWidth={120}
+                        />
+                      ) : (
+                        <Alert
+                          message="Schema is empty"
+                          description="Add fields to the JSON Schema to preview the form."
+                          type="warning"
+                          showIcon
+                        />
+                      )}
+                    </Card>
                     <Card size="small" title="JSON Schema">
                       <pre style={{ fontSize: 12, background: '#f5f5f5', padding: 8 }}>
                         {JSON.stringify(schemaData, null, 2)}

@@ -3,6 +3,7 @@ import { createEventSource } from '../core/http';
 
 export type FunctionDescriptor = {
   id: string;
+  type?: 'function' | 'entity';  // Type of descriptor: function or entity
   version?: string;
   category?: string;
   description?: string;
@@ -14,12 +15,18 @@ export type FunctionDescriptor = {
     group?: string;
     path?: string;
     order?: number;
+    icon?: string;
+    badge?: string;
     hidden?: boolean;
   };
   params?: any;
   auth?: Record<string, any>;
   // Optional outputs schema for UI rendering (views/layout); present in generated descriptors
   outputs?: any;
+  // Entity-specific fields
+  schema?: any;
+  operations?: any;
+  ui?: any;
 };
 
 export type FunctionPermission = {

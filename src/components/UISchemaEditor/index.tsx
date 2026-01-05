@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Card,
   Space,
@@ -11,7 +11,10 @@ import {
   Tag,
   Divider,
   Alert,
-  Tooltip
+  Tooltip,
+  Dropdown,
+  Menu,
+  Empty
 } from 'antd';
 import {
   PlusOutlined,
@@ -20,7 +23,8 @@ import {
   SettingOutlined,
   QuestionCircleOutlined,
   FormOutlined,
-  EyeInvisibleOutlined
+  EyeInvisibleOutlined,
+  DownOutlined
 } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { jsonParse } from '@/utils/json';
@@ -295,10 +299,21 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
   const intl = useIntl();
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [jsonError, setJsonError] = useState<string>('');
-  const [uiSchemaData, setUiSchemaData] = useState<any>(value || {
-    type: 'object',
-    properties: {}
-  });
+  const buildUISchema = (input?: any) => {
+    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length === 0) {
+      return {
+        type: 'object',
+        properties: {}
+      };
+    }
+    return input;
+  };
+  const [uiSchemaData, setUiSchemaData] = useState<any>(buildUISchema(value));
+
+  useEffect(() => {
+    setUiSchemaData(buildUISchema(value));
+    setJsonError('');
+  }, [value]);
 
   const handleVisualChange = useCallback((newData: any) => {
     setUiSchemaData(newData);
@@ -315,6 +330,25 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
       setJsonError(error.message || 'Invalid JSON');
     }
   };
+
+  const updateConfig = useCallback((property: string, config: FieldConfig) => {
+    handleVisualChange({
+      ...uiSchemaData,
+      properties: {
+        ...uiSchemaData.properties,
+        [property]: config
+      }
+    });
+  }, [uiSchemaData, handleVisualChange]);
+
+  const handleDeleteField = useCallback((field: string) => {
+    const newProperties = { ...uiSchemaData.properties };
+    delete newProperties[field];
+    handleVisualChange({
+      ...uiSchemaData,
+      properties: newProperties
+    });
+  }, [uiSchemaData, handleVisualChange]);
 
   const addCommonField = (type: string) => {
     const propName = `new${type.charAt(0).toUpperCase() + type.slice(1)}${Object.keys(uiSchemaData.properties || {}).length + 1}`;
@@ -334,19 +368,44 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     });
   };
 
+  // Add field from JSON Schema suggestion
+  const addFieldFromSchema = (field: string, schemaType: string) => {
+    const widget = schemaType === 'string' ? 'input' :
+                   schemaType === 'number' || schemaType === 'integer' ? 'number' :
+                   schemaType === 'boolean' ? 'switch' :
+                   schemaType === 'array' ? 'multiselect' : 'input';
+
+    const fieldConfig: FieldConfig = {
+      type: schemaType,
+      title: field,
+      widget
+    };
+
+    handleVisualChange({
+      ...uiSchemaData,
+      properties: {
+        ...uiSchemaData.properties,
+        [field]: fieldConfig
+      }
+    });
+  };
+
   const getSuggestedFields = () => {
     if (!jsonSchema?.properties) return [];
 
-    return Object.keys(jsonSchema.properties).map(key => ({
-      field: key,
-      schemaType: jsonSchema.properties[key]?.type || 'string',
-      suggested: {
-        widget: jsonSchema.properties[key]?.type === 'string' ? 'input' :
-                 jsonSchema.properties[key]?.type === 'number' ? 'number' :
-                 jsonSchema.properties[key]?.type === 'boolean' ? 'switch' :
-                 jsonSchema.properties[key]?.type === 'array' ? 'multiselect' : 'input'
-      }
-    }));
+    const existingFields = Object.keys(uiSchemaData.properties || {});
+    return Object.keys(jsonSchema.properties)
+      .filter(key => !existingFields.includes(key))
+      .map(key => ({
+        field: key,
+        schemaType: jsonSchema.properties[key]?.type || 'string',
+        suggested: {
+          widget: jsonSchema.properties[key]?.type === 'string' ? 'input' :
+                   jsonSchema.properties[key]?.type === 'number' ? 'number' :
+                   jsonSchema.properties[key]?.type === 'boolean' ? 'switch' :
+                   jsonSchema.properties[key]?.type === 'array' ? 'multiselect' : 'input'
+        }
+      }));
   };
 
   return (
@@ -375,11 +434,39 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
           </Button.Group>
 
           {jsonSchema && (
-            <Tooltip title="Suggest fields based on JSON Schema">
-              <Button icon={<FormOutlined />}>
-                Suggest Fields
+            <Dropdown
+              trigger={['click']}
+              overlay={
+                <Menu style={{ maxHeight: 300, overflow: 'auto' }}>
+                  {getSuggestedFields().length > 0 ? (
+                    getSuggestedFields().map(({ field, schemaType, suggested }) => (
+                      <Menu.Item
+                        key={field}
+                        onClick={() => addFieldFromSchema(field, schemaType)}
+                      >
+                        <Space>
+                          <Tag color={schemaType === 'string' ? 'blue' :
+                                   schemaType === 'number' ? 'green' :
+                                   schemaType === 'boolean' ? 'orange' :
+                                   schemaType === 'array' ? 'purple' : 'default'}>
+                            {schemaType}
+                          </Tag>
+                          <span>{field}</span>
+                        </Space>
+                      </Menu.Item>
+                    ))
+                  ) : (
+                    <Menu.Item disabled>
+                      <Empty description="All fields added" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                    </Menu.Item>
+                  )}
+                </Menu>
+              }
+            >
+              <Button icon={<DownOutlined />}>
+                Add from Schema ({getSuggestedFields().length})
               </Button>
-            </Tooltip>
+            </Dropdown>
           )}
 
           <div style={{ marginLeft: 'auto' }}>
@@ -459,23 +546,4 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
       </Space>
     </Card>
   );
-
-  function updateConfig(property: string, config: FieldConfig) {
-    handleVisualChange({
-      ...uiSchemaData,
-      properties: {
-        ...uiSchemaData.properties,
-        [property]: config
-      }
-    });
-  }
-
-  function handleDeleteField(field: string) {
-    const newProperties = { ...uiSchemaData.properties };
-    delete newProperties[field];
-    handleVisualChange({
-      ...uiSchemaData,
-      properties: newProperties
-    });
-  }
 }

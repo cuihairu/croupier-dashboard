@@ -119,10 +119,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       const safeName = (d: FunctionDescriptor) =>
         d?.display_name?.zh || d?.display_name?.en || d?.id || 'unknown';
 
-      const buildPath = (base: string, fid: string) => {
-        if (!base) base = '/game/functions/invoke';
+      const isEntity = (d: FunctionDescriptor) => d?.type === 'entity';
+
+      const buildPath = (base: string, fid: string, entityType = false) => {
+        if (!base) {
+          base = entityType ? '/game/entities/view' : '/game/functions/invoke';
+        }
         const sep = base.includes('?') ? '&' : '?';
-        return `${base}${sep}fid=${encodeURIComponent(fid)}`;
+        return `${base}${sep}id=${encodeURIComponent(fid)}`;
       };
 
       const visible = descriptors
@@ -132,7 +136,8 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
           name: safeName(d),
           category: d.category || 'uncategorized',
           order: typeof d.menu?.order === 'number' ? d.menu!.order! : 100,
-          path: buildPath(d.menu?.path || '/game/functions/invoke', d.id),
+          entityType: isEntity(d),
+          path: buildPath(d.menu?.path || '', d.id, isEntity(d)),
         }));
 
       if (visible.length === 0) return menuData;
