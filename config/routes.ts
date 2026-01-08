@@ -76,6 +76,12 @@ export default [
         access: 'canOpsRead',
         component: './Operations/Configs',
       },
+      {
+        path: '/operations/platforms',
+        name: 'Platforms',
+        access: 'canOpsRead',
+        component: './Platforms',
+      },
     ],
   },
   {

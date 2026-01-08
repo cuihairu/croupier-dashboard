@@ -50,6 +50,7 @@ export default {
   'menu.Operations.Registry': 'Service Registry',
   'menu.Operations.Servers': 'Servers',
   'menu.Operations.Configs': 'Configs',
+  'menu.Operations.Platforms': 'Third-party Platforms',
 
   // Ops
   'menu.Ops': 'Operations',

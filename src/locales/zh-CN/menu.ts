@@ -50,6 +50,7 @@ export default {
   'menu.Operations.Registry': '服务注册表',
   'menu.Operations.Servers': '服务列表',
   'menu.Operations.Configs': '配置管理',
+  'menu.Operations.Platforms': '第三方平台',
 
   // 运维管理
   'menu.Ops': '运维管理',
