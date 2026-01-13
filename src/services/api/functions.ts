@@ -27,6 +27,9 @@ export type FunctionDescriptor = {
   schema?: any;
   operations?: any;
   ui?: any;
+  // OpenAPI 3.0.3 Schema fields (JSON Schema format, stringified)
+  input_schema?: string;   // JSON Schema for request body (from proto)
+  output_schema?: string;  // JSON Schema for response body (from proto)
 };
 
 export type FunctionPermission = {

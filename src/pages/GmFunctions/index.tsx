@@ -8,6 +8,7 @@ import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cance
 import { getRenderer, registerBuiltins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
 import { useLocation } from '@umijs/max';
+import { parseInputSchema, buildUISchemaFromJSONSchema } from '@/utils/json';
 
 const { Text, Paragraph } = Typography;
 
@@ -328,6 +329,26 @@ export default function GmFunctionsPage() {
 
   const currentDesc = useMemo(() => (Array.isArray(descs) ? descs : []).find((d) => d.id === currentId), [descs, currentId]);
 
+  // Parse input_schema from proto, fallback to params for legacy compatibility
+  const effectiveSchema = useMemo(() => {
+    if (!currentDesc) return null;
+    // 优先使用 input_schema（来自 proto/OpenAPI），回退到 params（旧版）
+    return parseInputSchema(currentDesc.input_schema, currentDesc.params);
+  }, [currentDesc]);
+
+  // Auto-generate UI Schema when not provided by API
+  const effectiveUISchema = useMemo(() => {
+    // 如果有 API 返回的 uiSchema，直接使用
+    if (uiSchema && Object.keys(uiSchema).length > 0) {
+      return uiSchema;
+    }
+    // 否则从 JSON Schema 自动生成
+    if (effectiveSchema) {
+      return buildUISchemaFromJSONSchema(effectiveSchema);
+    }
+    return { fields: {} };
+  }, [uiSchema, effectiveSchema]);
+
   useEffect(() => {
     registerBuiltins();
     listDescriptors().then((d) => {
@@ -378,7 +399,7 @@ export default function GmFunctionsPage() {
 
   useEffect(() => {
     // reset form when function changes; only touch antd Form when it is mounted
-    const props = (currentDesc?.params && currentDesc.params.properties) || {};
+    const props = (effectiveSchema && effectiveSchema.properties) || {};
     const init: any = {};
     Object.keys(props).forEach((k) => (init[k] = undefined));
     if (renderMode !== 'form-render') {
@@ -414,19 +435,19 @@ export default function GmFunctionsPage() {
     } else {
       setInstances([]);
     }
-  }, [currentDesc?.id, renderMode]);
+  }, [currentDesc?.id, renderMode, effectiveSchema]);
 
   const onInvoke = async () => {
     try {
       let values: any;
-      if (renderMode === 'form-render' && currentDesc?.params) {
+      if (renderMode === 'form-render' && effectiveSchema) {
         // Use form-render data directly - it's already in the correct format
         values = formData;
       } else {
         // Use traditional form validation and normalization for enhanced/legacy modes
         values = await form.validateFields();
         if (renderMode === 'legacy') {
-          values = normalizeBySchema(values, currentDesc?.params || {});
+          values = normalizeBySchema(values, effectiveSchema || {});
         }
       }
 
@@ -451,14 +472,14 @@ export default function GmFunctionsPage() {
   const onStartJob = async () => {
     try {
       let values: any;
-      if (renderMode === 'form-render' && currentDesc?.params) {
+      if (renderMode === 'form-render' && effectiveSchema) {
         // Use form-render data directly
         values = formData;
       } else {
         // Use traditional form validation and normalization for enhanced/legacy modes
         values = await form.validateFields();
         if (renderMode === 'legacy') {
-          values = normalizeBySchema(values, currentDesc?.params || {});
+          values = normalizeBySchema(values, effectiveSchema || {});
         }
       }
 
@@ -572,16 +593,16 @@ export default function GmFunctionsPage() {
       {/* 配置可视化，便于后台查看参数与 UI 定制 */}
       <Row gutter={16}>
         <Col span={12}>
-          <Card size="small" title="参数 Schema">
+          <Card size="small" title={`参数 Schema${currentDesc?.input_schema ? ' (from proto)' : currentDesc?.params ? ' (legacy params)' : ''}`}>
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
-              {currentDesc?.params ? JSON.stringify(currentDesc.params, null, 2) : '无参数定义'}
+              {effectiveSchema ? JSON.stringify(effectiveSchema, null, 2) : '无参数定义'}
             </pre>
           </Card>
         </Col>
         <Col span={12}>
-          <Card size="small" title="UI 参数 (uiSchema)">
+          <Card size="small" title={`UI Schema${uiSchema && Object.keys(uiSchema).length > 0 ? ' (from API)' : ' (auto-generated)'}`}>
             <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
-              {uiSchema ? JSON.stringify(uiSchema, null, 2) : '无 UI Schema'}
+              {effectiveUISchema ? JSON.stringify(effectiveUISchema, null, 2) : '无 UI Schema'}
             </pre>
           </Card>
         </Col>
@@ -589,11 +610,11 @@ export default function GmFunctionsPage() {
 
       {/* Form Rendering Section */}
       {(() => {
-        if (renderMode === 'form-render' && currentDesc?.params) {
+        if (renderMode === 'form-render' && effectiveSchema) {
             return (
               <FormRender
-                schema={currentDesc.params}
-                uiSchema={uiSchema?.fields || {}}
+                schema={effectiveSchema as any}
+                uiSchema={effectiveUISchema?.fields || {}}
                 formData={formData}
                 onChange={setFormData}
                 displayType="row"
@@ -601,16 +622,19 @@ export default function GmFunctionsPage() {
               />
             );
           } else if (renderMode === 'enhanced') {
+            // Create a descriptor-like object with effectiveSchema for renderXFormItems
+            const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
             return (
               <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
-                {renderXFormItems(currentDesc, uiSchema, form)}
+                {renderXFormItems(descWithSchema, effectiveUISchema, form)}
               </Form>
             );
           } else {
-            // Legacy mode
+            // Legacy mode - same approach
+            const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
             return (
               <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
-                {renderFormItems(currentDesc, uiSchema, form)}
+                {renderFormItems(descWithSchema, effectiveUISchema, form)}
               </Form>
             );
           }
