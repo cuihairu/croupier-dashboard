@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Table, Space, Tag, Select, Input, Button, App, Drawer, Typography } from 'antd';
+import { Card, Table, Space, Tag, Select, Input, Button, App, Drawer, Typography, Descriptions } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import GameSelector from '@/components/GameSelector';
 import { fetchOpsServices, updateAgentMeta, type OpsService, type AgentProcess } from '@/services/api/ops';
 
 export default function OpsServicesPage() {
@@ -73,7 +72,6 @@ export default function OpsServicesPage() {
     <PageContainer>
       <Card title="服务列表" extra={
         <Space>
-          <GameSelector />
           <Select
             style={{ width: 140 }}
             placeholder="健康状态"
@@ -107,7 +105,7 @@ export default function OpsServicesPage() {
           pagination={{ pageSize: 10 }}
         />
       </Card>
-      <Drawer title="实例详情" width={640} open={!!detail} onClose={()=> setDetail(null)} extra={<Space>
+      <Drawer title="实例详情" width={720} open={!!detail} onClose={()=> setDetail(null)} extra={<Space>
         <Button onClick={load}>刷新</Button>
         {detail && detail.type === 'agent' && <Button onClick={async ()=>{
           const region = prompt('Region（可选）', detail.region||'')||'';
@@ -117,23 +115,31 @@ export default function OpsServicesPage() {
         }}>编辑元信息</Button>}
       </Space>}>
         {detail && (
-          <Space direction="vertical" style={{ width:'100%' }}>
-            <div><b>Service ID:</b> {detail.id}</div>
-            <div><b>Name:</b> {detail.name}</div>
-            <div><b>Type:</b> {detail.type}</div>
-            <div><b>Status:</b> <Tag color={detail.status === 'healthy' ? 'green' : detail.status === 'running' ? 'blue' : 'red'}>{detail.status}</Tag></div>
-            <div><b>Address:</b> {detail.address || '-'}</div>
-            <div><b>Game/Env:</b> {detail.gameId || '-'} / {detail.env || '-'}</div>
-            <div><b>Region/Zone:</b> {detail.region || '-'} / {detail.zone || '-'}</div>
-            <div><b>Version:</b> {detail.version || '-'}</div>
-            <div><b>Functions:</b> {detail.functionsCount || 0}</div>
-            <div>
-              <b>Processes:</b> {detail?.metadata?.processesCount ?? processes.length}
-              {processes.length > 0 && (
+          <Space direction="vertical" size="middle" style={{ width:'100%' }}>
+            <Card title="基础信息" size="small">
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="Service ID">{detail.id}</Descriptions.Item>
+                <Descriptions.Item label="Name">{detail.name}</Descriptions.Item>
+                <Descriptions.Item label="Type">{detail.type}</Descriptions.Item>
+                <Descriptions.Item label="Status">
+                  <Tag color={detail.status === 'healthy' ? 'green' : detail.status === 'running' ? 'blue' : 'red'}>{detail.status}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="Address" span={2}>{detail.address || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Game">{detail.gameId || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Env">{detail.env || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Region">{detail.region || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Zone">{detail.zone || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Version">{detail.version || '-'}</Descriptions.Item>
+                <Descriptions.Item label="Functions">{detail.functionsCount || 0}</Descriptions.Item>
+                <Descriptions.Item label="最后活跃">{detail.lastSeen ? new Date(detail.lastSeen).toLocaleString() : '-'}</Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {processes.length > 0 && (
+              <Card title={`注册进程 (${processes.length})`} size="small">
                 <Table<AgentProcess>
                   size="small"
                   rowKey={(r) => r.service_id}
-                  style={{ marginTop: 8 }}
                   dataSource={processes}
                   pagination={false}
                   columns={[
@@ -152,10 +158,21 @@ export default function OpsServicesPage() {
                     rowExpandable: (r) => Array.isArray(r?.function_ids) && r.function_ids.length > 0,
                   }}
                 />
-              )}
-            </div>
-            <div><b>Labels:</b> {detail.labels ? JSON.stringify(detail.labels) : '-'}</div>
-            <div><b>最后活跃:</b> {detail.lastSeen ? new Date(detail.lastSeen).toLocaleString() : '-'}</div>
+              </Card>
+            )}
+
+            <Card title="Labels" size="small">
+              {detail.labels ? (
+                <Space wrap>
+                  {Object.entries(detail.labels).map(([key, value], index) => {
+                    const colors = ['blue', 'green', 'orange', 'purple', 'cyan', 'magenta', 'gold', 'lime', 'red', 'volcano', 'geekblue', 'pink'];
+                    return (
+                      <Tag key={key} color={colors[index % colors.length]}>{key}: {value}</Tag>
+                    );
+                  })}
+                </Space>
+              ) : '-'}
+            </Card>
           </Space>
         )}
       </Drawer>

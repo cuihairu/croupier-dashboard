@@ -63,7 +63,7 @@ export default function AnalyticsRealtimePage() {
   }, []);
   useEffect(()=>{
     if (!auto) return;
-    const id = setInterval(load, 5000);
+    const id = setInterval(load, 60000);
     return ()=> clearInterval(id);
   }, [auto]);
 

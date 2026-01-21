@@ -34,7 +34,7 @@ export default function MessagesBell() {
     const loop = async () => {
       await poll();
       if (!es) { startSSE(); }
-      timer = setTimeout(loop, 30000);
+      timer = setTimeout(loop, 60000);
     };
     loop();
     return () => { alive = false; if (timer) clearTimeout(timer); if (es) es.close(); };

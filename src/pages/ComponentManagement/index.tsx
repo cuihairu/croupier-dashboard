@@ -82,7 +82,7 @@ export default function ComponentManagement() {
 
   useEffect(() => {
     loadStats();
-    refreshTimer.current = setInterval(loadStats, 30000); // 30秒刷新
+    refreshTimer.current = setInterval(loadStats, 60000); // 60秒刷新
     return () => {
       mounted.current = false;
       if (refreshTimer.current) clearInterval(refreshTimer.current);

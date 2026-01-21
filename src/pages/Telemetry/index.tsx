@@ -90,7 +90,7 @@ export default function TelemetryPage() {
   useEffect(() => {
     loadData();
     // 定时刷新数据
-    const interval = setInterval(loadData, 30000); // 30秒刷新一次
+    const interval = setInterval(loadData, 60000); // 60秒刷新一次
     return () => clearInterval(interval);
   }, [gameId, env, canView]);
 

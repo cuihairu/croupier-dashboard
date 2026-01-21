@@ -13,7 +13,7 @@ export default function OpsHealthPage() {
   const [status, setStatus] = useState<HealthStatus[]>([]);
   const load = async ()=> {
     setLoading(true);
-    try { const r = await fetchOpsHealth(); setChecks(r.checks||[]); setStatus(r.status||[]); } finally { setLoading(false); }
+    try { const r = await fetchOpsHealth() || {}; setChecks(r.checks||[]); setStatus(r.status||[]); } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);
 

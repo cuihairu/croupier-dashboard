@@ -56,7 +56,7 @@ export default function AuditPage(){
   }, []);
   useEffect(()=>{
     if (auto) {
-      autoRef.current = window.setInterval(()=>{ reload(); }, 5000);
+      autoRef.current = window.setInterval(()=>{ reload(); }, 60000);
     } else {
       if (autoRef.current) { window.clearInterval(autoRef.current); autoRef.current = null; }
     }
