@@ -82,6 +82,12 @@ export default [
         access: 'canOpsRead',
         component: './Platforms',
       },
+      {
+        path: '/operations/storage',
+        name: 'Storage',
+        access: 'canOpsRead',
+        component: './Storage',
+      },
     ],
   },
   {

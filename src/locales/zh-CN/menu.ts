@@ -51,6 +51,7 @@ export default {
   'menu.Operations.Servers': '服务列表',
   'menu.Operations.Configs': '配置管理',
   'menu.Operations.Platforms': '第三方平台',
+  'menu.Operations.Storage': '对象存储',
 
   // 运维管理
   'menu.Ops': '运维管理',

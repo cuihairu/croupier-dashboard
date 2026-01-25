@@ -51,6 +51,7 @@ export default {
   'menu.Operations.Servers': 'Servers',
   'menu.Operations.Configs': 'Configs',
   'menu.Operations.Platforms': 'Third-party Platforms',
+  'menu.Operations.Storage': 'Object Storage',
 
   // Ops
   'menu.Ops': 'Operations',
