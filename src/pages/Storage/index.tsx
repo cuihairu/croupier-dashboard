@@ -6,7 +6,7 @@ import {
   Space,
   Upload,
   Modal,
-  message,
+  App,
   Popconfirm,
   Input,
   Tag,
@@ -48,6 +48,7 @@ interface FileInfo {
 }
 
 export default function StoragePage() {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
