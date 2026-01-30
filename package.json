@@ -78,7 +78,7 @@
     "@umijs/max": "^4.1.1",
     "baseline-browser-mapping": "^2.9.11",
     "cross-env": "^7.0.3",
-    "eslint": "^9.26.0",
+    "eslint": "^9.27.0",
     "express": "^5.2.0",
     "gh-pages": "5.0.0",
     "husky": "^7.0.4",
