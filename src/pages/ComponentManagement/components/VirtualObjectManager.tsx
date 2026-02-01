@@ -258,8 +258,7 @@ export default function VirtualObjectManager() {
               size="small"
               icon={<EditOutlined />}
               onClick={() => {
-                setSelectedEntity(record);
-                setComposerVisible(true);
+                history.push(`/game/entities/${record.id}/edit`);
               }}
             />
           </Tooltip>
@@ -298,9 +297,7 @@ export default function VirtualObjectManager() {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => {
-                setSelectedEntity(null);
-                form.resetFields();
-                setComposerVisible(true);
+                history.push('/game/entities/create');
               }}
             >
               创建虚拟对象

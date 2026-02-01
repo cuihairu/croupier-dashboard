@@ -9,8 +9,9 @@ import {
   ApartmentOutlined, SettingOutlined, SaveOutlined, PlayCircleOutlined,
   EyeOutlined, ArrowRightOutlined, ApiOutlined, CodeOutlined
 } from '@ant-design/icons';
+import { useParams, history } from '@umijs/max';
 import { getLegacyDescriptorsMap } from '@/services/api';
-import { listEntities } from '@/services/api/entities';
+import { listEntities, getEntity, createEntity, updateEntity } from '@/services/api/entities';
 
 const { Step } = Steps;
 const { TextArea } = Input;
@@ -69,12 +70,16 @@ interface EntityComposition {
 
 interface EntityComposerProps {
   entity?: EntityComposition | null;
-  visible: boolean;
-  onSave: (entity: EntityComposition) => void;
-  onCancel: () => void;
+  visible?: boolean;
+  onSave?: (entity: EntityComposition) => void;
+  onCancel?: () => void;
 }
 
-export default function EntityComposer({ entity, visible, onSave, onCancel }: EntityComposerProps) {
+export default function EntityComposer({ entity: entityProp, visible: visibleProp, onSave: onSaveProp, onCancel: onCancelProp }: EntityComposerProps = {}) {
+  const { id } = useParams<{ id: string }>();
+  const isRouteMode = !entityProp && !visibleProp;
+  const isEditMode = !!id;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [composition, setComposition] = useState<EntityComposition>({
     id: '',
@@ -95,21 +100,50 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
 
   const [form] = Form.useForm();
 
+  // 加载实体数据（编辑模式）
+  const loadEntityData = async (entityId: string) => {
+    try {
+      message.loading('加载中...', 0);
+      const data = await getEntity(entityId);
+      setComposition(data);
+      form.setFieldsValue(data);
+      setSelectedFunctions(data.operations.map((op: any) => op.functionId));
+      setTransferTargetKeys(data.operations.map((op: any) => op.functionId));
+      message.destroy();
+      message.success('数据加载成功');
+    } catch (error) {
+      message.destroy();
+      message.error('加载失败');
+    }
+  };
+
   useEffect(() => {
-    if (visible) {
+    // Props 模式（Modal）
+    if (!isRouteMode && visibleProp) {
       loadAvailableFunctions();
       loadAvailableEntities();
 
-      if (entity) {
-        setComposition(entity);
-        form.setFieldsValue(entity);
-        setSelectedFunctions(entity.operations.map(op => op.functionId));
-        setTransferTargetKeys(entity.operations.map(op => op.functionId));
+      if (entityProp) {
+        setComposition(entityProp);
+        form.setFieldsValue(entityProp);
+        setSelectedFunctions(entityProp.operations.map(op => op.functionId));
+        setTransferTargetKeys(entityProp.operations.map(op => op.functionId));
       } else {
         resetComposer();
       }
     }
-  }, [visible, entity, form]);
+    // 路由模式（独立页面）
+    else if (isRouteMode) {
+      loadAvailableFunctions();
+      loadAvailableEntities();
+
+      if (isEditMode && id) {
+        loadEntityData(id);
+      } else {
+        resetComposer();
+      }
+    }
+  }, [isRouteMode, isEditMode, id, visibleProp, entityProp, form]);
 
   const resetComposer = () => {
     setCurrentStep(0);
@@ -277,11 +311,27 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
         return;
       }
 
-      onSave(composition);
-      message.success('虚拟对象保存成功');
-      resetComposer();
+      // Props 模式（Modal）：调用回调
+      if (onSaveProp) {
+        onSaveProp(composition);
+        message.success('虚拟对象保存成功');
+        resetComposer();
+        return;
+      }
+
+      // 路由模式（独立页面）：调用 API
+      if (isEditMode) {
+        await updateEntity(id, composition);
+        message.success('更新成功');
+      } else {
+        await createEntity(composition);
+        message.success('创建成功');
+      }
+
+      // 返回列表页面
+      history.push('/game/component-management');
     } catch (error) {
-      message.error('保存失败');
+      message.error(isEditMode ? '更新失败' : '创建失败');
     }
   };
 
@@ -774,20 +824,9 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
     { title: '预览确认', description: '预览并保存配置' }
   ];
 
-  return (
-    <Modal
-      title={
-        <Space>
-          <ApartmentOutlined />
-          {entity ? '编辑虚拟对象' : '创建虚拟对象'}
-        </Space>
-      }
-      open={visible}
-      onCancel={onCancel}
-      width="90%"
-      style={{ top: 20 }}
-      footer={null}
-    >
+  // 内容组件（可复用）
+  const Content = () => (
+    <>
       <Steps current={currentStep} style={{ marginBottom: 24 }}>
         {steps.map((step, index) => (
           <Step
@@ -827,6 +866,11 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
               保存虚拟对象
             </Button>
           )}
+          {isRouteMode && (
+            <Button onClick={() => history.push('/game/component-management')}>
+              取消
+            </Button>
+          )}
         </Space>
       </div>
 
@@ -858,6 +902,42 @@ export default function EntityComposer({ entity, visible, onSave, onCancel }: En
           </div>
         </div>
       </Modal>
-    </Modal>
+    </>
+  );
+
+  // Props 模式（Modal）
+  if (!isRouteMode) {
+    return (
+      <Modal
+        title={
+          <Space>
+            <ApartmentOutlined />
+            {entityProp ? '编辑虚拟对象' : '创建虚拟对象'}
+          </Space>
+        }
+        open={visibleProp || false}
+        onCancel={onCancelProp}
+        width="90%"
+        style={{ top: 20 }}
+        footer={null}
+      >
+        <Content />
+      </Modal>
+    );
+  }
+
+  // 路由模式（独立页面）
+  return (
+    <Card
+      title={
+        <Space>
+          <ApartmentOutlined />
+          {isEditMode ? '编辑虚拟对象' : '创建虚拟对象'}
+        </Space>
+      }
+      style={{ margin: 24 }}
+    >
+      <Content />
+    </Card>
   );
 }

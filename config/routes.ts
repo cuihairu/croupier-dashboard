@@ -278,6 +278,21 @@ export default [
         component: './ComponentManagement',
         hideInMenu: true,
       },
+      // 虚拟对象编辑器（独立页面）
+      {
+        path: '/game/entities/create',
+        name: 'CreateVirtualObject',
+        access: 'canFunctionsRead',
+        component: './ComponentManagement/components/EntityComposer',
+        hideInMenu: true,
+      },
+      {
+        path: '/game/entities/:id/edit',
+        name: 'EditVirtualObject',
+        access: 'canFunctionsRead',
+        component: './ComponentManagement/components/EntityComposer',
+        hideInMenu: true,
+      },
       // 游戏运营管理
       {
         path: '/game/assignments',
