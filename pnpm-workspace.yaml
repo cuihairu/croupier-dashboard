@@ -1,3 +1,6 @@
+packages:
+  - '.'
+
 overrides:
   '@babel/runtime@<7.26.10': '>=7.26.10'
   '@octokit/plugin-paginate-rest@>=1.0.0 <9.2.2': '>=9.2.2'
