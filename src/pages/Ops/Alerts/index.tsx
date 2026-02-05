@@ -28,7 +28,7 @@ export default function OpsAlertsPage() {
     try { const r = await fetchOpsAlerts(); setRows((r as any)?.alerts||[]); } catch(e:any){ message.error(e?.message||'加载失败'); } finally { setLoading(false); }
   };
   useEffect(()=>{ load(); }, []);
-  useEffect(()=>{ (async()=>{ try { const s = await listSilences(); setSilences(s.silences||[]);} catch{} })(); (async()=>{ try { const c = await fetchOpsConfig(); setCfg(c);} catch{} })(); }, []);
+  useEffect(()=>{ (async()=>{ try { const s = await listSilences(); setSilences(s.silences||[]);} catch{} })(); (async()=>{ try { const c = await fetchOpsConfig(); setCfg(c || {});} catch{} })(); }, []);
 
   const serviceOptions = useMemo(()=> Array.from(new Set((rows||[]).map(a=> a.service).filter(Boolean) as string[])).map(v=>({label:v,value:v})), [rows]);
   const data = useMemo(()=> (rows||[]).filter((a)=>{
@@ -80,8 +80,8 @@ export default function OpsAlertsPage() {
           <Input placeholder='关键词' value={q} onChange={(e)=> setQ(e.target.value)} style={{ width:220 }} />
           <Input placeholder='标签键' value={lk} onChange={(e)=> setLk(e.target.value)} style={{ width:160 }} />
           <Input placeholder='标签值(可选)' value={lv} onChange={(e)=> setLv(e.target.value)} style={{ width:160 }} />
-          {cfg.grafana_explore_url && <Button onClick={()=> window.open(cfg.grafana_explore_url!, '_blank')}>打开 Grafana</Button>}
-          {cfg.alertmanager_url && <Button onClick={()=> window.open(cfg.alertmanager_url!+'/#/alerts', '_blank')}>打开 AM</Button>}
+          {cfg?.grafana_explore_url && <Button onClick={()=> window.open(cfg.grafana_explore_url, '_blank')}>打开 Grafana</Button>}
+          {cfg?.alertmanager_url && <Button onClick={()=> window.open(cfg.alertmanager_url+'/#/alerts', '_blank')}>打开 AM</Button>}
           <Button onClick={()=> { load(); (async()=>{ try { const s = await listSilences(); setSilences(s.silences||[]);} catch{} })(); }}>刷新</Button>
         </Space>
       }>
@@ -99,7 +99,7 @@ export default function OpsAlertsPage() {
           { title:'时间', render: (_:any,r:any)=> `${r.starts_at||''} -> ${r.ends_at||''}` },
           { title:'状态', dataIndex:['status','state'], width:120 },
           { title:'操作', width:160, render: (_:any,r:any)=> <Space>
-            <Button size='small' onClick={()=> window.open((cfg.alertmanager_url||'').replace(/\/$/,'')+`/#/silences/${encodeURIComponent(r.id)}`,'_blank')}>查看</Button>
+            <Button size='small' onClick={()=> window.open(((cfg?.alertmanager_url||'').replace(/\/$/,'')+`/#/silences/${encodeURIComponent(r.id)}`),'_blank')}>查看</Button>
             <Button size='small' danger onClick={()=> Modal.confirm({ title:'解除静默', content:`确定解除静默 ${r.id}?`, onOk: async ()=>{ try { await deleteSilence(String(r.id)); message.success('已解除'); const s = await listSilences(); setSilences(s.silences||[]);} catch(e:any){ message.error(e?.message||'操作失败'); } } })}>解除</Button>
           </Space> }
         ]} pagination={{ pageSize: 10 }} />
