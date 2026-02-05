@@ -123,7 +123,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 
       const buildPath = (base: string, fid: string, entityType = false) => {
         if (!base) {
-          base = entityType ? '/game/entities/view' : '/game/functions/invoke';
+          base = entityType ? '/game/entities/view' : '/game/functions/catalog';
         }
         const sep = base.includes('?') ? '&' : '?';
         return `${base}${sep}id=${encodeURIComponent(fid)}`;

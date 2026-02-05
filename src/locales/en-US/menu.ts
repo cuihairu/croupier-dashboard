@@ -39,6 +39,8 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionPacks': 'Pack Management',
   'menu.GameManagement.GameFunctionsLegacy': 'Legacy Function Center',
   'menu.GameManagement.ComponentManagement': 'Component Management',
+  'menu.GameManagement.CreateVirtualObject': 'Create Virtual Object',
+  'menu.GameManagement.EditVirtualObject': 'Edit Virtual Object',
   'menu.GameManagement.GameAssignments': 'Function Assignments',
   'menu.GameManagement.GamePacks': 'Pack Management',
 

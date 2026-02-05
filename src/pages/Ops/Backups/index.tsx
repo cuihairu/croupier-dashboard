@@ -9,7 +9,7 @@ export default function OpsBackupsPage() {
   const { message } = App.useApp();
   const [rows, setRows] = useState<Backup[]>([]);
   const [loading, setLoading] = useState(false);
-  const load = async ()=>{ setLoading(true); try{ const r = await listOpsBackups(); setRows(r.backups||[]);} finally{ setLoading(false);} };
+  const load = async ()=>{ setLoading(true); try{ const r = await listOpsBackups(); setRows(r?.backups||[]);} finally{ setLoading(false);} };
   useEffect(()=>{ load(); }, []);
 
   const [open, setOpen] = useState(false);

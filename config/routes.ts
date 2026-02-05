@@ -233,13 +233,6 @@ export default [
             icon: 'unordered-list',
           },
           {
-            path: '/game/functions/invoke',
-            name: 'FunctionInvoke',
-            access: 'canFunctionsRead',
-            component: './GmFunctions',
-            icon: 'play-circle',
-          },
-          {
             path: '/game/functions/instances',
             name: 'FunctionInstances',
             access: 'canFunctionsRead',
@@ -261,14 +254,6 @@ export default [
             icon: 'inbox',
           },
         ],
-      },
-      // 保持向后兼容的重定向
-      {
-        path: '/game/functions/old',
-        name: 'GameFunctionsLegacy',
-        access: 'canFunctionsRead',
-        component: './GmFunctions',
-        hideInMenu: true,
       },
       // 新增统一组件管理中心（主菜单已迁移到 /components）
       {
@@ -366,6 +351,11 @@ export default [
     path: '/game-mgmt',
     redirect: '/game/meta',
   },
+  // Legacy redirects for removed function management pages
+  { path: '/game/functions/invoke', redirect: '/game/functions/catalog' },
+  { path: '/game/functions/old', redirect: '/game/functions/catalog' },
+  { path: '/functions/list', redirect: '/game/functions/catalog' },
+  { path: '/functions', redirect: '/game/functions/catalog' },
   {
     path: '/gm/games',
     redirect: '/game/environments',
@@ -405,32 +395,6 @@ export default [
     icon: 'appstore',
     access: 'canFunctionsRead',
     component: './ComponentManagement',
-  },
-  // 函数管理 - 新增独立页面
-  {
-    path: '/functions',
-    name: 'Functions',
-    icon: 'api',
-    access: 'canFunctionsRead',
-    routes: [
-      {
-        path: '/functions',
-        redirect: '/functions/list',
-      },
-      {
-        path: '/functions/list',
-        name: 'FunctionList',
-        access: 'canFunctionsRead',
-        component: './Functions',
-      },
-      {
-        path: '/functions/:id',
-        name: 'FunctionDetail',
-        access: 'canFunctionsRead',
-        component: './Functions/Detail',
-        hideInMenu: true,
-      },
-    ],
   },
   // 后台组件分配，显式展示在主菜单
   {

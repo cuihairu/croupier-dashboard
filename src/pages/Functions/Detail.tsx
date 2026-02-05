@@ -98,6 +98,10 @@ export default function FunctionDetailPage() {
   const [permSaving, setPermSaving] = useState(false);
   const [permError, setPermError] = useState<string>('');
   const [permForm] = Form.useForm();
+  const [uiConfigSaving, setUiConfigSaving] = useState(false);
+  const [uiConfigForm] = Form.useForm();
+  const [routeConfigSaving, setRouteConfigSaving] = useState(false);
+  const [routeConfigForm] = Form.useForm();
 
   // Load function detail
   const loadDetail = async () => {
@@ -130,6 +134,24 @@ export default function FunctionDetailPage() {
       } finally {
         setPermLoading(false);
       }
+
+      // Load UI Config
+      const descriptor = detail?.descriptor || {};
+      const menuConfig = descriptor?.menu || {};
+      routeConfigForm.setFieldsValue({
+        section: menuConfig.section || '',
+        group: menuConfig.group || '',
+        path: menuConfig.path || '',
+        order: menuConfig.order || 10,
+        hidden: menuConfig.hidden || false,
+      });
+
+      // UI Schema config would be loaded from function UI endpoint
+      // For now initialize with empty values
+      uiConfigForm.setFieldsValue({
+        layoutType: 'grid',
+        cols: 2,
+      });
     } catch (error) {
       message.error('加载函数详情失败');
     } finally {
@@ -483,15 +505,103 @@ export default function FunctionDetailPage() {
             </TabPane>
 
             <TabPane tab="配置" key="config">
-              <Alert
-                message="配置信息"
-                description="函数的详细配置信息"
-                type="info"
-                showIcon
-              />
-              <pre style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 4 }}>
-                {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
-              </pre>
+              <Tabs defaultActiveKey="json" type="card" size="small">
+                <TabPane tab="JSON 视图" key="json">
+                  <Alert
+                    message="配置信息"
+                    description="函数的完整 JSON 配置（只读）"
+                    type="info"
+                    showIcon
+                  />
+                  <pre style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 4, maxHeight: 500, overflow: 'auto' }}>
+                    {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
+                  </pre>
+                </TabPane>
+
+                <TabPane tab="🎨 UI 配置" key="ui">
+                  <Alert
+                    message="UI Schema 配置"
+                    description="配置函数参数的表单显示方式（需要重新打包 Pack 生效）"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Card title="布局配置" size="small">
+                    <Form form={uiConfigForm} layout="vertical">
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item label="布局类型" name="layoutType">
+                            <Select>
+                              <Select.Option value="grid">网格布局</Select.Option>
+                              <Select.Option value="tabs">标签页布局</Select.Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item label="列数" name="cols">
+                            <InputNumber min={1} max={4} style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Alert
+                        message="提示"
+                        description="完整的 UI Schema 配置需要编辑 Pack 文件中的 ui_schema 文件，然后重新上传。此功能正在开发中。"
+                        type="warning"
+                        showIcon
+                      />
+                    </Form>
+                  </Card>
+                </TabPane>
+
+                <TabPane tab="🛣️ 路由配置" key="route">
+                  <Alert
+                    message="路由配置"
+                    description="配置函数在前端菜单中的显示和跳转路径（需要重新打包 Pack 生效）"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                  <Card title="菜单配置" size="small">
+                    <Form form={routeConfigForm} layout="vertical">
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item label="一级菜单" name="section" tooltip="例如：玩家管理">
+                            <Input placeholder="留空则不分组" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item label="二级分组" name="group" tooltip="例如：基础功能">
+                            <Input placeholder="留空则不分组" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item label="路由路径" name="path" tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get">
+                            <Input placeholder="/game/functions（默认）" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item label="显示顺序" name="order" tooltip="数字越小越靠前">
+                            <InputNumber min={1} max={100} style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={6}>
+                          <Form.Item label="隐藏菜单" name="hidden" valuePropName="checked">
+                            <Switch />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Alert
+                        message="提示"
+                        description="修改路由配置后需要重新导出并上传 Pack 才能生效。此功能正在开发中，目前仅作为预览。"
+                        type="warning"
+                        showIcon
+                      />
+                    </Form>
+                  </Card>
+                </TabPane>
+              </Tabs>
             </TabPane>
 
             <TabPane tab="权限" key="permissions">

@@ -39,6 +39,8 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionPacks': '函数包管理',
   'menu.GameManagement.GameFunctionsLegacy': '旧版函数中心',
   'menu.GameManagement.ComponentManagement': '组件管理',
+  'menu.GameManagement.CreateVirtualObject': '创建虚拟对象',
+  'menu.GameManagement.EditVirtualObject': '编辑虚拟对象',
   'menu.GameManagement.GameAssignments': '功能分配',
   'menu.GameManagement.GamePacks': '功能包管理',
 
