@@ -8,7 +8,7 @@ export default function OpsMaintenancePage(){
   const { message } = App.useApp();
   const [rows, setRows] = useState<Window[]>([]);
   const [loading, setLoading] = useState(false);
-  const load = async ()=>{ setLoading(true); try{ const r = await fetchOpsMaintenance(); setRows(r.windows||[]);} finally{ setLoading(false);} };
+  const load = async ()=>{ setLoading(true); try{ const r = await fetchOpsMaintenance(); setRows(r?.windows||[]);} finally{ setLoading(false);} };
   useEffect(()=>{ load(); }, []);
 
   const [open, setOpen] = useState(false);

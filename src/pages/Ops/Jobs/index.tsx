@@ -107,7 +107,7 @@ export default function OpsJobsPage() {
 
       <Drawer title="作业详情" width={720} open={!!detail} onClose={()=> { setDetail(null); setStream([]); setResult(null); if (esRef.current) { esRef.current.close(); esRef.current = null; } }} extra={<Space>
         {detail?.state==='running' && <Button danger onClick={async ()=>{ if(!detail) return; try { await cancelJob(detail.id); message.success('已取消'); load(); } catch(e:any){ message.error(e?.message||'取消失败'); } }}>取消</Button>}
-        <Button onClick={async ()=>{ if(!detail) return; try { const r = await fetchJobResult(detail.id); setResult(r as any); message.success(`状态：${r.state}`); load(); } catch(e:any){ message.error(e?.message||'查询失败'); } }}>刷新结果</Button>
+        <Button onClick={async ()=>{ if(!detail) return; try { const r = await fetchJobResult(detail.id); setResult(r as any); message.success(`状态：${r?.state}`); load(); } catch(e:any){ message.error(e?.message||'查询失败'); } }}>刷新结果</Button>
       </Space>}>
         {detail && (
           <Space direction='vertical' style={{ width:'100%' }}>
