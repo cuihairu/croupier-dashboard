@@ -33,8 +33,10 @@ export default function OpsServicesPage() {
 
   const data = useMemo(() => {
     return (rows||[]).filter((r) => {
-      if (filter.game && r.gameId && r.gameId !== filter.game) return false;
-      if (filter.env && r.env && r.env !== filter.env) return false;
+      // GameId 过滤：如果设置了 filter.game，则只显示匹配的服务（空字符串 != 任何值）
+      if (filter.game && r.gameId !== filter.game) return false;
+      // Env 过滤：如果设置了 filter.env，则只显示匹配的服务（空字符串 != 任何值）
+      if (filter.env && r.env !== filter.env) return false;
       if (filter.healthy) {
         const isHealthy = r.status === 'healthy' || r.status === 'running';
         if (filter.healthy === 'healthy' && !isHealthy) return false;
