@@ -49,6 +49,7 @@
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@ant-design/pro-components": "^2.8.10",
+    "@microlink/react-json-view": "^1.27.1",
     "@monaco-editor/react": "^4.7.0",
     "@umijs/route-utils": "^2.2.2",
     "antd": "^5.28.0",

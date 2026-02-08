@@ -98,8 +98,35 @@ export async function fetchJobResult(id: string) {
 
 export async function listFunctionInstances(params: { game_id?: string; function_id: string }) {
   return request<{ instances: { agent_id: string; service_id: string; addr: string; version: string }[] }>(
-    `/api/v1/functions/${params.function_id}/instances`,
-    { params },
+    `/api/v1/functions/instances`,
+    {
+      method: 'GET',
+      params,
+    },
+  );
+}
+
+// OpenAPI 3.0.3 相关的 API 调用
+
+export async function getFunctionOpenAPISpec(functionId: string) {
+  return request<{ spec: any }>(`/api/v1/functions/${functionId}/openapi`, {
+    method: 'GET',
+  });
+}
+
+export async function importOpenAPISpec(spec: any) {
+  return request<{ imported: number; failed: string[] }>(`/api/v1/functions/_import`, {
+    method: 'POST',
+    data: { spec },
+  });
+}
+
+export async function getEntityFunctions(entityId: string) {
+  return request<{ items: Array<{ id: string; operation: string; name: string }> }>(
+    `/api/v1/entities/${entityId}/functions`,
+    {
+      method: 'GET',
+    },
   );
 }
 

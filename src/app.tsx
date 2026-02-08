@@ -131,6 +131,8 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 
       const visible = descriptors
         .filter((d) => d && d.id && !(d.menu && d.menu.hidden))
+        // Filter out special function IDs that cause route conflicts
+        .filter((d) => !['invoke', 'old', 'test'].includes(d.id.toLowerCase()))
         .map((d) => ({
           id: d.id,
           name: safeName(d),
@@ -144,14 +146,24 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 
       const byCategory = new Map<string, typeof visible>();
       for (const it of visible) {
-        const arr = byCategory.get(it.category) || [];
-        arr.push(it);
-        byCategory.set(it.category, arr);
+        // Normalize category: remove redundant prefixes like 'examples.examples' -> 'examples'
+        let normalizedCategory = it.category;
+        if (normalizedCategory && normalizedCategory.includes('.')) {
+          const parts = normalizedCategory.split('.');
+          // If the category has repeated parts (e.g., 'examples.examples'), use only the last part
+          if (parts.length > 1 && parts[parts.length - 1] === parts[parts.length - 2]) {
+            normalizedCategory = parts[parts.length - 1];
+          }
+        }
+        const arr = byCategory.get(normalizedCategory || 'uncategorized') || [];
+        arr.push({ ...it, category: normalizedCategory || 'uncategorized' });
+        byCategory.set(normalizedCategory || 'uncategorized', arr);
       }
 
       const categoryItems = Array.from(byCategory.entries())
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([category, items]) => {
+          const normalizedCategory = category === 'uncategorized' ? 'Other' : category;
           const children = items
             .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name))
             .map((it) => ({
@@ -159,8 +171,8 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
               path: it.path,
             }));
           return {
-            name: category === 'uncategorized' ? 'Other' : category,
-            path: `/game/functions/catalog?category=${encodeURIComponent(category)}`,
+            name: normalizedCategory,
+            path: `/game/functions/catalog?category=${encodeURIComponent(normalizedCategory)}`,
             children,
           };
         });

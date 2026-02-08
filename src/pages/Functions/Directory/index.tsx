@@ -4,7 +4,7 @@ import { App, Button, Space, Tag, Card, Descriptions, Drawer, Badge, Tooltip, Ty
 import { EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
 import { history } from '@umijs/max';
 import { listDescriptors, listFunctionInstances } from '@/services/api';
-import { getFunctionSummary } from '@/services/api/functions-enhanced';
+import { getFunctionSummary, getFunctionDetail } from '@/services/api/functions-enhanced';
 
 const { Text } = Typography;
 
@@ -74,10 +74,25 @@ export default () => {
 
   const handleViewDetail = async (record: SummaryRow) => {
     try {
-      // Try to fetch more detailed information
-      const detailInfo: DetailRow = { ...record };
+      // Try to fetch complete function details from backend
+      let detailInfo: DetailRow = { ...record };
 
-      // If we have instances API, we could fetch that too
+      try {
+        const fullDetail = await getFunctionDetail(record.id);
+        // Merge full detail with the record data
+        detailInfo = {
+          ...record,
+          ...fullDetail,
+          // Preserve display_name and summary as fallback
+          display_name: fullDetail.display_name || record.display_name,
+          summary: fullDetail.summary || record.summary,
+        };
+      } catch (err) {
+        console.warn('Failed to fetch full detail, using summary data:', err);
+        // Fallback to summary data only
+      }
+
+      // Fetch instances count
       try {
         const instances = await listFunctionInstances({ function_id: record.id });
         detailInfo.instances = instances?.instances?.length || 0;
@@ -249,44 +264,64 @@ export default () => {
         }
       >
         {selectedFunction && (
-          <Card size="small" title="基本信息">
-            <Descriptions column={1} size="small">
-              <Descriptions.Item label="函数ID">
-                <Text code copyable>{selectedFunction.id}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="版本">
-                {selectedFunction.version || <Text type="secondary">未指定</Text>}
-              </Descriptions.Item>
-              <Descriptions.Item label="分类">
-                <Tag color={selectedFunction.category ? 'geekblue' : 'default'}>
-                  {selectedFunction.category || '未分类'}
-                </Tag>
-              </Descriptions.Item>
-              <Descriptions.Item label="状态">
-                <Badge
-                  status={selectedFunction.enabled ? 'success' : 'default'}
-                  text={selectedFunction.enabled ? '启用' : '禁用'}
-                />
-              </Descriptions.Item>
-              <Descriptions.Item label="覆盖实例">
-                {selectedFunction.instances !== undefined
-                  ? `${selectedFunction.instances} 个实例`
-                  : <Text type="secondary">未知</Text>
-                }
-              </Descriptions.Item>
-            </Descriptions>
+          <>
+            <Card size="small" title="基本信息">
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="函数ID">
+                  <Text code copyable>{selectedFunction.id}</Text>
+                </Descriptions.Item>
+                <Descriptions.Item label="版本">
+                  {selectedFunction.version || <Text type="secondary">未指定</Text>}
+                </Descriptions.Item>
+                <Descriptions.Item label="分类">
+                  <Tag color={selectedFunction.category ? 'geekblue' : 'default'}>
+                    {selectedFunction.category || '未分类'}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="状态">
+                  <Badge
+                    status={selectedFunction.enabled ? 'success' : 'default'}
+                    text={selectedFunction.enabled ? '启用' : '禁用'}
+                  />
+                </Descriptions.Item>
+                <Descriptions.Item label="覆盖实例">
+                  {selectedFunction.instances !== undefined
+                    ? `${selectedFunction.instances} 个实例`
+                    : <Text type="secondary">未知</Text>
+                  }
+                </Descriptions.Item>
+                {selectedFunction.author && (
+                  <Descriptions.Item label="作者">
+                    {selectedFunction.author}
+                  </Descriptions.Item>
+                )}
+                {selectedFunction.created_at && (
+                  <Descriptions.Item label="创建时间">
+                    {new Date(selectedFunction.created_at).toLocaleString('zh-CN')}
+                  </Descriptions.Item>
+                )}
+                {selectedFunction.updated_at && (
+                  <Descriptions.Item label="更新时间">
+                    {new Date(selectedFunction.updated_at).toLocaleString('zh-CN')}
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
 
             {(selectedFunction.display_name?.zh || selectedFunction.display_name?.en) && (
-              <>
-                <Card size="small" title="显示名称" style={{ marginTop: 16 }}>
-                  {selectedFunction.display_name?.zh || selectedFunction.display_name?.en}
-                </Card>
-              </>
+              <Card size="small" title="显示名称" style={{ marginTop: 16 }}>
+                {selectedFunction.display_name?.zh || selectedFunction.display_name?.en}
+                {selectedFunction.display_name?.zh && selectedFunction.display_name?.en && selectedFunction.display_name.zh !== selectedFunction.display_name.en && (
+                  <div style={{ marginTop: 8, color: '#888' }}>
+                    EN: {selectedFunction.display_name.en}
+                  </div>
+                )}
+              </Card>
             )}
 
-            {(selectedFunction.summary?.zh || selectedFunction.summary?.en) && (
+            {(selectedFunction.summary?.zh || selectedFunction.summary?.en || selectedFunction.description?.zh || selectedFunction.description?.en) && (
               <Card size="small" title="函数描述" style={{ marginTop: 16 }}>
-                {selectedFunction.summary?.zh || selectedFunction.summary?.en}
+                {selectedFunction.summary?.zh || selectedFunction.summary?.en || selectedFunction.description?.zh || selectedFunction.description?.en}
               </Card>
             )}
 
@@ -300,7 +335,7 @@ export default () => {
               </Card>
             )}
 
-            {selectedFunction.menu && (
+            {selectedFunction.menu && (selectedFunction.menu.section || selectedFunction.menu.group || selectedFunction.menu.path) && (
               <Card size="small" title="菜单信息" style={{ marginTop: 16 }}>
                 <Descriptions column={1} size="small">
                   {selectedFunction.menu.section && (
@@ -309,10 +344,18 @@ export default () => {
                   {selectedFunction.menu.group && (
                     <Descriptions.Item label="子分组">{selectedFunction.menu.group}</Descriptions.Item>
                   )}
+                  {selectedFunction.menu.path && (
+                    <Descriptions.Item label="路径">
+                      <Text code copyable>{selectedFunction.menu.path}</Text>
+                    </Descriptions.Item>
+                  )}
+                  {typeof selectedFunction.menu.order === 'number' && (
+                    <Descriptions.Item label="排序">{selectedFunction.menu.order}</Descriptions.Item>
+                  )}
                 </Descriptions>
               </Card>
             )}
-          </Card>
+          </>
         )}
       </Drawer>
     </PageContainer>

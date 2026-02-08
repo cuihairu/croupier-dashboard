@@ -17,7 +17,7 @@ export default [
     icon: 'areaChart',
     access: 'canAnalyticsRead',
     routes: [
-      { path: '/analytics', redirect: '/analytics/realtime' },
+      { path: '/analytics', redirect: '/analytics/realtime', hideInMenu: true },
       { path: '/analytics/realtime', name: 'Realtime', access: 'canAnalyticsRead', component: './Analytics/Realtime' },
       { path: '/analytics/overview', name: 'Overview', access: 'canAnalyticsRead', component: './Analytics/Overview' },
       { path: '/analytics/retention', name: 'Retention', access: 'canAnalyticsRead', component: './Analytics/Retention' },
@@ -107,7 +107,7 @@ export default [
     icon: 'customerService',
     access: 'canSupportRead',
     routes: [
-      { path: '/support', redirect: '/support/tickets' },
+      { path: '/support', redirect: '/support/tickets', hideInMenu: true },
       {
         path: '/support/tickets',
         name: 'Tickets',
@@ -213,18 +213,33 @@ export default [
         path: '/game/entities',
         name: 'GameEntities',
         access: 'canEntitiesRead',
-        component: './Entities',
+        routes: [
+          {
+            path: '/game/entities',
+            redirect: '/game/entities/list',
+          },
+          {
+            path: '/game/entities/list',
+            name: 'EntitiesList',
+            access: 'canEntitiesRead',
+            component: './Entities',
+          },
+          {
+            path: '/game/entities/:id/functions',
+            name: 'EntityFunctions',
+            access: 'canEntitiesRead',
+            component: './Entities/EntityFunctions',
+            hideInMenu: true,
+          },
+        ],
       },
       // 函数管理模块 - 重构后的统一函数管理菜单
       {
         path: '/game/functions',
         name: 'FunctionManagement',
         access: 'canFunctionsRead',
+        redirect: '/game/functions/catalog',
         routes: [
-          {
-            path: '/game/functions',
-            redirect: '/game/functions/catalog',
-          },
           {
             path: '/game/functions/catalog',
             name: 'FunctionCatalog',
@@ -252,6 +267,20 @@ export default [
             access: 'canPacksRead',
             component: './Packs',
             icon: 'inbox',
+          },
+          {
+            path: '/game/functions/import-openapi',
+            name: 'OpenAPIImport',
+            access: 'canFunctionsWrite',
+            component: './Functions/OpenAPIImport',
+            icon: 'import',
+          },
+          {
+            path: '/game/functions/:id/openapi',
+            name: 'OpenAPISpec',
+            access: 'canFunctionsRead',
+            component: './Functions/OpenAPISpec',
+            hideInMenu: true,
           },
         ],
       },
@@ -299,7 +328,7 @@ export default [
     icon: 'cluster',
     access: 'canOpsRead',
     routes: [
-      { path: '/ops', redirect: '/ops/services' },
+      { path: '/ops', redirect: '/ops/services', hideInMenu: true },
       { path: '/ops/services', name: 'Services', access: 'canOpsRead', component: './Ops/Services' },
       { path: '/ops/health', name: 'Health', access: 'canOpsRead', component: './Ops/Health' },
       { path: '/ops/nodes', name: 'Nodes', access: 'canOpsRead', component: './Ops/Nodes' },
@@ -317,76 +346,6 @@ export default [
   {
     path: '/',
     redirect: '/analytics/realtime',
-  },
-  // Legacy redirects for backward compatibility
-  {
-    path: '/account',
-    redirect: '/admin/account/center',
-  },
-  { path: '/account/messages', redirect: '/admin/account/messages' },
-  { path: '/account/center', redirect: '/admin/account/center' },
-  { path: '/account/settings', redirect: '/admin/account/settings' },
-  { path: '/permissions', redirect: '/admin/permissions/roles' },
-  // Legacy redirects for system->admin renaming
-  { path: '/system', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions/roles', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions/users', redirect: '/admin/permissions/users' },
-  { path: '/system/permissions/config', redirect: '/admin/permissions/config' },
-  // Legacy redirects for admin/permissions
-  { path: '/admin/permissions', redirect: '/admin/permissions/roles' },
-  { path: '/admin/permissions/roles', redirect: '/admin/permissions/roles' },
-  { path: '/admin/permissions/users', redirect: '/admin/permissions/users' },
-  { path: '/admin/permissions/config', redirect: '/admin/permissions/config' },
-  // Game management legacy redirects
-  {
-    path: '/game-mgmt/games-meta',
-    redirect: '/game/meta',
-  },
-  {
-    path: '/game-mgmt/entities',
-    redirect: '/game/entities',
-  },
-  {
-    path: '/game-mgmt',
-    redirect: '/game/meta',
-  },
-  // Legacy redirects for removed function management pages
-  { path: '/game/functions/invoke', redirect: '/game/functions/catalog' },
-  { path: '/game/functions/old', redirect: '/game/functions/catalog' },
-  { path: '/functions/list', redirect: '/game/functions/catalog' },
-  { path: '/functions', redirect: '/game/functions/catalog' },
-  {
-    path: '/gm/games',
-    redirect: '/game/environments',
-  },
-  {
-    path: '/gm/functions',
-    redirect: '/game/functions',
-  },
-  {
-    path: '/gm/assignments',
-    redirect: '/game/assignments',
-  },
-  {
-    path: '/gm/packs',
-    redirect: '/game/packs',
-  },
-  {
-    path: '/gm/approvals',
-    redirect: '/operations/approvals',
-  },
-  {
-    path: '/gm/audit',
-    redirect: '/operations/audit',
-  },
-  {
-    path: '/gm/registry',
-    redirect: '/operations/registry',
-  },
-  {
-    path: '/gm',
-    redirect: '/game/meta',
   },
   // Security menu removed (duplicated with AdminUsers/Permissions)
   {
