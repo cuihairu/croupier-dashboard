@@ -370,3 +370,63 @@ export async function testFunction(params: {
     data: params
   });
 }
+
+/**
+ * ============================================================================
+ * OpenAPI 3.0.3 增强功能
+ * ============================================================================
+ */
+
+/**
+ * 获取函数的 OpenAPI 3.0.3 完整规范（增强版）
+ * @param functionId 函数 ID
+ * @returns 完整的 OpenAPI 3.0.3 Operation Object，包含扩展字段
+ */
+export async function getFunctionOpenAPIDetail(functionId: string): Promise<{
+  operationId: string;
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  // OpenAPI 扩展字段
+  extensions?: {
+    'x-category'?: string;
+    'x-risk'?: 'safe' | 'warning' | 'danger';
+    'x-entity'?: string;
+    'x-operation'?: 'create' | 'read' | 'update' | 'delete' | 'custom';
+  };
+  // 请求/响应 schema
+  requestBody?: any;
+  responses?: any;
+  parameters?: any[];
+}> {
+  return request(`/api/v1/functions/${functionId}/openapi`);
+}
+
+/**
+ * 批量获取多个函数的 OpenAPI 规范
+ * @param functionIds 函数 ID 列表
+ * @returns OpenAPI Operation Object 映射
+ */
+export async function batchGetFunctionOpenAPI(functionIds: string[]): Promise<Record<string, any>> {
+  return request('/api/v1/functions/_openapi-batch', {
+    method: 'POST',
+    data: { function_ids: functionIds }
+  });
+}
+
+/**
+ * 根据 Entity 类型获取相关函数的 OpenAPI 列表
+ * @param entityId Entity ID
+ * @returns Entity 关联的函数列表
+ */
+export async function getEntityFunctions(entityId: string): Promise<{
+  items: Array<{
+    id: string;
+    operation: 'create' | 'read' | 'update' | 'delete' | 'custom';
+    name: string;
+    summary?: string;
+    risk?: 'safe' | 'warning' | 'danger';
+  }>;
+}> {
+  return request(`/api/v1/entities/${entityId}/functions`);
+}

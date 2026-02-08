@@ -188,3 +188,41 @@ export async function updateFunction(functionId: string, data: {
     data,
   });
 }
+
+/**
+ * OpenAPI 3.0.3 相关类型定义
+ */
+export type OpenAPIOperation = {
+  operationId?: string;
+  summary?: string;
+  description?: string;
+  tags?: string[];
+  parameters?: any[];
+  requestBody?: any;
+  responses?: any;
+  extensions?: Record<string, any>;
+};
+
+/**
+ * 获取函数的 OpenAPI 3.0.3 规范
+ * @param functionId 函数 ID
+ * @returns OpenAPI Operation Object
+ */
+export async function getFunctionOpenAPI(functionId: string) {
+  return request<OpenAPIOperation>(`/api/v1/functions/${functionId}/openapi`);
+}
+
+/**
+ * 导入 OpenAPI 3.0.3 规范
+ * @param spec OpenAPI 3.0.3 Document
+ * @returns 导入结果
+ */
+export async function importOpenAPISpec(spec: any) {
+  return request<{
+    imported: number;
+    failed: string[];
+  }>('/api/v1/functions/_import', {
+    method: 'POST',
+    data: { spec },
+  });
+}
