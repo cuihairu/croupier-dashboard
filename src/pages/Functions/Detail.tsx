@@ -35,6 +35,7 @@ import {
   DeleteOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
+import FunctionUIManager from '@/components/FunctionUIManager';
 import { useParams, history } from '@umijs/max';
 import { useIntl } from '@umijs/max';
 import {
@@ -46,6 +47,7 @@ import {
   copyFunction,
   getFunctionPermissions,
   updateFunctionPermissions,
+  fetchFunctionUiSchema,
   type FunctionPermission
 } from '@/services/api/functions';
 
@@ -519,38 +521,17 @@ export default function FunctionDetailPage() {
                 </TabPane>
 
                 <TabPane tab="🎨 UI 配置" key="ui">
-                  <Alert
-                    message="UI Schema 配置"
-                    description="配置函数参数的表单显示方式（需要重新打包 Pack 生效）"
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 16 }}
+                  <FunctionUIManager
+                    functionId={params.id || ''}
+                    jsonSchema={functionDetail?.descriptor?.schema}
+                    onSave={async (uiConfig) => {
+                      await fetch(`/api/v1/functions/${params.id}/ui`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(uiConfig)
+                      });
+                    }}
                   />
-                  <Card title="布局配置" size="small">
-                    <Form form={uiConfigForm} layout="vertical">
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Form.Item label="布局类型" name="layoutType">
-                            <Select>
-                              <Select.Option value="grid">网格布局</Select.Option>
-                              <Select.Option value="tabs">标签页布局</Select.Option>
-                            </Select>
-                          </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                          <Form.Item label="列数" name="cols">
-                            <InputNumber min={1} max={4} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                      <Alert
-                        message="提示"
-                        description="完整的 UI Schema 配置需要编辑 Pack 文件中的 ui_schema 文件，然后重新上传。此功能正在开发中。"
-                        type="warning"
-                        showIcon
-                      />
-                    </Form>
-                  </Card>
                 </TabPane>
 
                 <TabPane tab="🛣️ 路由配置" key="route">

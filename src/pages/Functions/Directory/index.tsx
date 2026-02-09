@@ -174,7 +174,9 @@ export default () => {
             type="link"
             size="small"
             icon={<InfoCircleOutlined />}
-            onClick={() => handleViewDetail(record)}
+            onClick={() => {
+              history.push(`/game/functions/${encodeURIComponent(record.id)}`);
+            }}
           />
         </Tooltip>,
         <Tooltip key="invoke" title="调用函数">

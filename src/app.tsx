@@ -183,10 +183,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
           };
           if (out.path === '/game/functions') {
             const curChildren = Array.isArray(out.children) ? out.children : [];
-            const exists = curChildren.some((c: any) => c?.path === registeredGroup.path || c?.name === registeredGroup.name);
-            if (!exists) {
-              out.children = [...curChildren, registeredGroup];
-              out.routes = out.children;
+            // 检查是否已经有 catalog 相关的子菜单（静态配置）
+            const hasCatalog = curChildren.some((c: any) => c?.path?.includes('/game/functions/catalog'));
+            if (!hasCatalog) {
+              const exists = curChildren.some((c: any) => c?.path === registeredGroup.path || c?.name === registeredGroup.name);
+              if (!exists) {
+                out.children = [...curChildren, registeredGroup];
+                out.routes = out.children;
+              }
             }
           }
           return out;

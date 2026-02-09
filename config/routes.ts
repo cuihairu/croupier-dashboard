@@ -233,6 +233,13 @@ export default [
             icon: 'unordered-list',
           },
           {
+            path: '/game/functions/:id',
+            name: 'FunctionDetail',
+            access: 'canFunctionsRead',
+            component: './Functions/Detail',
+            hideInMenu: true,
+          },
+          {
             path: '/game/functions/instances',
             name: 'FunctionInstances',
             access: 'canFunctionsRead',
