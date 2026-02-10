@@ -51,7 +51,11 @@ export async function getInitialState(): Promise<{
         access: accessTokens.join(','),
         roles: roleNames,
       } as any;
-    } catch (error) {
+    } catch (error: any) {
+      // 如果是认证错误，清除无效token
+      if (error?.response?.status === 401 || error?.response?.status === 400) {
+        localStorage.removeItem('token');
+      }
       history.push(loginPath);
       return undefined;
     }
@@ -157,16 +161,19 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
             .map((it) => ({
               name: it.name,
               path: it.path,
+              locale: false, // 禁用国际化，直接使用 name 作为显示文本
             }));
           return {
             name: category === 'uncategorized' ? 'Other' : category,
             path: `/game/functions/catalog?category=${encodeURIComponent(category)}`,
             children,
+            locale: false, // 禁用国际化
           };
         });
 
       const registeredGroup = {
-        name: 'Registered',
+        name: 'Registered', // 将通过国际化键 menu.Registered 查找翻译
+        locale: 'menu.Registered',
         path: '/game/functions/catalog?tab=registered',
         children: categoryItems,
       };

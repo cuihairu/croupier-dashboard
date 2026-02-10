@@ -63,7 +63,7 @@ export async function invokeFunction(
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
-  return request<any>(`/api/v1/functions/${function_id}/invoke`, { method: 'POST', data });
+  return request<any>(`/api/v1/functions/${encodeURIComponent(function_id)}/invoke`, { method: 'POST', data });
 }
 
 export async function startJob(
@@ -85,7 +85,7 @@ export async function startJob(
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
-  return request<{ job_id: string }>(`/api/v1/functions/${function_id}/invoke?mode=job`, { method: 'POST', data });
+  return request<{ job_id: string }>(`/api/v1/functions/${encodeURIComponent(function_id)}/invoke?mode=job`, { method: 'POST', data });
 }
 
 export async function cancelJob(job_id: string) {
@@ -98,13 +98,13 @@ export async function fetchJobResult(id: string) {
 
 export async function listFunctionInstances(params: { game_id?: string; function_id: string }) {
   return request<{ instances: { agent_id: string; service_id: string; addr: string; version: string }[] }>(
-    `/api/v1/functions/${params.function_id}/instances`,
+    `/api/v1/functions/${encodeURIComponent(params.function_id)}/instances`,
     { params },
   );
 }
 
 export async function fetchFunctionUiSchema(functionId: string) {
-  return request<{ uiSchema?: any; uischema?: any }>(`/api/v1/functions/${functionId}/ui`, { method: 'GET' });
+  return request<{ uiSchema?: any; uischema?: any }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });
 }
 
 export async function getFunctionPermissions(functionId: string) {
@@ -126,7 +126,7 @@ export function openJobEventSource(jobId: string) {
 
 // Batch operations
 export async function updateFunctionStatus(functionId: string, data: { enabled: boolean }) {
-  return request<void>(`/api/v1/functions/${functionId}/status`, {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}/status`, {
     method: 'PUT',
     data,
   });
@@ -140,19 +140,19 @@ export async function batchUpdateFunctions(data: { function_ids: string[]; enabl
 }
 
 export async function copyFunction(functionId: string) {
-  return request<{ function_id: string; new_id: string }>(`/api/v1/functions/${functionId}/copy`, {
+  return request<{ function_id: string; new_id: string }>(`/api/v1/functions/${encodeURIComponent(functionId)}/copy`, {
     method: 'POST',
   });
 }
 
 export async function deleteFunction(functionId: string) {
-  return request<void>(`/api/v1/functions/${functionId}`, {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}`, {
     method: 'DELETE',
   });
 }
 
 export async function getFunctionDetail(functionId: string) {
-  return request<FunctionDescriptor>(`/api/v1/functions/${functionId}`);
+  return request<FunctionDescriptor>(`/api/v1/functions/${encodeURIComponent(functionId)}`);
 }
 
 export async function getFunctionHistory(functionId: string) {
@@ -162,7 +162,7 @@ export async function getFunctionHistory(functionId: string) {
     operator?: string;
     timestamp: string;
     details?: any;
-  }>>(`/api/v1/functions/${functionId}/history`);
+  }>>(`/api/v1/functions/${encodeURIComponent(functionId)}/history`);
 }
 
 export async function getFunctionAnalytics(functionId: string) {
@@ -173,7 +173,7 @@ export async function getFunctionAnalytics(functionId: string) {
     callsToday: number;
     callsThisWeek: number;
     callsThisMonth: number;
-  }>(`/api/v1/functions/${functionId}/analytics`);
+  }>(`/api/v1/functions/${encodeURIComponent(functionId)}/analytics`);
 }
 
 export async function updateFunction(functionId: string, data: {
@@ -183,7 +183,7 @@ export async function updateFunction(functionId: string, data: {
   tags?: string[];
   enabled?: boolean;
 }) {
-  return request<void>(`/api/v1/functions/${functionId}`, {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}`, {
     method: 'PUT',
     data,
   });
@@ -209,7 +209,7 @@ export type OpenAPIOperation = {
  * @returns OpenAPI Operation Object
  */
 export async function getFunctionOpenAPI(functionId: string) {
-  return request<OpenAPIOperation>(`/api/v1/functions/${functionId}/openapi`);
+  return request<OpenAPIOperation>(`/api/v1/functions/${encodeURIComponent(functionId)}/openapi`);
 }
 
 /**

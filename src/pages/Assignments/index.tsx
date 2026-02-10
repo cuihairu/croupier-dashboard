@@ -41,6 +41,7 @@ import {
 } from '@ant-design/icons';
 import { useModel } from '@umijs/max';
 import { useIntl } from '@umijs/max';
+import { history as routerHistory } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import {
   listDescriptors,
@@ -344,6 +345,18 @@ export default function AssignmentsPage() {
               onClick={() => {
                 setEditingAssignment(record);
                 setCanaryModalVisible(true);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="查看详情">
+            <Button
+              type="link"
+              size="small"
+              icon={<SettingOutlined />}
+              onClick={() => {
+                // 跳转到函数详情页的 UI 配置标签
+                const targetUrl = `/game/functions/${encodeURIComponent(record.id)}?tab=config&subTab=ui`;
+                routerHistory.push(targetUrl);
               }}
             />
           </Tooltip>

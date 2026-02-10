@@ -240,6 +240,13 @@ export default [
             hideInMenu: true,
           },
           {
+            path: '/game/functions/invoke',
+            name: 'FunctionInvoke',
+            access: 'canFunctionsRead',
+            component: './GmFunctions',
+            hideInMenu: true,
+          },
+          {
             path: '/game/functions/instances',
             name: 'FunctionInstances',
             access: 'canFunctionsRead',

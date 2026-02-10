@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
 import { App, Button, Space, Tag, Card, Descriptions, Drawer, Badge, Tooltip, Typography } from 'antd';
-import { EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
+import { EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, ReloadOutlined, FilterOutlined, SettingOutlined } from '@ant-design/icons';
 import { history } from '@umijs/max';
+
+// DEBUG: NEW CODE WITH EDIT UI BUTTON - 2025-02-10 v4
+console.log('[DIRECTORY] Loading updated Directory/index.tsx with Edit UI button');
 import { listDescriptors, listFunctionInstances } from '@/services/api';
 import { getFunctionSummary } from '@/services/api/functions-enhanced';
 
@@ -167,7 +170,7 @@ export default () => {
     {
       title: '操作',
       valueType: 'option',
-      width: 150,
+      width: 200,
       render: (_, record) => [
         <Tooltip key="detail" title="查看详情">
           <Button
@@ -176,6 +179,16 @@ export default () => {
             icon={<InfoCircleOutlined />}
             onClick={() => {
               history.push(`/game/functions/${encodeURIComponent(record.id)}`);
+            }}
+          />
+        </Tooltip>,
+        <Tooltip key="ui" title="编辑UI">
+          <Button
+            type="link"
+            size="small"
+            icon={<SettingOutlined />}
+            onClick={() => {
+              history.push(`/game/functions/${encodeURIComponent(record.id)}?tab=config&subTab=ui`);
             }}
           />
         </Tooltip>,

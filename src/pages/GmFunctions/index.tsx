@@ -20,11 +20,11 @@ type UISchema = {
 };
 
 // Enhanced render function using XUISchema
-function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any) {
+function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any, formValues: any) {
   const items: any[] = [];
   const props = (desc?.params && desc.params.properties) || {};
   const required: string[] = (desc?.params && desc.params.required) || [];
-  const values = Form.useWatch([], form);
+  const values = formValues;
 
   const uiFields = ui?.fields || {};
 
@@ -82,11 +82,11 @@ function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | u
   }
   return items;
 }
-function renderFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any) {
+function renderFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any, formValues: any) {
   const items: any[] = [];
   const props = (desc?.params && desc.params.properties) || {};
   const required: string[] = (desc?.params && desc.params.required) || [];
-  const values = Form.useWatch([], form);
+  const values = formValues;
 
   const getByPath = (obj: any, path: string) => {
     if (!path) return undefined;
@@ -320,6 +320,7 @@ export default function GmFunctionsPage() {
   const [events, setEvents] = useState<string[]>([]);
   const esRef = useRef<EventSource | null>(null);
   const [form] = Form.useForm();
+  const formValues = Form.useWatch([], form);
   const [uiSchema, setUiSchema] = useState<UISchema | undefined>();
   const [lastOutput, setLastOutput] = useState<any>(undefined);
 
@@ -415,11 +416,15 @@ export default function GmFunctionsPage() {
         setInstances(res.instances||[]);
       });
       // fetch UI schema (optional)
-      fetchFunctionUiSchema(currentId)
-        .then((json) => {
-          setUiSchema(json?.uischema || json?.uiSchema || { fields: {} });
-        })
-        .catch(() => {});
+      // 运行时注册的函数不在数据库中，跳过 API 调用
+      // 直接从 descriptor 中获取 UI Schema（如果有）
+      const currentDesc = descs.find(d => d.id === currentId);
+      if (currentDesc?.ui) {
+        setUiSchema(currentDesc.ui);
+      } else {
+        // 使用默认空 UI Schema
+        setUiSchema({ fields: {} });
+      }
       // refresh assignments filter when scope changes
       const safeDescs = Array.isArray(descs) ? descs : [];
       if (gid) {
@@ -626,7 +631,7 @@ export default function GmFunctionsPage() {
             const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
             return (
               <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
-                {renderXFormItems(descWithSchema, effectiveUISchema, form)}
+                {renderXFormItems(descWithSchema, effectiveUISchema, form, formValues)}
               </Form>
             );
           } else {
@@ -634,7 +639,7 @@ export default function GmFunctionsPage() {
             const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
             return (
               <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
-                {renderFormItems(descWithSchema, effectiveUISchema, form)}
+                {renderFormItems(descWithSchema, effectiveUISchema, form, formValues)}
               </Form>
             );
           }

@@ -10,8 +10,8 @@ import {
   Tag,
   Switch,
   Input,
+  InputNumber,
   Form,
-  message,
   Divider,
   Timeline,
   Alert,
@@ -36,8 +36,11 @@ import {
   ReloadOutlined
 } from '@ant-design/icons';
 import FunctionUIManager from '@/components/FunctionUIManager';
-import { useParams, history } from '@umijs/max';
+import { useParams, history, useLocation } from '@umijs/max';
 import { useIntl } from '@umijs/max';
+import { App } from 'antd';
+// Force rebuild - cache bust 2025-02-10 v3 - DEBUG: NEW CODE
+console.log('[DETAIL] Loading updated Detail.tsx with runtime function support');
 import {
   getFunctionDetail,
   updateFunction,
@@ -48,6 +51,7 @@ import {
   getFunctionPermissions,
   updateFunctionPermissions,
   fetchFunctionUiSchema,
+  listDescriptors,
   type FunctionPermission
 } from '@/services/api/functions';
 
@@ -91,7 +95,18 @@ interface AnalyticsData {
 
 export default function FunctionDetailPage() {
   const intl = useIntl();
+  const location = useLocation();
   const params = useParams<{ id: string }>();
+  const { message } = App.useApp();
+
+  // 从 URL 参数获取默认激活的标签，默认为 'basic'
+  const searchParams = new URLSearchParams(location.search);
+  const defaultTab = searchParams.get('tab') || 'basic';
+  const defaultSubTab = searchParams.get('subTab') || 'json'; // 用于配置页面的子标签
+
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const [activeSubTab, setActiveSubTab] = useState(defaultSubTab);
+
   const [loading, setLoading] = useState(false);
   const [functionDetail, setFunctionDetail] = useState<FunctionDetail | null>(null);
   const [editing, setEditing] = useState(false);
@@ -154,8 +169,48 @@ export default function FunctionDetailPage() {
         layoutType: 'grid',
         cols: 2,
       });
-    } catch (error) {
-      message.error('加载函数详情失败');
+    } catch (error: any) {
+      // 运行时注册的函数不在数据库中，尝试从 descriptors API 获取
+      if (error?.response?.status === 400 || error?.response?.status === 404) {
+        try {
+          const descs = await listDescriptors();
+          const descArray = Array.isArray(descs) ? descs : (descs as any)?.descriptors || [];
+          const desc = descArray.find((d: FunctionDescriptor) => d.id === params.id);
+
+          if (desc) {
+            // 从 descriptor 构造函数详情
+            const detailFromDesc: FunctionDetail = {
+              id: desc.id,
+              name: desc.display_name?.zh || desc.display_name?.en || desc.id,
+              description: desc.summary?.zh || desc.summary?.en || desc.description || '',
+              category: desc.category || 'general',
+              version: desc.version || '1.0.0',
+              enabled: true,
+              tags: desc.tags || [],
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              provider: 'runtime',
+              health: 'healthy' as const,
+              descriptor: desc,
+            };
+            setFunctionDetail(detailFromDesc);
+            form.setFieldsValue({
+              name: detailFromDesc.name,
+              description: detailFromDesc.description,
+              category: detailFromDesc.category,
+              tags: detailFromDesc.tags?.join(', '),
+            });
+            permForm.setFieldsValue({ items: [] });
+            setPermError('运行时注册的函数不支持权限管理');
+          } else {
+            message.error('函数不存在');
+          }
+        } catch (e) {
+          message.error('加载函数详情失败');
+        }
+      } else {
+        message.error('加载函数详情失败');
+      }
     } finally {
       setLoading(false);
     }
@@ -372,8 +427,9 @@ export default function FunctionDetailPage() {
         </Space>
       }
       extra={[
-        <Space>
+        <Space key="actions">
           <Button
+            key="reload"
             icon={<ReloadOutlined />}
             onClick={loadDetail}
             loading={loading}
@@ -381,12 +437,14 @@ export default function FunctionDetailPage() {
             刷新
           </Button>
           <Button
+            key="copy"
             icon={<CopyOutlined />}
             onClick={handleCopy}
           >
             复制
           </Button>
           <Button
+            key="delete"
             danger
             icon={<DeleteOutlined />}
             onClick={handleDelete}
@@ -394,6 +452,7 @@ export default function FunctionDetailPage() {
             删除
           </Button>
           <Button
+            key="edit"
             type="primary"
             icon={editing ? <SaveOutlined /> : <EditOutlined />}
             onClick={() => {
@@ -411,7 +470,7 @@ export default function FunctionDetailPage() {
     >
       <Card loading={loading}>
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Tabs defaultActiveKey="basic">
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
             <TabPane tab="基本信息" key="basic">
               <Descriptions bordered column={2}>
                 <Descriptions.Item label="函数ID">
@@ -507,7 +566,7 @@ export default function FunctionDetailPage() {
             </TabPane>
 
             <TabPane tab="配置" key="config">
-              <Tabs defaultActiveKey="json" type="card" size="small">
+              <Tabs activeKey={activeSubTab} onChange={setActiveSubTab} type="card" size="small">
                 <TabPane tab="JSON 视图" key="json">
                   <Alert
                     message="配置信息"

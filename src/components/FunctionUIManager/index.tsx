@@ -7,10 +7,10 @@ import {
   Alert,
   Switch,
   Tag,
-  message,
   Spin,
   Empty,
-  Divider
+  Divider,
+  App
 } from 'antd';
 import {
   EditOutlined,
@@ -45,6 +45,7 @@ export default function FunctionUIManager({
   jsonSchema,
   onSave
 }: FunctionUIManagerProps) {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uiConfig, setUiConfig] = useState<{
