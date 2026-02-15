@@ -281,8 +281,13 @@ export default function FunctionUIManager({
 
                 <UISchemaEditor
                   value={uiConfig.schema}
-                  onChange={setUiConfig}
                   jsonSchema={jsonSchema}
+                  onChange={(newSchema) => {
+                    setUiConfig((prev) => ({
+                      ...prev,
+                      schema: newSchema
+                    }));
+                  }}
                 />
 
                 <Divider />

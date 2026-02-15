@@ -104,7 +104,22 @@ export async function listFunctionInstances(params: { game_id?: string; function
 }
 
 export async function fetchFunctionUiSchema(functionId: string) {
-  return request<{ uiSchema?: any; uischema?: any }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });
+  return request<{
+    schema?: any;
+    layout?: any;
+    components?: any;
+  }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });
+}
+
+export async function saveFunctionUiSchema(functionId: string, uiConfig: {
+  schema?: any;
+  layout?: any;
+  components?: any;
+}) {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, {
+    method: 'PUT',
+    data: uiConfig,
+  });
 }
 
 export async function getFunctionPermissions(functionId: string) {

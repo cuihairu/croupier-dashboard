@@ -14,7 +14,8 @@ import {
   Tooltip,
   Dropdown,
   Menu,
-  Empty
+  Empty,
+  Modal
 } from 'antd';
 import {
   PlusOutlined,

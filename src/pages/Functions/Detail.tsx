@@ -51,6 +51,7 @@ import {
   getFunctionPermissions,
   updateFunctionPermissions,
   fetchFunctionUiSchema,
+  saveFunctionUiSchema,
   listDescriptors,
   type FunctionPermission
 } from '@/services/api/functions';
@@ -582,13 +583,12 @@ export default function FunctionDetailPage() {
                 <TabPane tab="🎨 UI 配置" key="ui">
                   <FunctionUIManager
                     functionId={params.id || ''}
-                    jsonSchema={functionDetail?.descriptor?.schema}
+                    jsonSchema={functionDetail?.descriptor?.input_schema ?
+                      JSON.parse(functionDetail.descriptor.input_schema) :
+                      functionDetail?.descriptor?.schema}
                     onSave={async (uiConfig) => {
-                      await fetch(`/api/v1/functions/${params.id}/ui`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(uiConfig)
-                      });
+                      if (!params.id) return;
+                      await saveFunctionUiSchema(params.id, uiConfig);
                     }}
                   />
                 </TabPane>
