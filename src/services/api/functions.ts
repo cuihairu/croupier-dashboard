@@ -149,6 +149,18 @@ export async function updateFunctionStatus(functionId: string, data: { enabled: 
   });
 }
 
+export async function enableFunction(functionId: string) {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}/enable`, {
+    method: 'POST',
+  });
+}
+
+export async function disableFunction(functionId: string) {
+  return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}/disable`, {
+    method: 'POST',
+  });
+}
+
 export async function batchUpdateFunctions(data: { function_ids: string[]; enabled: boolean }) {
   return request<{ updated: number; failed: string[] }>('/api/v1/functions/batch-update', {
     method: 'POST',

@@ -48,6 +48,8 @@ import {
   getFunctionAnalytics,
   deleteFunction,
   copyFunction,
+  enableFunction,
+  disableFunction,
   getFunctionPermissions,
   updateFunctionPermissions,
   fetchFunctionUiSchema,
@@ -241,7 +243,11 @@ export default function FunctionDetailPage() {
   // Handle status toggle
   const handleStatusToggle = async (enabled: boolean) => {
     try {
-      await updateFunction(params.id!, { enabled });
+      if (enabled) {
+        await enableFunction(params.id!);
+      } else {
+        await disableFunction(params.id!);
+      }
       message.success(enabled ? '函数已启用' : '函数已禁用');
       loadDetail();
     } catch (error) {
