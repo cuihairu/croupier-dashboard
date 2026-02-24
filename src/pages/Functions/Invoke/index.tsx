@@ -13,7 +13,7 @@ const { Text } = Typography;
 export default () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
-  const initialFunctionId = searchParams.get('fid');
+  const initialFunctionId = searchParams.get('fid') || searchParams.get('id');
 
   const [functions, setFunctions] = useState<FunctionDescriptor[]>([]);
   const [selectedFunction, setSelectedFunction] = useState<FunctionDescriptor | null>(null);

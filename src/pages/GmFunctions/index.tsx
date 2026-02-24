@@ -327,6 +327,10 @@ export default function GmFunctionsPage() {
   // Form-render state
   const [formData, setFormData] = useState<any>({});
   const [renderMode, setRenderMode] = useState<'form-render' | 'enhanced' | 'legacy'>('enhanced');
+  const getFunctionIdFromQuery = () => {
+    const query = new URLSearchParams(location.search);
+    return query.get('fid') || query.get('id') || undefined;
+  };
 
   const currentDesc = useMemo(() => (Array.isArray(descs) ? descs : []).find((d) => d.id === currentId), [descs, currentId]);
 
@@ -365,7 +369,7 @@ export default function GmFunctionsPage() {
           const fns = Object.values(m).flat();
           const dd = Array.isArray(arr) ? arr : [];
           const filt = (fns && fns.length>0) ? dd.filter(x => fns.includes(x.id)) : dd;
-          const fid = new URLSearchParams(location.search).get('fid') || undefined;
+          const fid = getFunctionIdFromQuery();
           let final = filt;
           if (fid && dd.some((x) => x.id === fid) && !final.some((x) => x.id === fid)) {
             const picked = dd.find((x) => x.id === fid);
@@ -376,7 +380,7 @@ export default function GmFunctionsPage() {
           else if (final?.length) setCurrentId(final[0].id);
         }).catch(()=>{ setFilteredDescs(arr); if (arr?.length) setCurrentId(arr[0].id); });
       } else {
-        const fid = new URLSearchParams(location.search).get('fid') || undefined;
+        const fid = getFunctionIdFromQuery();
         setFilteredDescs(arr);
         if (fid && arr.some((x) => x.id === fid)) setCurrentId(fid);
         else if (arr?.length) setCurrentId(arr[0].id);
@@ -388,7 +392,7 @@ export default function GmFunctionsPage() {
   }, []);
 
   useEffect(() => {
-    const fid = new URLSearchParams(location.search).get('fid') || undefined;
+    const fid = getFunctionIdFromQuery();
     if (fid && fid !== currentId && descs.some((d) => d.id === fid)) {
       setCurrentId(fid);
       if (!filteredDescs.some((d) => d.id === fid)) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PageContainer } from '@ant-design/pro-components';
 import {
   Card,
@@ -123,6 +123,31 @@ export default function FunctionDetailPage() {
   const [routeConfigSaving, setRouteConfigSaving] = useState(false);
   const [routeConfigForm] = Form.useForm();
 
+  const buildSearch = (tab: string, subTab?: string) => {
+    const search = new URLSearchParams(location.search);
+    search.set('tab', tab);
+    if (tab === 'config') {
+      search.set('subTab', subTab || activeSubTab || 'json');
+    } else {
+      search.delete('subTab');
+    }
+    const query = search.toString();
+    return query ? `?${query}` : '';
+  };
+
+  const parsedInputSchema = useMemo(() => {
+    const descriptor = functionDetail?.descriptor;
+    if (!descriptor) return undefined;
+    if (typeof descriptor.input_schema === 'string') {
+      try {
+        return JSON.parse(descriptor.input_schema);
+      } catch {
+        return descriptor.schema;
+      }
+    }
+    return descriptor.schema;
+  }, [functionDetail?.descriptor]);
+
   // Load function detail
   const loadDetail = async () => {
     if (!params.id) return;
@@ -222,6 +247,12 @@ export default function FunctionDetailPage() {
   useEffect(() => {
     loadDetail();
   }, [params.id]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    setActiveTab(searchParams.get('tab') || 'basic');
+    setActiveSubTab(searchParams.get('subTab') || 'json');
+  }, [location.search]);
 
   // Handle save
   const handleSave = async (values: any) => {
@@ -477,7 +508,13 @@ export default function FunctionDetailPage() {
     >
       <Card loading={loading}>
         <Form form={form} layout="vertical" onFinish={handleSave}>
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => {
+              setActiveTab(key);
+              history.replace(`${location.pathname}${buildSearch(key, key === 'config' ? activeSubTab : undefined)}`);
+            }}
+          >
             <TabPane tab="基本信息" key="basic">
               <Descriptions bordered column={2}>
                 <Descriptions.Item label="函数ID">
@@ -573,7 +610,15 @@ export default function FunctionDetailPage() {
             </TabPane>
 
             <TabPane tab="配置" key="config">
-              <Tabs activeKey={activeSubTab} onChange={setActiveSubTab} type="card" size="small">
+              <Tabs
+                activeKey={activeSubTab}
+                onChange={(key) => {
+                  setActiveSubTab(key);
+                  history.replace(`${location.pathname}${buildSearch('config', key)}`);
+                }}
+                type="card"
+                size="small"
+              >
                 <TabPane tab="JSON 视图" key="json">
                   <Alert
                     message="配置信息"
@@ -589,9 +634,7 @@ export default function FunctionDetailPage() {
                 <TabPane tab="🎨 UI 配置" key="ui">
                   <FunctionUIManager
                     functionId={params.id || ''}
-                    jsonSchema={functionDetail?.descriptor?.input_schema ?
-                      JSON.parse(functionDetail.descriptor.input_schema) :
-                      functionDetail?.descriptor?.schema}
+                    jsonSchema={parsedInputSchema}
                     onSave={async (uiConfig) => {
                       if (!params.id) return;
                       await saveFunctionUiSchema(params.id, uiConfig);

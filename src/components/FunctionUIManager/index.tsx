@@ -56,6 +56,8 @@ export default function FunctionUIManager({
   const [editMode, setEditMode] = useState(false);
   const [useCustomUI, setUseCustomUI] = useState(false);
   const [hasDefaultUI, setHasDefaultUI] = useState(false);
+  const [originalSchema, setOriginalSchema] = useState<any>(undefined);
+  const [isDirty, setIsDirty] = useState(false);
 
   // 加载 UI 配置
   const loadUIConfig = async () => {
@@ -70,13 +72,23 @@ export default function FunctionUIManager({
         components: res?.components
       };
       setUiConfig(config);
+      setOriginalSchema(config.schema);
+      setIsDirty(false);
 
       const custom = !!res?.custom;
       const hasDefault = typeof res?.hasDefault === 'boolean' ? res.hasDefault : (!!config.schema && !custom);
       setUseCustomUI(custom);
       setHasDefaultUI(hasDefault);
     } catch (e: any) {
-      message.error(e?.message || '加载 UI 配置失败');
+      if (e?.response?.status === 404) {
+        setUiConfig({});
+        setOriginalSchema(undefined);
+        setUseCustomUI(false);
+        setHasDefaultUI(false);
+        setIsDirty(false);
+      } else {
+        message.error(e?.message || '加载 UI 配置失败');
+      }
     } finally {
       setLoading(false);
     }
@@ -166,6 +178,9 @@ export default function FunctionUIManager({
       title="UI 配置管理"
       extra={
         <Space>
+          <Tag color={useCustomUI ? 'blue' : hasDefaultUI ? 'green' : 'default'}>
+            {useCustomUI ? '当前: 自定义' : hasDefaultUI ? '当前: 默认' : '当前: 未配置'}
+          </Tag>
           <Button
             icon={<ReloadOutlined />}
             onClick={loadUIConfig}
@@ -287,10 +302,12 @@ export default function FunctionUIManager({
                   value={uiConfig.schema}
                   jsonSchema={jsonSchema}
                   onChange={(newSchema) => {
+                    const changed = JSON.stringify(newSchema ?? null) !== JSON.stringify(originalSchema ?? null);
                     setUiConfig((prev) => ({
                       ...prev,
                       schema: newSchema
                     }));
+                    setIsDirty(changed);
                   }}
                 />
 
@@ -302,8 +319,22 @@ export default function FunctionUIManager({
                     icon={<SaveOutlined />}
                     onClick={() => handleSave(uiConfig.schema)}
                     loading={saving}
+                    disabled={!isDirty}
                   >
                     保存更改
+                  </Button>
+                  <Button
+                    icon={<CheckOutlined />}
+                    disabled={!isDirty}
+                    onClick={() => {
+                      setUiConfig((prev) => ({
+                        ...prev,
+                        schema: originalSchema
+                      }));
+                      setIsDirty(false);
+                    }}
+                  >
+                    重置更改
                   </Button>
                   <Button
                     icon={<CloseOutlined />}
