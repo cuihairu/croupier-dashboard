@@ -254,7 +254,7 @@ export default function FunctionDetailPage() {
     try {
       const newId = await copyFunction(params.id!);
       message.success(`复制成功，新函数ID: ${newId.function_id}`);
-      history.push(`/functions/${newId.function_id}`);
+      history.push(`/game/functions/${newId.function_id}`);
     } catch (error) {
       message.error('复制失败');
     }
@@ -270,7 +270,7 @@ export default function FunctionDetailPage() {
         try {
           await deleteFunction(params.id!);
           message.success('删除成功');
-          history.push('/functions');
+          history.push('/game/functions/catalog');
         } catch (error) {
           message.error('删除失败');
         }
@@ -404,7 +404,7 @@ export default function FunctionDetailPage() {
           type="error"
           showIcon
           action={
-            <Button type="primary" onClick={() => history.push('/functions')}>
+            <Button type="primary" onClick={() => history.push('/game/functions/catalog')}>
               返回函数列表
             </Button>
           }
@@ -419,7 +419,7 @@ export default function FunctionDetailPage() {
         <Space>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => history.push('/functions')}
+            onClick={() => history.push('/game/functions/catalog')}
           >
             返回
           </Button>
@@ -618,7 +618,7 @@ export default function FunctionDetailPage() {
                       <Row gutter={16}>
                         <Col span={12}>
                           <Form.Item label="路由路径" name="path" tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get">
-                            <Input placeholder="/game/functions（默认）" />
+                            <Input placeholder="/game/functions/invoke（默认）" />
                           </Form.Item>
                         </Col>
                         <Col span={6}>

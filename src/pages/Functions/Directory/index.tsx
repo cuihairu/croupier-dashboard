@@ -95,6 +95,12 @@ export default () => {
     }
   };
 
+  const buildInvokePath = (basePath: string | undefined, functionId: string) => {
+    const base = basePath || '/game/functions/invoke';
+    const sep = base.includes('?') ? '&' : '?';
+    return `${base}${sep}fid=${encodeURIComponent(functionId)}`;
+  };
+
   const columns: ProColumns<SummaryRow>[] = [
     {
       title: '函数ID',
@@ -198,7 +204,7 @@ export default () => {
             size="small"
             icon={<PlayCircleOutlined />}
             onClick={() => {
-              const path = (record.menu?.path || '/game/functions') + `?fid=${encodeURIComponent(record.id)}`;
+              const path = buildInvokePath(record.menu?.path, record.id);
               history.push(path);
             }}
           />
@@ -253,7 +259,7 @@ export default () => {
             icon={<PlayCircleOutlined />}
             onClick={() => {
               if (selectedFunction) {
-                const path = (selectedFunction.menu?.path || '/game/functions') + `?fid=${encodeURIComponent(selectedFunction.id)}`;
+                const path = buildInvokePath(selectedFunction.menu?.path, selectedFunction.id);
                 history.push(path);
                 setDetailVisible(false);
               }

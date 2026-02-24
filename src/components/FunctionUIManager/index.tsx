@@ -71,10 +71,10 @@ export default function FunctionUIManager({
       };
       setUiConfig(config);
 
-      // 判断是否有默认 UI（从 OpenAPI x-ui）
-      // 如果 schema 不为空且不是来自用户自定义，则认为有默认 UI
-      setHasDefaultUI(!!config.schema);
-      setUseCustomUI(false); // 默认使用原始 UI
+      const custom = !!res?.custom;
+      const hasDefault = typeof res?.hasDefault === 'boolean' ? res.hasDefault : (!!config.schema && !custom);
+      setUseCustomUI(custom);
+      setHasDefaultUI(hasDefault);
     } catch (e: any) {
       message.error(e?.message || '加载 UI 配置失败');
     } finally {
@@ -120,25 +120,29 @@ export default function FunctionUIManager({
     setSaving(true);
     try {
       if (checked) {
-        // 启用自定义 UI - 创建空的自定义配置
+        // 启用自定义 UI - 基于当前可见 schema 初始化，避免编辑器空白
+        const initialSchema =
+          uiConfig.schema && typeof uiConfig.schema === 'object'
+            ? uiConfig.schema
+            : { type: 'object', properties: {} };
         await onSave({
-          schema: { type: 'object', properties: {} },
+          schema: initialSchema,
           layout: uiConfig.layout,
           components: uiConfig.components
         });
         setUseCustomUI(true);
         setEditMode(true);
       } else {
-        // 禁用自定义 UI - 删除自定义配置，恢复默认
+        // 禁用自定义 UI - 后端识别该标记后清理 metadata.ui
         await onSave({
-          schema: null, // 删除自定义 UI
+          schema: { __clear_custom_ui: true },
           layout: uiConfig.layout,
           components: uiConfig.components
         });
         setUseCustomUI(false);
         setEditMode(false);
-        await loadUIConfig();
       }
+      await loadUIConfig();
       message.success(checked ? '已启用自定义 UI' : '已恢复默认 UI');
     } catch (e: any) {
       message.error(e?.message || '操作失败');
@@ -169,7 +173,7 @@ export default function FunctionUIManager({
           >
             刷新
           </Button>
-          {hasDefaultUI && (
+          {(hasDefaultUI || useCustomUI) && (
             <Space>
               <span>自定义 UI:</span>
               <Switch

@@ -127,10 +127,11 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 
       const buildPath = (base: string, fid: string, entityType = false) => {
         if (!base) {
-          base = entityType ? '/game/entities/view' : '/game/functions/catalog';
+          base = entityType ? '/game/entities/view' : '/game/functions/invoke';
         }
         const sep = base.includes('?') ? '&' : '?';
-        return `${base}${sep}id=${encodeURIComponent(fid)}`;
+        const paramKey = entityType ? 'id' : 'fid';
+        return `${base}${sep}${paramKey}=${encodeURIComponent(fid)}`;
       };
 
       const visible = descriptors

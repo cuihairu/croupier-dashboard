@@ -366,7 +366,7 @@ export default [
     redirect: '/game/meta',
   },
   // Legacy redirects for removed function management pages
-  { path: '/game/functions/invoke', redirect: '/game/functions/catalog' },
+  { path: '/functions/invoke', redirect: '/game/functions/invoke' },
   { path: '/game/functions/old', redirect: '/game/functions/catalog' },
   { path: '/functions/list', redirect: '/game/functions/catalog' },
   { path: '/functions', redirect: '/game/functions/catalog' },
