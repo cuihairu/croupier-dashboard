@@ -240,6 +240,13 @@ export default [
             hideInMenu: true,
           },
           {
+            path: '/game/functions/:id/ui-designer',
+            name: 'FunctionUIDesigner',
+            access: 'canFunctionsRead',
+            component: './Functions/SchemaDesigner',
+            hideInMenu: true,
+          },
+          {
             path: '/game/functions/invoke',
             name: 'FunctionInvoke',
             access: 'canFunctionsRead',

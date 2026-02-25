@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Card,
-  Tabs,
   Button,
   Space,
   Alert,
@@ -12,23 +11,18 @@ import {
   Divider,
   App
 } from 'antd';
-import {
-  EditOutlined,
-  EyeOutlined,
-  SaveOutlined,
-  ReloadOutlined,
-  CheckOutlined,
-  CloseOutlined
-} from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
+import { history, useModel } from '@umijs/max';
 import { fetchFunctionUiSchema } from '@/services/api/functions';
+import SchemaRenderer from '@/components/formily/SchemaRenderer';
 import UISchemaEditor from '@/components/UISchemaEditor';
 import { FunctionFormRenderer, type JSONSchema } from '@/components/FunctionFormRenderer';
-
-const { TabPane } = Tabs;
+import { featureFlags } from '@/config/featureFlags';
+import { fetchOptions } from '@/services/schema/async';
 
 interface FunctionUIManagerProps {
   functionId: string;
-  jsonSchema?: JSONSchema; // 函数的 JSON Schema（用于预览）
+  jsonSchema?: JSONSchema;
   onSave?: (uiSchema: any) => Promise<void>;
 }
 
@@ -46,6 +40,7 @@ export default function FunctionUIManager({
   onSave
 }: FunctionUIManagerProps) {
   const { message } = App.useApp();
+  const { initialState } = useModel('@@initialState');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uiConfig, setUiConfig] = useState<{
@@ -53,7 +48,6 @@ export default function FunctionUIManager({
     layout?: any;
     components?: any;
   }>({});
-  const [editMode, setEditMode] = useState(false);
   const [useCustomUI, setUseCustomUI] = useState(false);
   const [hasDefaultUI, setHasDefaultUI] = useState(false);
   const [originalSchema, setOriginalSchema] = useState<any>(undefined);
@@ -113,7 +107,6 @@ export default function FunctionUIManager({
         components: uiConfig.components
       });
       message.success('UI 配置保存成功');
-      setEditMode(false);
       await loadUIConfig(); // 重新加载
     } catch (e: any) {
       message.error(e?.message || '保存失败');
@@ -143,7 +136,6 @@ export default function FunctionUIManager({
           components: uiConfig.components
         });
         setUseCustomUI(true);
-        setEditMode(true);
       } else {
         // 禁用自定义 UI - 后端识别该标记后清理 metadata.ui
         await onSave({
@@ -152,7 +144,6 @@ export default function FunctionUIManager({
           components: uiConfig.components
         });
         setUseCustomUI(false);
-        setEditMode(false);
       }
       await loadUIConfig();
       message.success(checked ? '已启用自定义 UI' : '已恢复默认 UI');
@@ -188,6 +179,14 @@ export default function FunctionUIManager({
           >
             刷新
           </Button>
+          {featureFlags.formilyDesigner && (
+            <Button
+              type="primary"
+              onClick={() => history.push(`/game/functions/${encodeURIComponent(functionId)}/ui-designer`)}
+            >
+              打开设计器
+            </Button>
+          )}
           {(hasDefaultUI || useCustomUI) && (
             <Space>
               <span>自定义 UI:</span>
@@ -206,29 +205,8 @@ export default function FunctionUIManager({
       {!hasDefaultUI && !uiConfig.schema ? (
         <Empty description="该函数没有配置 UI Schema" />
       ) : (
-        <Tabs
-          defaultActiveKey="preview"
-          activeKey={editMode ? 'edit' : 'preview'}
-          onChange={(key) => {
-            if (key === 'edit' && !useCustomUI && hasDefaultUI) {
-              message.warning('请先启用自定义 UI 才能编辑');
-              return;
-            }
-            setEditMode(key === 'edit');
-          }}
-          type="card"
-        >
-          {/* 预览 Tab */}
-          <TabPane
-            tab={
-              <span>
-                <EyeOutlined />
-                预览
-                {useCustomUI && <Tag color="blue" style={{ marginLeft: 8 }}>自定义</Tag>}
-              </span>
-            }
-            key="preview"
-          >
+        featureFlags.formilyDesigner ? (
+          <>
             <Alert
               message="UI 预览"
               description={
@@ -239,6 +217,37 @@ export default function FunctionUIManager({
                   : "当前无 UI 配置"
               }
               type={useCustomUI ? "success" : "info"}
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+
+            <SchemaRenderer
+              schema={uiConfig.schema}
+              readOnly={false}
+              context={{
+                gameId: typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined,
+                env: typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined,
+                functionId,
+                permissions: String((initialState as any)?.currentUser?.access || '')
+                  .split(',')
+                  .filter(Boolean),
+              }}
+              scope={{
+                hasPerm: (perm: string) =>
+                  String((initialState as any)?.currentUser?.access || '')
+                    .split(',')
+                    .filter(Boolean)
+                    .includes(perm),
+                fetchOptions,
+              }}
+            />
+          </>
+        ) : (
+          <>
+            <Alert
+              message="UI 预览（Legacy）"
+              description="当前使用旧版 UI Schema 预览与编辑"
+              type="info"
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -259,19 +268,9 @@ export default function FunctionUIManager({
                 showIcon
               />
             )}
-          </TabPane>
 
-          {/* 编辑 Tab */}
-          <TabPane
-            tab={
-              <span>
-                <EditOutlined />
-                编辑
-                {editMode && <Tag color="blue" style={{ marginLeft: 8 }}>编辑中</Tag>}
-              </span>
-            }
-            key="edit"
-          >
+            <Divider />
+
             {!useCustomUI && hasDefaultUI ? (
               <Alert
                 message="启用自定义编辑"
@@ -290,14 +289,6 @@ export default function FunctionUIManager({
               />
             ) : (
               <>
-                <Alert
-                  message="UI Schema 编辑器"
-                  description="配置函数参数的表单显示方式（布局、组件、验证规则等）"
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
-
                 <UISchemaEditor
                   value={uiConfig.schema}
                   jsonSchema={jsonSchema}
@@ -316,7 +307,6 @@ export default function FunctionUIManager({
                 <Space>
                   <Button
                     type="primary"
-                    icon={<SaveOutlined />}
                     onClick={() => handleSave(uiConfig.schema)}
                     loading={saving}
                     disabled={!isDirty}
@@ -324,7 +314,6 @@ export default function FunctionUIManager({
                     保存更改
                   </Button>
                   <Button
-                    icon={<CheckOutlined />}
                     disabled={!isDirty}
                     onClick={() => {
                       setUiConfig((prev) => ({
@@ -337,9 +326,7 @@ export default function FunctionUIManager({
                     重置更改
                   </Button>
                   <Button
-                    icon={<CloseOutlined />}
                     onClick={() => {
-                      setEditMode(false);
                       loadUIConfig();
                     }}
                   >
@@ -348,8 +335,8 @@ export default function FunctionUIManager({
                 </Space>
               </>
             )}
-          </TabPane>
-        </Tabs>
+          </>
+        )
       )}
     </Card>
   );

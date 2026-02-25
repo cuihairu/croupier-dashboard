@@ -35,6 +35,7 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionCatalog': '函数目录',
   'menu.GameManagement.FunctionManagement.FunctionInvoke': '函数调用',
   'menu.GameManagement.FunctionManagement.FunctionDetail': '函数详情',
+  'menu.GameManagement.FunctionManagement.FunctionUIDesigner': 'UI 设计器',
   'menu.GameManagement.FunctionManagement.FunctionInstances': '实例管理',
   'menu.GameManagement.FunctionManagement.FunctionAssignments': '权限分配',
   'menu.GameManagement.FunctionManagement.FunctionPacks': '函数包管理',

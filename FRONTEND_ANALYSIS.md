@@ -228,7 +228,37 @@ export default function AuditPage() {
 | **GmFunctions** | `/gm/functions` | 无(默认可见) | 函数动态表单调用、作业执行 |
 | **Packs** | `/gm/packs` | 部分(reload/export) | 函数包导入/导出 |
 
-### 5.2 API 服务层 (`src/services/croupier/index.ts`)
+### 5.2 函数编辑界面（Function Detail/Edit）
+
+**入口与路由**
+- 目录页入口：`/game/functions/catalog` 的“编辑UI”按钮会跳转到详情页并选中配置子页  
+  入口文件：`src/pages/Functions/Directory/index.tsx`  
+  路由：`/game/functions/:id?tab=config&subTab=ui`
+- 函数详情页：`/game/functions/:id`  
+  页面文件：`src/pages/Functions/Detail.tsx`
+
+**页面结构与状态**
+- 页面由 `Tabs` 构成，默认包含“基本信息/配置”等分组，顶部操作区包含 `复制/删除/编辑(保存)`。  
+  `editing` 状态切换控制“只读展示”与“编辑表单”两种视图。
+- “编辑”按钮点击后进入表单编辑，`form.submit()` 触发保存逻辑。
+
+**可编辑字段（基本信息）**
+- 函数名称、分类、描述、标签  
+  表单仅在 `editing=true` 时展示，未编辑状态下仅展示只读描述与标签。
+
+**关键交互**
+- 状态开关：详情页内可直接切换函数启用/禁用状态（非编辑表单内）。  
+- UI 配置入口：从目录页跳转 `tab=config&subTab=ui` 直接进入 UI 配置子页。
+
+**数据来源/更新**
+- 详情页加载时拉取函数详情并填充 `form`。  
+- 保存时调用更新接口（`updateFunction`），成功后退出编辑状态并刷新展示信息。
+
+**权限**
+- 受 `config/routes.ts` 中 `canFunctionsRead` 控制访问。  
+  编辑能力是否需要额外权限未在页面内显式限制（需结合后端鉴权）。
+
+### 5.3 API 服务层 (`src/services/croupier/index.ts`)
 
 所有后端调用:
 - `loginAuth(params)` → POST /api/auth/login

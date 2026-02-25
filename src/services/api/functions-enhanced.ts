@@ -179,18 +179,16 @@ export async function getFunctionInstances(params?: {
   env?: string;
   status?: string;
 }): Promise<{ instances: FunctionInstance[]; total: number }> {
-  // 后端 API: GET /api/v1/functions/:id/instances
+  // 后端 API: GET /api/v1/functions/instances (all) or /api/v1/functions/:id/instances
   const { function_id, ...queryParams } = params || {};
-  if (!function_id) {
-    return { instances: [], total: 0 };
-  }
   try {
-    const res = await request(`/api/v1/functions/${function_id}/instances`, {
-      params: queryParams
-    });
+    const url = function_id
+      ? `/api/v1/functions/${function_id}/instances`
+      : `/api/v1/functions/instances`;
+    const res = await request(url, { params: queryParams });
     return {
       instances: res.items || res.instances || [],
-      total: res.total || res.items?.length || 0
+      total: res.total || res.items?.length || res.instances?.length || 0
     };
   } catch (error) {
     console.warn('Failed to fetch function instances:', error);

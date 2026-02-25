@@ -110,6 +110,7 @@ export async function fetchFunctionUiSchema(functionId: string) {
     components?: any;
     custom?: boolean;
     hasDefault?: boolean;
+    updated_at?: string;
   }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });
 }
 

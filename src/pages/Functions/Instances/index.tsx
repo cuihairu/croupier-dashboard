@@ -20,6 +20,7 @@ const { Text, Title } = Typography;
 type FunctionInstance = {
   agent_id: string;
   service_id: string;
+  provider_id?: string;
   addr: string;
   version: string;
   function_id: string;
@@ -93,7 +94,11 @@ export default () => {
     setLoading(true);
     try {
       const res = await getFunctionInstances();
-      setInstances(res?.instances || []);
+      const normalized = (res?.instances || []).map((instance: FunctionInstance) => ({
+        ...instance,
+        service_id: instance.service_id || instance.provider_id || '',
+      }));
+      setInstances(normalized);
 
       // Calculate coverage statistics
       const functionsMap = new Map<string, number>();
@@ -475,7 +480,12 @@ export default () => {
 
       {/* Instances Table */}
       <ProTable<FunctionInstance>
-        rowKey="agent_id"
+        rowKey={(record) => [
+          record.agent_id,
+          record.service_id || record.provider_id || '',
+          record.function_id,
+          record.addr,
+        ].join('|')}
         loading={loading}
         columns={columns}
         dataSource={processedData}

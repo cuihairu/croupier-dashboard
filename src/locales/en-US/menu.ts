@@ -34,6 +34,7 @@ export default {
   'menu.GameManagement.FunctionManagement': 'Function Management',
   'menu.GameManagement.FunctionManagement.FunctionCatalog': 'Function Catalog',
   'menu.GameManagement.FunctionManagement.FunctionInvoke': 'Function Invoke',
+  'menu.GameManagement.FunctionManagement.FunctionUIDesigner': 'UI Designer',
   'menu.GameManagement.FunctionManagement.FunctionInstances': 'Instance Management',
   'menu.GameManagement.FunctionManagement.FunctionAssignments': 'Permission Assignments',
   'menu.GameManagement.FunctionManagement.FunctionPacks': 'Pack Management',

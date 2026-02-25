@@ -20,7 +20,7 @@
     "lint:js": "eslint --cache --ext .js,.jsx,.ts,.tsx --format=pretty ./src",
     "lint:prettier": "prettier -c --write \"**/**.{js,jsx,tsx,ts,less,md,json}\" --end-of-line auto",
     "openapi": "max openapi",
-    "prepare": "if [ -e .git ]; then husky install; else echo 'husky install skipped (no git metadata)'; fi",
+    "prepare": "node scripts/prepare.js",
     "prettier": "prettier -c --write \"**/**.{js,jsx,tsx,ts,less,md,json}\"",
     "preview": "npm run build && max preview --port 8000",
     "record": "cross-env NODE_ENV=development REACT_APP_ENV=test max record --scene=login",
@@ -49,6 +49,9 @@
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
     "@ant-design/pro-components": "^2.8.10",
+    "@formily/antd-v5": "^1.2.4",
+    "@formily/core": "^2.3.2",
+    "@formily/react": "^2.3.2",
     "@monaco-editor/react": "^4.7.0",
     "@umijs/route-utils": "^2.2.2",
     "antd": "^5.28.0",
