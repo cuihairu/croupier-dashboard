@@ -81,6 +81,8 @@ export default defineConfig({
     locale: true,
     ...defaultSettings,
   },
+  // Use product logo as favicon
+  favicons: ['/logo.png'],
   /**
    * @name moment2dayjs 插件
    * @description 将项目中的 moment 替换为 dayjs
