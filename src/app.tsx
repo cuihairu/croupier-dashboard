@@ -9,6 +9,7 @@ import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import { fetchCurrentUser, getMyPermissions, listDescriptors, type FunctionDescriptor } from '@/services/api';
+import { hydrateScope } from '@/stores/scope';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
@@ -64,12 +65,13 @@ export async function getInitialState(): Promise<{
   const { location } = history;
   if (location.pathname !== loginPath) {
     const currentUser = await fetchUserInfo();
-    let functionDescriptors: FunctionDescriptor[] | undefined;
-    if (currentUser) {
-      try {
-        const descriptors = await listDescriptors();
-        functionDescriptors = Array.isArray(descriptors) ? descriptors : [];
-      } catch {
+      let functionDescriptors: FunctionDescriptor[] | undefined;
+      if (currentUser) {
+        hydrateScope();
+        try {
+          const descriptors = await listDescriptors();
+          functionDescriptors = Array.isArray(descriptors) ? descriptors : [];
+        } catch {
         functionDescriptors = undefined;
       }
     }
@@ -103,7 +105,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   const isAuthed = !!initialState?.currentUser;
   return {
     actionsRender: () => [
-      <GameSelector key="scope" />,
+      <GameSelector key="scope" variant="header" />,
       isAuthed ? <MessagesBell key="msgs" /> : null,
       <Question key="doc" />,
       <SelectLang key="SelectLang" />,

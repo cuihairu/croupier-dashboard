@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @name umi 的路由配置
  * @description 只支持 path,component,routes,redirect,wrappers,name,icon 的配置
  * @param path  path 只支持两种占位符配置，第一种是动态参数 :id 的形式，第二种是 * 通配符，通配符只能出现路由字符串的最后。
@@ -11,6 +11,118 @@
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
+  {
+    path: '/game',
+    name: 'GameManagement',
+    icon: 'control',
+    access: 'canGamesRead',
+    routes: [
+      {
+        path: '/game',
+        redirect: '/game/environments',
+      },
+      // 游戏基础配置页面已下线，合并到环境/实体等页面
+      {
+        path: '/game/environments',
+        name: 'GameEnvironments',
+        access: 'canGamesRead',
+        component: './GamesEnvs',
+      },
+      // 游戏内容管理
+      {
+        path: '/game/entities',
+        name: 'GameEntities',
+        access: 'canEntitiesRead',
+        component: './Entities',
+      },
+      // 函数管理模块 - 重构后的统一函数管理菜单
+      {
+        path: '/game/functions',
+        name: 'FunctionManagement',
+        access: 'canFunctionsRead',
+        routes: [
+          {
+            path: '/game/functions',
+            redirect: '/game/functions/catalog',
+          },
+          {
+            path: '/game/functions/catalog',
+            name: 'FunctionCatalog',
+            access: 'canFunctionsRead',
+            component: './Functions/Directory',
+            icon: 'unordered-list',
+          },
+          {
+            path: '/game/functions/:id',
+            name: 'FunctionDetail',
+            access: 'canFunctionsRead',
+            component: './Functions/Detail',
+            hideInMenu: true,
+          },
+          {
+            path: '/game/functions/:id/ui-designer',
+            name: 'FunctionUIDesigner',
+            access: 'canFunctionsRead',
+            component: './Functions/SchemaDesigner',
+            hideInMenu: true,
+          },
+          {
+            path: '/game/functions/invoke',
+            name: 'FunctionInvoke',
+            access: 'canFunctionsRead',
+            component: './GmFunctions',
+            hideInMenu: true,
+          },
+          {
+            path: '/game/functions/instances',
+            name: 'FunctionInstances',
+            access: 'canFunctionsRead',
+            component: './Functions/Instances',
+            icon: 'cluster',
+          },
+          {
+            path: '/game/functions/assignments',
+            name: 'FunctionAssignments',
+            access: 'canAssignmentsRead',
+            component: './Assignments',
+            icon: 'safety',
+          },
+          {
+            path: '/game/functions/packs',
+            name: 'FunctionPacks',
+            access: 'canPacksRead',
+            component: './Packs',
+            icon: 'inbox',
+          },
+        ],
+      },
+      // 新增统一组件管理中心
+      {
+        path: '/game/component-management',
+        name: 'ComponentManagement',
+        access: 'canFunctionsRead',
+        component: './ComponentManagement',
+      },
+      // 虚拟对象编辑器（独立页面）
+      {
+        path: '/game/entities/create',
+        name: 'CreateVirtualObject',
+        access: 'canFunctionsRead',
+        component: './ComponentManagement/components/EntityComposer',
+        hideInMenu: true,
+      },
+      {
+        path: '/game/entities/:id/edit',
+        name: 'EditVirtualObject',
+        access: 'canFunctionsRead',
+        component: './ComponentManagement/components/EntityComposer',
+        hideInMenu: true,
+      },
+      // 游戏运营管理
+      { path: '/game/assignments', redirect: '/game/functions/assignments' },
+      { path: '/game/packs', redirect: '/game/functions/packs' },
+    ],
+  },
   {
     path: '/analytics',
     name: 'Analytics',
@@ -28,66 +140,38 @@ export default [
       { path: '/analytics/segments', name: 'Segments', access: 'canAnalyticsRead', component: './Analytics/Segments', hideInMenu: true },
     ],
   },
-  // Move 运营管理 (Operations) to second position in the menu
+  // Operations / Ops merged into a single menu
   {
-    path: '/operations',
+    path: '/ops',
     name: 'Operations',
     icon: 'dashboard',
+    access: 'canOpsRead',
     routes: [
-      {
-        path: '/operations',
-        redirect: '/operations/approvals',
-      },
-      {
-        path: '/operations/approvals',
-        name: 'Approvals',
-        access: 'canApprovalsRead',
-        component: './Approvals',
-      },
-      {
-        path: '/operations/audit',
-        name: 'Audit',
-        access: 'canAuditRead',
-        component: './Audit',
-      },
-      {
-        path: '/operations/operation-logs',
-        name: 'OperationLogs',
-        access: 'canAuditRead',
-        component: './Admin/OperationLogs',
-      },
-      {
-        path: '/operations/registry',
-        name: 'Registry',
-        access: 'canRegistryRead',
-        component: './Registry',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/servers',
-        name: 'Servers',
-        access: 'canRegistryRead',
-        component: './Servers',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/configs',
-        name: 'Configs',
-        access: 'canOpsRead',
-        component: './Operations/Configs',
-      },
-      {
-        path: '/operations/platforms',
-        name: 'Platforms',
-        access: 'canOpsRead',
-        component: './Platforms',
-      },
-      {
-        path: '/operations/storage',
-        name: 'Storage',
-        access: 'canOpsRead',
-        component: './Storage',
-      },
+      { path: '/ops', redirect: '/ops/approvals' },
+      // Governance & audit
+      { path: '/ops/approvals', name: 'Approvals', access: 'canApprovalsRead', component: './Approvals' },
+      { path: '/ops/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
+      { path: '/ops/operation-logs', name: 'OperationLogs', access: 'canAuditRead', component: './Admin/OperationLogs' },
+      // Registry & servers (advanced)
+      { path: '/ops/registry', name: 'Registry', access: 'canRegistryRead', component: './Registry', hideInMenu: true },
+      { path: '/ops/servers', name: 'Servers', access: 'canRegistryRead', component: './Servers', hideInMenu: true },
+      // Config & integrations
+      { path: '/ops/configs', name: 'Configs', access: 'canOpsRead', component: './Operations/Configs' },
+      { path: '/ops/platforms', name: 'Platforms', access: 'canOpsRead', component: './Platforms' },
+      { path: '/ops/storage', name: 'Storage', access: 'canOpsRead', component: './Storage' },
+      // Infra & runtime
+      { path: '/ops/services', name: 'Services', access: 'canOpsRead', component: './Ops/Services' },
+      { path: '/ops/health', name: 'Health', access: 'canOpsRead', component: './Ops/Health' },
+      { path: '/ops/nodes', name: 'Nodes', access: 'canOpsRead', component: './Ops/Nodes' },
+      { path: '/ops/jobs', name: 'Jobs', access: 'canOpsRead', component: './Ops/Jobs' },
+      { path: '/ops/alerts', name: 'Alerts', access: 'canOpsRead', component: './Ops/Alerts' },
+      { path: '/ops/rate-limits', name: 'RateLimits', access: 'canOpsManage', component: './Ops/RateLimits' },
+      { path: '/ops/backups', name: 'Backups', access: 'canOpsManage', component: './Ops/Backups' },
+      { path: '/ops/mq', name: 'MQ', access: 'canOpsRead', component: './Ops/MQ' },
+      { path: '/ops/certificates', name: 'Certificates', access: 'canOpsManage', component: './Ops/Certificates' },
+      { path: '/ops/notifications', name: 'Notifications', access: 'canOpsManage', component: './Ops/Notifications' },
+      { path: '/ops/analytics-filters', name: 'AnalyticsFilters', access: 'canOpsManage', component: './Ops/AnalyticsFilters' },
+      { path: '/ops/maintenance', name: 'Maintenance', access: 'canOpsManage', component: './Ops/Maintenance' },
     ],
   },
   {
@@ -192,150 +276,6 @@ export default [
     ],
   },
   {
-    path: '/game',
-    name: 'GameManagement',
-    icon: 'control',
-    access: 'canGamesRead',
-    routes: [
-      {
-        path: '/game',
-        redirect: '/game/environments',
-      },
-      // 游戏基础配置页面已下线，合并到环境/实体等页面
-      {
-        path: '/game/environments',
-        name: 'GameEnvironments',
-        access: 'canGamesRead',
-        component: './GamesEnvs',
-      },
-      // 游戏内容管理
-      {
-        path: '/game/entities',
-        name: 'GameEntities',
-        access: 'canEntitiesRead',
-        component: './Entities',
-      },
-      // 函数管理模块 - 重构后的统一函数管理菜单
-      {
-        path: '/game/functions',
-        name: 'FunctionManagement',
-        access: 'canFunctionsRead',
-        routes: [
-          {
-            path: '/game/functions',
-            redirect: '/game/functions/catalog',
-          },
-          {
-            path: '/game/functions/catalog',
-            name: 'FunctionCatalog',
-            access: 'canFunctionsRead',
-            component: './Functions/Directory',
-            icon: 'unordered-list',
-          },
-          {
-            path: '/game/functions/:id',
-            name: 'FunctionDetail',
-            access: 'canFunctionsRead',
-            component: './Functions/Detail',
-            hideInMenu: true,
-          },
-          {
-            path: '/game/functions/:id/ui-designer',
-            name: 'FunctionUIDesigner',
-            access: 'canFunctionsRead',
-            component: './Functions/SchemaDesigner',
-            hideInMenu: true,
-          },
-          {
-            path: '/game/functions/invoke',
-            name: 'FunctionInvoke',
-            access: 'canFunctionsRead',
-            component: './GmFunctions',
-            hideInMenu: true,
-          },
-          {
-            path: '/game/functions/instances',
-            name: 'FunctionInstances',
-            access: 'canFunctionsRead',
-            component: './Functions/Instances',
-            icon: 'cluster',
-          },
-          {
-            path: '/game/functions/assignments',
-            name: 'FunctionAssignments',
-            access: 'canAssignmentsRead',
-            component: './Assignments',
-            icon: 'safety',
-          },
-          {
-            path: '/game/functions/packs',
-            name: 'FunctionPacks',
-            access: 'canPacksRead',
-            component: './Packs',
-            icon: 'inbox',
-          },
-        ],
-      },
-      // 新增统一组件管理中心（主菜单已迁移到 /components）
-      {
-        path: '/game/component-management',
-        name: 'ComponentManagement',
-        access: 'canFunctionsRead',
-        component: './ComponentManagement',
-        hideInMenu: true,
-      },
-      // 虚拟对象编辑器（独立页面）
-      {
-        path: '/game/entities/create',
-        name: 'CreateVirtualObject',
-        access: 'canFunctionsRead',
-        component: './ComponentManagement/components/EntityComposer',
-        hideInMenu: true,
-      },
-      {
-        path: '/game/entities/:id/edit',
-        name: 'EditVirtualObject',
-        access: 'canFunctionsRead',
-        component: './ComponentManagement/components/EntityComposer',
-        hideInMenu: true,
-      },
-      // 游戏运营管理
-      {
-        path: '/game/assignments',
-        name: 'GameAssignments',
-        access: 'canAssignmentsRead',
-        component: './Assignments',
-      },
-      {
-        path: '/game/packs',
-        name: 'GamePacks',
-        access: 'canPacksRead',
-        component: './Packs',
-      },
-    ],
-  },
-  {
-    path: '/ops',
-    name: 'Ops',
-    icon: 'cluster',
-    access: 'canOpsRead',
-    routes: [
-      { path: '/ops', redirect: '/ops/services' },
-      { path: '/ops/services', name: 'Services', access: 'canOpsRead', component: './Ops/Services' },
-      { path: '/ops/health', name: 'Health', access: 'canOpsRead', component: './Ops/Health' },
-      { path: '/ops/nodes', name: 'Nodes', access: 'canOpsRead', component: './Ops/Nodes' },
-      { path: '/ops/jobs', name: 'Jobs', access: 'canOpsRead', component: './Ops/Jobs' },
-      { path: '/ops/alerts', name: 'Alerts', access: 'canOpsRead', component: './Ops/Alerts' },
-      { path: '/ops/rate-limits', name: 'RateLimits', access: 'canOpsManage', component: './Ops/RateLimits' },
-      { path: '/ops/backups', name: 'Backups', access: 'canOpsManage', component: './Ops/Backups' },
-      { path: '/ops/mq', name: 'MQ', access: 'canOpsRead', component: './Ops/MQ' },
-      { path: '/ops/certificates', name: 'Certificates', access: 'canOpsManage', component: './Ops/Certificates' },
-      { path: '/ops/notifications', name: 'Notifications', access: 'canOpsManage', component: './Ops/Notifications' },
-      { path: '/ops/analytics-filters', name: 'AnalyticsFilters', access: 'canOpsManage', component: './Ops/AnalyticsFilters' },
-      { path: '/ops/maintenance', name: 'Maintenance', access: 'canOpsManage', component: './Ops/Maintenance' },
-    ],
-  },
-  {
     path: '/',
     redirect: '/analytics/realtime',
   },
@@ -362,7 +302,7 @@ export default [
   // Game management legacy redirects
   {
     path: '/game-mgmt/games-meta',
-    redirect: '/game/meta',
+    redirect: '/game/environments',
   },
   {
     path: '/game-mgmt/entities',
@@ -370,7 +310,7 @@ export default [
   },
   {
     path: '/game-mgmt',
-    redirect: '/game/meta',
+    redirect: '/game/environments',
   },
   // Legacy redirects for removed function management pages
   { path: '/functions/invoke', redirect: '/game/functions/invoke' },
@@ -387,44 +327,41 @@ export default [
   },
   {
     path: '/gm/assignments',
-    redirect: '/game/assignments',
+    redirect: '/game/functions/assignments',
   },
   {
     path: '/gm/packs',
-    redirect: '/game/packs',
+    redirect: '/game/functions/packs',
   },
   {
     path: '/gm/approvals',
-    redirect: '/operations/approvals',
+    redirect: '/ops/approvals',
   },
   {
     path: '/gm/audit',
-    redirect: '/operations/audit',
+    redirect: '/ops/audit',
   },
   {
     path: '/gm/registry',
-    redirect: '/operations/registry',
+    redirect: '/ops/registry',
   },
   {
     path: '/gm',
-    redirect: '/game/meta',
+    redirect: '/game/environments',
   },
-  // Security menu removed (duplicated with AdminUsers/Permissions)
-  {
-    path: '/components',
-    name: 'ComponentManagement',
-    icon: 'appstore',
-    access: 'canFunctionsRead',
-    component: './ComponentManagement',
-  },
-  // 后台组件分配，显式展示在主菜单
-  {
-    path: '/assignments',
-    name: 'GameAssignments',
-    icon: 'branches',
-    access: 'canAssignmentsRead',
-    component: './Assignments',
-  },
+  // Legacy redirects for ops -> unified /ops
+  { path: '/operations', redirect: '/ops/approvals' },
+  { path: '/operations/approvals', redirect: '/ops/approvals' },
+  { path: '/operations/audit', redirect: '/ops/audit' },
+  { path: '/operations/operation-logs', redirect: '/ops/operation-logs' },
+  { path: '/operations/registry', redirect: '/ops/registry' },
+  { path: '/operations/servers', redirect: '/ops/servers' },
+  { path: '/operations/configs', redirect: '/ops/configs' },
+  { path: '/operations/platforms', redirect: '/ops/platforms' },
+  { path: '/operations/storage', redirect: '/ops/storage' },
+  // Legacy redirects for moved menus
+  { path: '/components', redirect: '/game/component-management' },
+  { path: '/assignments', redirect: '/game/functions/assignments' },
   {
     path: '/403',
     layout: false,

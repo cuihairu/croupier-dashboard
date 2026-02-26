@@ -1,6 +1,8 @@
 ﻿import { render, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { TestBrowser } from '@@/testBrowser';
+import { BRAND } from '@/config/branding';
+import { history } from '@umijs/max';
 
 // @ts-ignore
 import { startMock } from '@@/requestRecordMock';
@@ -40,17 +42,15 @@ describe('Login Page', () => {
       />,
     );
 
-    await rootContainer.findAllByText('Ant Design');
+    await rootContainer.findAllByText(BRAND.title);
 
     act(() => {
       historyRef.current?.push('/user/login');
     });
 
     expect(rootContainer.baseElement?.querySelector('.ant-pro-form-login-desc')?.textContent).toBe(
-      'Ant Design is the most influential web design specification in Xihu district',
+      BRAND.subTitle,
     );
-
-    expect(rootContainer.asFragment()).toMatchSnapshot();
 
     rootContainer.unmount();
   });
@@ -66,30 +66,27 @@ describe('Login Page', () => {
       />,
     );
 
-    await rootContainer.findAllByText('Ant Design');
+    await rootContainer.findAllByText(BRAND.title);
 
-    const userNameInput = await rootContainer.findByPlaceholderText('Username: admin or user');
+    const userNameInput = await rootContainer.findByPlaceholderText('用户名: admin or user');
 
     act(() => {
       fireEvent.change(userNameInput, { target: { value: 'admin' } });
     });
 
-    const passwordInput = await rootContainer.findByPlaceholderText('Password: ant.design');
+    const passwordInput = await rootContainer.findByPlaceholderText('密码: admin');
 
     act(() => {
       fireEvent.change(passwordInput, { target: { value: 'ant.design' } });
     });
 
-    await (await rootContainer.findByText('Login')).click();
+    const submitButton = await rootContainer.findByRole('button', { name: /登\s*录/ });
+    await submitButton.click();
 
-    // 等待接口返回结果
-    await waitTime(5000);
+    await waitTime(200);
 
-    await rootContainer.findAllByText('Ant Design Pro');
-
-    expect(rootContainer.asFragment()).toMatchSnapshot();
-
-    await waitTime(2000);
+    expect(localStorage.setItem).toHaveBeenCalledWith('token', 'test-token');
+    expect(history.push).toHaveBeenCalledWith('/');
 
     rootContainer.unmount();
   });

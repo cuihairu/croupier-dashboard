@@ -68,6 +68,9 @@
   },
   "devDependencies": {
     "@ant-design/pro-cli": "^3.3.0",
+    "@babel/core": "^7.28.4",
+    "@babel/plugin-transform-modules-commonjs": "^7.28.6",
+    "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^13.4.0",
     "@types/express": "^4.17.21",
     "@types/history": "^4.7.11",
@@ -92,6 +95,7 @@
     "prettier": "^2.8.8",
     "react-dev-inspector": "^1.9.0",
     "swagger-ui-dist": "^4.19.1",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "umi-presets-pro": "^2.0.3",

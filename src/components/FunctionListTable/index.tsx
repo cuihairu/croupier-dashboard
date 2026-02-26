@@ -214,88 +214,98 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
     )
   });
 
-  // Add actions column
-  const actions = [];
-  if (showActions.view) {
-    actions.push(
-      <Tooltip key="detail" title="查看详情">
-        <Button
-          type="link"
-          size="small"
-          icon={<InfoCircleOutlined />}
-          onClick={() => onViewDetail?.(record)}
-        />
-      </Tooltip>
-    );
-  }
-  if (showActions.invoke) {
-    actions.push(
-      <Tooltip key="invoke" title="调用函数">
-        <Button
-          type="link"
-          size="small"
-          icon={<PlayCircleOutlined />}
-          onClick={() => onInvoke?.(record)}
-        />
-      </Tooltip>
-    );
-  }
-  if (showActions.edit) {
-    actions.push(
-      <Tooltip key="edit" title="编辑">
-        <Button
-          type="link"
-          size="small"
-          icon={<EditOutlined />}
-          onClick={() => onEdit?.(record)}
-        />
-      </Tooltip>
-    );
-  }
-  if (showActions.toggle) {
-    const toggleIcon = record.enabled ? <StopOutlined /> : <PlayCircleOutlined />;
-    const toggleTitle = record.enabled ? '禁用' : '启用';
-    actions.push(
-      <Popconfirm
-        key="toggle"
-        title={`确定要${toggleTitle}此函数吗？`}
-        onConfirm={() => onToggleStatus?.(record)}
-      >
-        <Tooltip title={toggleTitle}>
+  const buildActions = (record: FunctionItem) => {
+    const actions = [];
+    if (showActions.view) {
+      actions.push(
+        <Tooltip key="detail" title="查看详情">
           <Button
             type="link"
             size="small"
-            icon={toggleIcon}
-            danger={record.enabled}
+            icon={<InfoCircleOutlined />}
+            onClick={() => onViewDetail?.(record)}
           />
         </Tooltip>
-      </Popconfirm>
-    );
-  }
-  if (showActions.delete) {
-    actions.push(
-      <Popconfirm
-        key="delete"
-        title="确定要删除此函数吗？此操作不可恢复！"
-        onConfirm={() => onDelete?.(record)}
-      >
-        <Tooltip title="删除">
+      );
+    }
+    if (showActions.invoke) {
+      actions.push(
+        <Tooltip key="invoke" title="调用函数">
           <Button
             type="link"
             size="small"
-            icon={<DeleteOutlined />}
-            danger
+            icon={<PlayCircleOutlined />}
+            onClick={() => onInvoke?.(record)}
           />
         </Tooltip>
-      </Popconfirm>
-    );
-  }
+      );
+    }
+    if (showActions.edit) {
+      actions.push(
+        <Tooltip key="edit" title="编辑">
+          <Button
+            type="link"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => onEdit?.(record)}
+          />
+        </Tooltip>
+      );
+    }
+    if (showActions.toggle) {
+      const toggleIcon = record.enabled ? <StopOutlined /> : <PlayCircleOutlined />;
+      const toggleTitle = record.enabled ? '禁用' : '启用';
+      actions.push(
+        <Popconfirm
+          key="toggle"
+          title={`确定要${toggleTitle}此函数吗？`}
+          onConfirm={() => onToggleStatus?.(record)}
+        >
+          <Tooltip title={toggleTitle}>
+            <Button
+              type="link"
+              size="small"
+              icon={toggleIcon}
+              danger={record.enabled}
+            />
+          </Tooltip>
+        </Popconfirm>
+      );
+    }
+    if (showActions.delete) {
+      actions.push(
+        <Popconfirm
+          key="delete"
+          title="确定要删除此函数吗？此操作不可恢复！"
+          onConfirm={() => onDelete?.(record)}
+        >
+          <Tooltip title="删除">
+            <Button
+              type="link"
+              size="small"
+              icon={<DeleteOutlined />}
+              danger
+            />
+          </Tooltip>
+        </Popconfirm>
+      );
+    }
+    return actions;
+  };
+
+  const actionsCount = [
+    showActions.view,
+    showActions.invoke,
+    showActions.edit,
+    showActions.toggle,
+    showActions.delete,
+  ].filter(Boolean).length;
 
   columns.push({
     title: '操作',
     valueType: 'option',
-    width: actions.length * 40 + 20,
-    render: (_, record) => <Space>{actions.map(action => action)}</Space>
+    width: actionsCount * 40 + 20,
+    render: (_, record) => <Space>{buildActions(record).map(action => action)}</Space>
   });
 
   const rowSelection = selectable ? {

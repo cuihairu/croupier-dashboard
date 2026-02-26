@@ -1,15 +1,26 @@
-import { configUmiAlias, createConfig } from '@umijs/max/test';
+import { createConfig } from '@umijs/max/test';
 
 export default async () => {
-  const config = await configUmiAlias({
-    ...createConfig({
-      target: 'browser',
-    }),
+  const config = createConfig({
+    target: 'browser',
+    jsTransformer: 'ts-jest',
   });
-  console.log(JSON.stringify(config));
 
   return {
     ...config,
+    transform: {
+      '^.+\\.(t|j)sx?$': [
+        'ts-jest',
+        {
+          tsconfig: '<rootDir>/tsconfig.jest.json',
+        },
+      ],
+    },
+    moduleNameMapper: {
+      ...(config.moduleNameMapper || {}),
+      '^@/(.*)$': '<rootDir>/src/$1',
+      '^@@/(.*)$': '<rootDir>/tests/umi/$1',
+    },
     testEnvironmentOptions: {
       ...(config?.testEnvironmentOptions || {}),
       url: 'http://localhost:8000',

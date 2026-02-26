@@ -3,6 +3,7 @@ import { AppstoreOutlined, ThunderboltOutlined } from "@ant-design/icons";
 import { Empty, Select, Spin } from "antd";
 import classNames from "classnames";
 import { listMyGames, type Game, type GameEnvMeta } from "@/services/api";
+import { getScope, setScope } from "@/stores/scope";
 import styles from "./index.less";
 
 type GameSelectorProps = {
@@ -11,6 +12,7 @@ type GameSelectorProps = {
   onChange?: (gameId?: string) => void;
   onEnvChange?: (env?: string) => void;
   className?: string;
+  variant?: "header" | "inline";
 };
 
 type EnvOption = {
@@ -86,6 +88,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   onChange,
   onEnvChange,
   className,
+  variant = "inline",
 }) => {
   const canListGames = true;
 
@@ -94,12 +97,12 @@ const GameSelector: React.FC<GameSelectorProps> = ({
 
   const isGameControlled = typeof value !== "undefined";
   const [gameState, setGameState] = useState<string | undefined>(
-    () => value ?? localStorage.getItem("game_id") ?? undefined,
+    () => value ?? getScope().gameId ?? undefined,
   );
 
   const isEnvControlled = typeof envValue !== "undefined";
   const [envState, setEnvState] = useState<string | undefined>(
-    () => envValue ?? localStorage.getItem("env") ?? undefined,
+    () => envValue ?? getScope().env ?? undefined,
   );
 
   useEffect(() => {
@@ -184,8 +187,8 @@ const GameSelector: React.FC<GameSelectorProps> = ({
     }
     if (!isGameControlled) {
       setGameState(next);
-      localStorage.setItem("game_id", next);
     }
+    setScope({ gameId: next }, { persist: true, emit: true });
     onChange?.(next);
   };
 
@@ -195,8 +198,8 @@ const GameSelector: React.FC<GameSelectorProps> = ({
     }
     if (!isEnvControlled) {
       setEnvState(next);
-      localStorage.setItem("env", next);
     }
+    setScope({ env: next }, { persist: true, emit: true });
     onEnvChange?.(next);
   };
 
@@ -235,7 +238,11 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   }));
 
   return (
-    <div className={classNames(styles.scopeInline, className)}>
+    <div
+      className={classNames(styles.scopeInline, className, {
+        [styles.compact]: variant === "header",
+      })}
+    >
       <div className={styles.inlineGroup}>
         <span className={styles.inlineLabel}>
           <AppstoreOutlined className={styles.inlineLabelIcon} />

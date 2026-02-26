@@ -1,4 +1,5 @@
 import { apiUrl } from '@/utils/api';
+import { getScope } from '@/stores/scope';
 
 type JsonInit = RequestInit & {
   skipAuth?: boolean;
@@ -15,12 +16,10 @@ function getToken() {
 }
 
 function getScopeValue(key: string) {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    return localStorage.getItem(key) || undefined;
-  } catch {
-    return undefined;
-  }
+  const scope = getScope();
+  if (key === 'game_id') return scope.gameId;
+  if (key === 'env') return scope.env;
+  return undefined;
 }
 
 function isASCII(s?: string | null) {

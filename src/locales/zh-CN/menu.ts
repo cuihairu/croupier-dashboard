@@ -47,7 +47,7 @@ export default {
   'menu.GameManagement.GamePacks': '功能包管理',
 
   // 运营管理
-  'menu.Operations': '游戏运营',
+  'menu.Operations': '运营与运维',
   'menu.Operations.Approvals': '审批管理',
   'menu.Operations.Audit': '审计日志',
   'menu.Operations.OperationLogs': '操作日志',
@@ -56,21 +56,19 @@ export default {
   'menu.Operations.Configs': '配置管理',
   'menu.Operations.Platforms': '第三方平台',
   'menu.Operations.Storage': '对象存储',
+  'menu.Operations.Services': '服务列表',
+  'menu.Operations.Health': '服务探活',
+  'menu.Operations.Nodes': '节点维护',
+  'menu.Operations.Jobs': '任务监控',
+  'menu.Operations.Alerts': '告警中心',
+  'menu.Operations.RateLimits': '限速管理',
+  'menu.Operations.MQ': '消息队列',
+  'menu.Operations.Certificates': '证书监控',
+  'menu.Operations.Notifications': '事件通知',
+  'menu.Operations.AnalyticsFilters': '采样控制',
+  'menu.Operations.Backups': '数据备份',
+  'menu.Operations.Maintenance': '维护公告',
 
-  // 运维管理
-  'menu.Ops': '运维管理',
-  'menu.Ops.Services': '服务列表',
-  'menu.Ops.Health': '服务探活',
-  'menu.Ops.Nodes': '节点维护',
-  'menu.Ops.Jobs': '任务监控',
-  'menu.Ops.Alerts': '告警中心',
-  'menu.Ops.RateLimits': '限速管理',
-  'menu.Ops.MQ': '消息队列',
-  'menu.Ops.Certificates': '证书监控',
-  'menu.Ops.Notifications': '事件通知',
-  'menu.Ops.AnalyticsFilters': '采样控制',
-  'menu.Ops.Backups': '数据备份',
-  'menu.Ops.Maintenance': '维护公告',
 
   // 数据分析
   'menu.Analytics': '数据分析',
