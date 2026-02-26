@@ -20,7 +20,6 @@ export default {
   'menu.Support.Feedback': '玩家反馈',
   'menu.Support.Bugs': '缺陷列表',
 
-
   // 安全设置
   'menu.Security': '安全管理',
   'menu.Security.Roles': '角色管理',
@@ -68,7 +67,6 @@ export default {
   'menu.Operations.AnalyticsFilters': '采样控制',
   'menu.Operations.Backups': '数据备份',
   'menu.Operations.Maintenance': '维护公告',
-
 
   // 数据分析
   'menu.Analytics': '数据分析',

@@ -35,7 +35,9 @@ jest.mock('antd', () => {
     ...jest.requireActual('antd'),
     Table: ({ children, ...props }: any) => <table {...props}>{children}</table>,
     Button: ({ children, onClick, title }: any) => (
-      <button onClick={onClick} title={title}>{children}</button>
+      <button onClick={onClick} title={title}>
+        {children}
+      </button>
     ),
     Space: ({ children }: any) => <div>{children}</div>,
     Tag: ({ children }: any) => <span>{children}</span>,
@@ -143,7 +145,9 @@ describe('FunctionListTable', () => {
     fireEvent.click(detailButton);
 
     await waitFor(() => {
-      expect(mockOnViewDetail).toHaveBeenCalledWith(expect.objectContaining({ id: 'test-function-1' }));
+      expect(mockOnViewDetail).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-function-1' }),
+      );
     });
   });
 
@@ -189,12 +193,7 @@ describe('FunctionListTable', () => {
       total: 25,
     };
 
-    render(
-      <FunctionListTable
-        {...defaultProps}
-        pagination={paginationProps}
-      />
-    );
+    render(<FunctionListTable {...defaultProps} pagination={paginationProps} />);
 
     // Should show pagination info
     expect(screen.getByText('共 25 个函数')).toBeInTheDocument();
@@ -204,11 +203,7 @@ describe('FunctionListTable', () => {
     const mockOnEdit = jest.fn();
 
     render(
-      <FunctionListTable
-        {...defaultProps}
-        showActions={{ edit: true }}
-        onEdit={mockOnEdit}
-      />
+      <FunctionListTable {...defaultProps} showActions={{ edit: true }} onEdit={mockOnEdit} />,
     );
 
     const editButton = screen.getAllByTitle('编辑')[0];
@@ -227,7 +222,7 @@ describe('FunctionListTable', () => {
         {...defaultProps}
         showActions={{ delete: true }}
         onDelete={mockOnDelete}
-      />
+      />,
     );
 
     const deleteButton = screen.getAllByTitle('删除')[0];
@@ -246,14 +241,16 @@ describe('FunctionListTable', () => {
         {...defaultProps}
         showActions={{ toggle: true }}
         onToggleStatus={mockOnToggleStatus}
-      />
+      />,
     );
 
     const toggleButton = screen.getAllByTitle('禁用')[0];
     fireEvent.click(toggleButton);
 
     await waitFor(() => {
-      expect(mockOnToggleStatus).toHaveBeenCalledWith(expect.objectContaining({ id: 'test-function-1' }));
+      expect(mockOnToggleStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'test-function-1' }),
+      );
     });
   });
 
@@ -263,5 +260,4 @@ describe('FunctionListTable', () => {
     expect(screen.getAllByText('test').length).toBeGreaterThan(0);
     expect(screen.getByText('demo')).toBeInTheDocument();
   });
-
 });

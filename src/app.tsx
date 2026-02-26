@@ -8,7 +8,12 @@ import { history, Link } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import { fetchCurrentUser, getMyPermissions, listDescriptors, type FunctionDescriptor } from '@/services/api';
+import {
+  fetchCurrentUser,
+  getMyPermissions,
+  listDescriptors,
+  type FunctionDescriptor,
+} from '@/services/api';
 import { hydrateScope } from '@/stores/scope';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
@@ -44,7 +49,11 @@ export async function getInitialState(): Promise<{
         permissionIDs = [];
       }
       const accessTokens = Array.from(new Set([...(permissionIDs || []), ...(roleNames || [])]))
-        .map((t) => String(t || '').trim().toLowerCase())
+        .map((t) =>
+          String(t || '')
+            .trim()
+            .toLowerCase(),
+        )
         .filter(Boolean);
       return {
         name: currentUser.username,
@@ -65,13 +74,13 @@ export async function getInitialState(): Promise<{
   const { location } = history;
   if (location.pathname !== loginPath) {
     const currentUser = await fetchUserInfo();
-      let functionDescriptors: FunctionDescriptor[] | undefined;
-      if (currentUser) {
-        hydrateScope();
-        try {
-          const descriptors = await listDescriptors();
-          functionDescriptors = Array.isArray(descriptors) ? descriptors : [];
-        } catch {
+    let functionDescriptors: FunctionDescriptor[] | undefined;
+    if (currentUser) {
+      hydrateScope();
+      try {
+        const descriptors = await listDescriptors();
+        functionDescriptors = Array.isArray(descriptors) ? descriptors : [];
+      } catch {
         functionDescriptors = undefined;
       }
     }
@@ -104,12 +113,13 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   };
   const isAuthed = !!initialState?.currentUser;
   return {
-    actionsRender: () => [
-      <GameSelector key="scope" variant="header" />,
-      isAuthed ? <MessagesBell key="msgs" /> : null,
-      <Question key="doc" />,
-      <SelectLang key="SelectLang" />,
-    ].filter(Boolean) as any,
+    actionsRender: () =>
+      [
+        <GameSelector key="scope" variant="header" />,
+        isAuthed ? <MessagesBell key="msgs" /> : null,
+        <Question key="doc" />,
+        <SelectLang key="SelectLang" />,
+      ].filter(Boolean) as any,
     avatarProps: {
       src: initialState?.currentUser?.avatar,
       icon: initialState?.currentUser?.avatar ? undefined : <UserOutlined />,
@@ -119,7 +129,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       },
     },
     menuDataRender: (menuData) => {
-      const descriptors = (initialState as any)?.functionDescriptors as FunctionDescriptor[] | undefined;
+      const descriptors = (initialState as any)?.functionDescriptors as
+        | FunctionDescriptor[]
+        | undefined;
       if (!Array.isArray(descriptors) || descriptors.length === 0) return menuData;
 
       const safeName = (d: FunctionDescriptor) =>
@@ -160,7 +172,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         .sort((a, b) => a[0].localeCompare(b[0]))
         .map(([category, items]) => {
           const children = items
-            .sort((a, b) => (a.order - b.order) || a.name.localeCompare(b.name))
+            .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
             .map((it) => ({
               name: it.name,
               path: it.path,
@@ -194,9 +206,13 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
           if (out.path === '/game/functions') {
             const curChildren = Array.isArray(out.children) ? out.children : [];
             // 检查是否已经有 catalog 相关的子菜单（静态配置）
-            const hasCatalog = curChildren.some((c: any) => c?.path?.includes('/game/functions/catalog'));
+            const hasCatalog = curChildren.some((c: any) =>
+              c?.path?.includes('/game/functions/catalog'),
+            );
             if (!hasCatalog) {
-              const exists = curChildren.some((c: any) => c?.path === registeredGroup.path || c?.name === registeredGroup.name);
+              const exists = curChildren.some(
+                (c: any) => c?.path === registeredGroup.path || c?.name === registeredGroup.name,
+              );
               if (!exists) {
                 out.children = [...curChildren, registeredGroup];
                 out.routes = out.children;
@@ -209,7 +225,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       return inject(menuData as any);
     },
     footerRender: () => <Footer />,
-    
+
     onPageChange: () => {
       const { location } = history;
       // 如果没有登录，重定向到 login

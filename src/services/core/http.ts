@@ -26,7 +26,10 @@ function isASCII(s?: string | null) {
   return !!s && /^[\x00-\x7F]*$/.test(s);
 }
 
-function buildHeaders(init?: HeadersInit, opts?: { skipAuth?: boolean; skipScopeHeaders?: boolean }) {
+function buildHeaders(
+  init?: HeadersInit,
+  opts?: { skipAuth?: boolean; skipScopeHeaders?: boolean },
+) {
   const headers = new Headers(init || {});
   if (!opts?.skipAuth) {
     const token = getToken();
@@ -86,7 +89,10 @@ export function createEventSource(
   return new EventSource(urlObj.toString());
 }
 
-export function buildDownloadUrl(path: string, params?: Record<string, string | number | undefined>) {
+export function buildDownloadUrl(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+) {
   const origin =
     typeof window !== 'undefined' && window.location ? window.location.origin : 'http://localhost';
   const urlObj = new URL(apiUrl(path), origin);

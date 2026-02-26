@@ -8,7 +8,7 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   EyeOutlined,
-  StopOutlined
+  StopOutlined,
 } from '@ant-design/icons';
 import { history } from '@umijs/max';
 
@@ -81,7 +81,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
     invoke: true,
     edit: false,
     delete: false,
-    toggle: false
+    toggle: false,
   },
   selectable = false,
   onSelectionChange,
@@ -89,21 +89,21 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
     current: 1,
     pageSize: 10,
     showSizeChanger: true,
-    showQuickJumper: true
+    showQuickJumper: true,
   },
   searchable = true,
   filters = true,
-  compact = false
+  compact = false,
 }) => {
   const [selectedRows, setSelectedRows] = useState<FunctionItem[]>([]);
 
   // Process data for display
   const processedData = useMemo(() => {
-    return data.map(row => ({
+    return data.map((row) => ({
       ...row,
       displayName: row.display_name?.zh || row.display_name?.en || row.id,
       displaySummary: row.summary?.zh || row.summary?.en || '-',
-      categoryName: row.category || '未分类'
+      categoryName: row.category || '未分类',
     }));
   }, [data]);
 
@@ -117,8 +117,8 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
 
   // Get categories for filter
   const categories = useMemo(() => {
-    const cats = [...new Set(data.map(item => item.category).filter(Boolean))];
-    return cats.map(cat => ({ text: cat || '未分类', value: cat }));
+    const cats = [...new Set(data.map((item) => item.category).filter(Boolean))];
+    return cats.map((cat) => ({ text: cat || '未分类', value: cat }));
   }, [data]);
 
   const columns: ProColumns<FunctionItem>[] = [
@@ -134,9 +134,13 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
             <Badge status={record.enabled ? 'success' : 'default'} />
             <Text code>{record.id}</Text>
           </Space>
-          {record.version && <Tag color="blue" size="small">v{record.version}</Tag>}
+          {record.version && (
+            <Tag color="blue" size="small">
+              v{record.version}
+            </Tag>
+          )}
         </Space>
-      )
+      ),
     },
     {
       title: '函数名称',
@@ -145,7 +149,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
       ellipsis: true,
       render: (_, record) => (
         <Text strong>{record.display_name?.zh || record.display_name?.en || record.id}</Text>
-      )
+      ),
     },
     {
       title: '函数描述',
@@ -154,11 +158,9 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
       ellipsis: true,
       hideInSearch: compact,
       render: (_, record) => (
-        <Text type="secondary">
-          {record.summary?.zh || record.summary?.en || '-'}
-        </Text>
-      )
-    }
+        <Text type="secondary">{record.summary?.zh || record.summary?.en || '-'}</Text>
+      ),
+    },
   ];
 
   // Add category column if not compact
@@ -170,10 +172,8 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
       filters: filters ? categories : undefined,
       onFilter: filters ? (value, record) => record.category === value : undefined,
       render: (_, record) => (
-        <Tag color={record.category ? 'geekblue' : 'default'}>
-          {record.category || '未分类'}
-        </Tag>
-      )
+        <Tag color={record.category ? 'geekblue' : 'default'}>{record.category || '未分类'}</Tag>
+      ),
     });
   }
 
@@ -185,14 +185,16 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
       width: 200,
       render: (_, record) => (
         <Space wrap>
-          {(record.tags || []).slice(0, 3).map(tag => (
-            <Tag key={tag} size="small">{tag}</Tag>
+          {(record.tags || []).slice(0, 3).map((tag) => (
+            <Tag key={tag} size="small">
+              {tag}
+            </Tag>
           ))}
           {(record.tags || []).length > 3 && (
             <Tag size="small">+{(record.tags || []).length - 3}</Tag>
           )}
         </Space>
-      )
+      ),
     });
   }
 
@@ -201,17 +203,19 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
     title: '状态',
     dataIndex: 'enabled',
     width: 80,
-    filters: filters ? [
-      { text: '启用', value: true },
-      { text: '禁用', value: false }
-    ] : undefined,
+    filters: filters
+      ? [
+          { text: '启用', value: true },
+          { text: '禁用', value: false },
+        ]
+      : undefined,
     onFilter: filters ? (value, record) => record.enabled === value : undefined,
     render: (_, record) => (
       <Badge
         status={record.enabled ? 'success' : 'default'}
         text={record.enabled ? '启用' : '禁用'}
       />
-    )
+    ),
   });
 
   const buildActions = (record: FunctionItem) => {
@@ -225,7 +229,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
             icon={<InfoCircleOutlined />}
             onClick={() => onViewDetail?.(record)}
           />
-        </Tooltip>
+        </Tooltip>,
       );
     }
     if (showActions.invoke) {
@@ -237,7 +241,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
             icon={<PlayCircleOutlined />}
             onClick={() => onInvoke?.(record)}
           />
-        </Tooltip>
+        </Tooltip>,
       );
     }
     if (showActions.edit) {
@@ -249,7 +253,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
             icon={<EditOutlined />}
             onClick={() => onEdit?.(record)}
           />
-        </Tooltip>
+        </Tooltip>,
       );
     }
     if (showActions.toggle) {
@@ -262,14 +266,9 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
           onConfirm={() => onToggleStatus?.(record)}
         >
           <Tooltip title={toggleTitle}>
-            <Button
-              type="link"
-              size="small"
-              icon={toggleIcon}
-              danger={record.enabled}
-            />
+            <Button type="link" size="small" icon={toggleIcon} danger={record.enabled} />
           </Tooltip>
-        </Popconfirm>
+        </Popconfirm>,
       );
     }
     if (showActions.delete) {
@@ -280,14 +279,9 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
           onConfirm={() => onDelete?.(record)}
         >
           <Tooltip title="删除">
-            <Button
-              type="link"
-              size="small"
-              icon={<DeleteOutlined />}
-              danger
-            />
+            <Button type="link" size="small" icon={<DeleteOutlined />} danger />
           </Tooltip>
-        </Popconfirm>
+        </Popconfirm>,
       );
     }
     return actions;
@@ -305,15 +299,17 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
     title: '操作',
     valueType: 'option',
     width: actionsCount * 40 + 20,
-    render: (_, record) => <Space>{buildActions(record).map(action => action)}</Space>
+    render: (_, record) => <Space>{buildActions(record).map((action) => action)}</Space>,
   });
 
-  const rowSelection = selectable ? {
-    onChange: handleSelectionChange,
-    getCheckboxProps: (record: FunctionItem) => ({
-      disabled: false
-    })
-  } : undefined;
+  const rowSelection = selectable
+    ? {
+        onChange: handleSelectionChange,
+        getCheckboxProps: (record: FunctionItem) => ({
+          disabled: false,
+        }),
+      }
+    : undefined;
 
   return (
     <ProTable<FunctionItem>
@@ -324,11 +320,11 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
       pagination={{
         ...pagination,
         total: pagination.total || data.length,
-        showTotal: pagination.total ? (total) => `共 ${total} 个函数` : undefined
+        showTotal: pagination.total ? (total) => `共 ${total} 个函数` : undefined,
       }}
       search={{
         labelWidth: 'auto',
-        collapseRender: searchable ? undefined : false
+        collapseRender: searchable ? undefined : false,
       }}
       dateFormatter="string"
       headerTitle="函数列表"
@@ -338,7 +334,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
           tools.push(
             <Button key="refresh" icon={<ReloadOutlined />} onClick={onRefresh}>
               刷新
-            </Button>
+            </Button>,
           );
         }
         return tools;
@@ -348,7 +344,7 @@ export const FunctionListTable: React.FC<FunctionListTableProps> = ({
         density: compact,
         fullScreen: true,
         reload: !!onRefresh,
-        setting: true
+        setting: true,
       }}
     />
   );

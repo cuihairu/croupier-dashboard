@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { AppstoreOutlined, ThunderboltOutlined } from "@ant-design/icons";
-import { Empty, Select, Spin } from "antd";
-import classNames from "classnames";
-import { listMyGames, type Game, type GameEnvMeta } from "@/services/api";
-import { getScope, setScope } from "@/stores/scope";
-import styles from "./index.less";
+import React, { useEffect, useMemo, useState } from 'react';
+import { AppstoreOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { Empty, Select, Spin } from 'antd';
+import classNames from 'classnames';
+import { listMyGames, type Game, type GameEnvMeta } from '@/services/api';
+import { getScope, setScope } from '@/stores/scope';
+import styles from './index.less';
 
 type GameSelectorProps = {
   value?: string;
@@ -12,7 +12,7 @@ type GameSelectorProps = {
   onChange?: (gameId?: string) => void;
   onEnvChange?: (env?: string) => void;
   className?: string;
-  variant?: "header" | "inline";
+  variant?: 'header' | 'inline';
 };
 
 type EnvOption = {
@@ -23,13 +23,13 @@ type EnvOption = {
 };
 
 const DEFAULT_ENV_OPTIONS: EnvOption[] = [
-  { value: "prod", label: "PROD", color: "#13c2c2", description: "Production" },
-  { value: "stage", label: "STAGE", color: "#fa8c16", description: "Staging" },
-  { value: "test", label: "TEST", color: "#722ed1", description: "Testing" },
-  { value: "dev", label: "DEV", color: "#1677ff", description: "Development" },
+  { value: 'prod', label: 'PROD', color: '#13c2c2', description: 'Production' },
+  { value: 'stage', label: 'STAGE', color: '#fa8c16', description: 'Staging' },
+  { value: 'test', label: 'TEST', color: '#722ed1', description: 'Testing' },
+  { value: 'dev', label: 'DEV', color: '#1677ff', description: 'Development' },
 ];
 
-const FALLBACK_COLOR = "#8c8c8c";
+const FALLBACK_COLOR = '#8c8c8c';
 
 const buildEnvOptions = (game?: Game): EnvOption[] => {
   if (!game) return DEFAULT_ENV_OPTIONS;
@@ -37,13 +37,10 @@ const buildEnvOptions = (game?: Game): EnvOption[] => {
     Array.isArray(game.envMeta) && game.envMeta.length > 0
       ? game.envMeta
       : Array.isArray(game.envs) && game.envs.length > 0
-        ? game.envs.map((env) => ({ env }))
-        : null;
+      ? game.envs.map((env) => ({ env }))
+      : null;
 
-  const source = (fromMeta ?? DEFAULT_ENV_OPTIONS) as (
-    | GameEnvMeta
-    | EnvOption
-  )[];
+  const source = (fromMeta ?? DEFAULT_ENV_OPTIONS) as (GameEnvMeta | EnvOption)[];
   return source
     .map((env) => {
       const name = (env as GameEnvMeta).env || (env as EnvOption).value;
@@ -52,10 +49,7 @@ const buildEnvOptions = (game?: Game): EnvOption[] => {
       return {
         value: name,
         label: name.toUpperCase(),
-        color:
-          (env as GameEnvMeta).color ||
-          (env as EnvOption).color ||
-          fallback?.color,
+        color: (env as GameEnvMeta).color || (env as EnvOption).color || fallback?.color,
         description:
           (env as GameEnvMeta).description ||
           (env as EnvOption).description ||
@@ -66,14 +60,14 @@ const buildEnvOptions = (game?: Game): EnvOption[] => {
 };
 
 const toRGBA = (hex?: string, alpha = 0.16) => {
-  if (!hex || !hex.startsWith("#")) return undefined;
-  const raw = hex.replace("#", "");
+  if (!hex || !hex.startsWith('#')) return undefined;
+  const raw = hex.replace('#', '');
   const normalized =
     raw.length === 3
       ? raw
-          .split("")
+          .split('')
           .map((char) => char + char)
-          .join("")
+          .join('')
       : raw;
   const int = parseInt(normalized, 16);
   const r = (int >> 16) & 255;
@@ -88,19 +82,19 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   onChange,
   onEnvChange,
   className,
-  variant = "inline",
+  variant = 'inline',
 }) => {
   const canListGames = true;
 
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const isGameControlled = typeof value !== "undefined";
+  const isGameControlled = typeof value !== 'undefined';
   const [gameState, setGameState] = useState<string | undefined>(
     () => value ?? getScope().gameId ?? undefined,
   );
 
-  const isEnvControlled = typeof envValue !== "undefined";
+  const isEnvControlled = typeof envValue !== 'undefined';
   const [envState, setEnvState] = useState<string | undefined>(
     () => envValue ?? getScope().env ?? undefined,
   );
@@ -128,7 +122,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
         setGames(scopedGames);
       })
       .catch((err) => {
-        console.error("Failed to load games", err);
+        console.error('Failed to load games', err);
       })
       .finally(() => {
         if (mounted) {
@@ -157,7 +151,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
       if (fallback) {
         if (!isGameControlled) {
           setGameState(fallback);
-          localStorage.setItem("game_id", fallback);
+          localStorage.setItem('game_id', fallback);
         }
         onChange?.(fallback);
       }
@@ -174,7 +168,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
       if (fallback) {
         if (!isEnvControlled) {
           setEnvState(fallback);
-          localStorage.setItem("env", fallback);
+          localStorage.setItem('env', fallback);
         }
         onEnvChange?.(fallback);
       }
@@ -203,8 +197,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
     onEnvChange?.(next);
   };
 
-  const currentEnv =
-    (isEnvControlled ? envValue : envState) ?? envOptions[0]?.value;
+  const currentEnv = (isEnvControlled ? envValue : envState) ?? envOptions[0]?.value;
   const colorDot = (color?: string) => ({
     backgroundColor: color || FALLBACK_COLOR,
   });
@@ -240,7 +233,7 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   return (
     <div
       className={classNames(styles.scopeInline, className, {
-        [styles.compact]: variant === "header",
+        [styles.compact]: variant === 'header',
       })}
     >
       <div className={styles.inlineGroup}>

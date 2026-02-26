@@ -6,15 +6,15 @@ type Scope = {
 type ScopeListener = (scope: Scope) => void;
 
 const STORAGE_KEYS = {
-  gameId: "game_id",
-  env: "env",
+  gameId: 'game_id',
+  env: 'env',
 };
 
 let currentScope: Scope = {};
 const listeners = new Set<ScopeListener>();
 
 const readFromStorage = (): Scope => {
-  if (typeof window === "undefined") return {};
+  if (typeof window === 'undefined') return {};
   try {
     return {
       gameId: localStorage.getItem(STORAGE_KEYS.gameId) || undefined,
@@ -26,7 +26,7 @@ const readFromStorage = (): Scope => {
 };
 
 const persistToStorage = (scope: Scope) => {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
   try {
     if (scope.gameId) {
       localStorage.setItem(STORAGE_KEYS.gameId, scope.gameId);
@@ -40,8 +40,8 @@ const persistToStorage = (scope: Scope) => {
 };
 
 const emitScopeChange = (scope: Scope) => {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("scope:change", { detail: scope }));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('scope:change', { detail: scope }));
   }
   listeners.forEach((listener) => listener(scope));
 };

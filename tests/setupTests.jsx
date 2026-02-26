@@ -92,7 +92,8 @@ jest.mock('@umijs/max', () => {
     useIntl: () => ({
       formatMessage: ({ defaultMessage }) => defaultMessage,
     }),
-    FormattedMessage: ({ defaultMessage }) => React.createElement(React.Fragment, null, defaultMessage),
+    FormattedMessage: ({ defaultMessage }) =>
+      React.createElement(React.Fragment, null, defaultMessage),
     SelectLang: () => null,
     Helmet: ({ children }) => React.createElement(React.Fragment, null, children),
     useModel: () => ({
@@ -103,4 +104,3 @@ jest.mock('@umijs/max', () => {
     }),
   };
 });
-

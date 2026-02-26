@@ -20,7 +20,6 @@ export default {
   'menu.Support.Feedback': 'Player Feedback',
   'menu.Support.Bugs': 'Bugs',
 
-
   // Security settings
   'menu.Security': 'Security',
   'menu.Security.Roles': 'Role Management',

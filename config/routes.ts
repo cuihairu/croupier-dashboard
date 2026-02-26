@@ -130,14 +130,56 @@ export default [
     access: 'canAnalyticsRead',
     routes: [
       { path: '/analytics', redirect: '/analytics/realtime' },
-      { path: '/analytics/realtime', name: 'Realtime', access: 'canAnalyticsRead', component: './Analytics/Realtime' },
-      { path: '/analytics/overview', name: 'Overview', access: 'canAnalyticsRead', component: './Analytics/Overview' },
-      { path: '/analytics/retention', name: 'Retention', access: 'canAnalyticsRead', component: './Analytics/Retention' },
-      { path: '/analytics/behavior', name: 'Behavior', access: 'canAnalyticsRead', component: './Analytics/Behavior' },
-      { path: '/analytics/payments', name: 'Payments', access: 'canAnalyticsRead', component: './Analytics/Payments' },
-      { path: '/analytics/levels', name: 'Levels', access: 'canAnalyticsRead', component: './Analytics/Levels' },
-      { path: '/analytics/attribution', name: 'Attribution', access: 'canAnalyticsRead', component: './Analytics/Attribution', hideInMenu: true },
-      { path: '/analytics/segments', name: 'Segments', access: 'canAnalyticsRead', component: './Analytics/Segments', hideInMenu: true },
+      {
+        path: '/analytics/realtime',
+        name: 'Realtime',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Realtime',
+      },
+      {
+        path: '/analytics/overview',
+        name: 'Overview',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Overview',
+      },
+      {
+        path: '/analytics/retention',
+        name: 'Retention',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Retention',
+      },
+      {
+        path: '/analytics/behavior',
+        name: 'Behavior',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Behavior',
+      },
+      {
+        path: '/analytics/payments',
+        name: 'Payments',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Payments',
+      },
+      {
+        path: '/analytics/levels',
+        name: 'Levels',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Levels',
+      },
+      {
+        path: '/analytics/attribution',
+        name: 'Attribution',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Attribution',
+        hideInMenu: true,
+      },
+      {
+        path: '/analytics/segments',
+        name: 'Segments',
+        access: 'canAnalyticsRead',
+        component: './Analytics/Segments',
+        hideInMenu: true,
+      },
     ],
   },
   // Operations / Ops merged into a single menu
@@ -149,29 +191,86 @@ export default [
     routes: [
       { path: '/ops', redirect: '/ops/approvals' },
       // Governance & audit
-      { path: '/ops/approvals', name: 'Approvals', access: 'canApprovalsRead', component: './Approvals' },
+      {
+        path: '/ops/approvals',
+        name: 'Approvals',
+        access: 'canApprovalsRead',
+        component: './Approvals',
+      },
       { path: '/ops/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
-      { path: '/ops/operation-logs', name: 'OperationLogs', access: 'canAuditRead', component: './Admin/OperationLogs' },
+      {
+        path: '/ops/operation-logs',
+        name: 'OperationLogs',
+        access: 'canAuditRead',
+        component: './Admin/OperationLogs',
+      },
       // Registry & servers (advanced)
-      { path: '/ops/registry', name: 'Registry', access: 'canRegistryRead', component: './Registry', hideInMenu: true },
-      { path: '/ops/servers', name: 'Servers', access: 'canRegistryRead', component: './Servers', hideInMenu: true },
+      {
+        path: '/ops/registry',
+        name: 'Registry',
+        access: 'canRegistryRead',
+        component: './Registry',
+        hideInMenu: true,
+      },
+      {
+        path: '/ops/servers',
+        name: 'Servers',
+        access: 'canRegistryRead',
+        component: './Servers',
+        hideInMenu: true,
+      },
       // Config & integrations
-      { path: '/ops/configs', name: 'Configs', access: 'canOpsRead', component: './Operations/Configs' },
+      {
+        path: '/ops/configs',
+        name: 'Configs',
+        access: 'canOpsRead',
+        component: './Operations/Configs',
+      },
       { path: '/ops/platforms', name: 'Platforms', access: 'canOpsRead', component: './Platforms' },
       { path: '/ops/storage', name: 'Storage', access: 'canOpsRead', component: './Storage' },
       // Infra & runtime
-      { path: '/ops/services', name: 'Services', access: 'canOpsRead', component: './Ops/Services' },
+      {
+        path: '/ops/services',
+        name: 'Services',
+        access: 'canOpsRead',
+        component: './Ops/Services',
+      },
       { path: '/ops/health', name: 'Health', access: 'canOpsRead', component: './Ops/Health' },
       { path: '/ops/nodes', name: 'Nodes', access: 'canOpsRead', component: './Ops/Nodes' },
       { path: '/ops/jobs', name: 'Jobs', access: 'canOpsRead', component: './Ops/Jobs' },
       { path: '/ops/alerts', name: 'Alerts', access: 'canOpsRead', component: './Ops/Alerts' },
-      { path: '/ops/rate-limits', name: 'RateLimits', access: 'canOpsManage', component: './Ops/RateLimits' },
+      {
+        path: '/ops/rate-limits',
+        name: 'RateLimits',
+        access: 'canOpsManage',
+        component: './Ops/RateLimits',
+      },
       { path: '/ops/backups', name: 'Backups', access: 'canOpsManage', component: './Ops/Backups' },
       { path: '/ops/mq', name: 'MQ', access: 'canOpsRead', component: './Ops/MQ' },
-      { path: '/ops/certificates', name: 'Certificates', access: 'canOpsManage', component: './Ops/Certificates' },
-      { path: '/ops/notifications', name: 'Notifications', access: 'canOpsManage', component: './Ops/Notifications' },
-      { path: '/ops/analytics-filters', name: 'AnalyticsFilters', access: 'canOpsManage', component: './Ops/AnalyticsFilters' },
-      { path: '/ops/maintenance', name: 'Maintenance', access: 'canOpsManage', component: './Ops/Maintenance' },
+      {
+        path: '/ops/certificates',
+        name: 'Certificates',
+        access: 'canOpsManage',
+        component: './Ops/Certificates',
+      },
+      {
+        path: '/ops/notifications',
+        name: 'Notifications',
+        access: 'canOpsManage',
+        component: './Ops/Notifications',
+      },
+      {
+        path: '/ops/analytics-filters',
+        name: 'AnalyticsFilters',
+        access: 'canOpsManage',
+        component: './Ops/AnalyticsFilters',
+      },
+      {
+        path: '/ops/maintenance',
+        name: 'Maintenance',
+        access: 'canOpsManage',
+        component: './Ops/Maintenance',
+      },
     ],
   },
   {
@@ -236,8 +335,16 @@ export default [
         icon: 'user',
         routes: [
           { path: '/admin/account/center', name: 'Center', component: './Profile' },
-          { path: '/admin/account/settings', name: 'Settings', redirect: '/admin/account/center?tab=security' },
-          { path: '/admin/account/messages', name: 'Messages', redirect: '/admin/account/center?tab=notifications' },
+          {
+            path: '/admin/account/settings',
+            name: 'Settings',
+            redirect: '/admin/account/center?tab=security',
+          },
+          {
+            path: '/admin/account/messages',
+            name: 'Messages',
+            redirect: '/admin/account/center?tab=notifications',
+          },
         ],
       },
       // Back-office user management (mirrors Security pages for convenience)
@@ -270,9 +377,19 @@ export default [
       // Quick links to audit pages
       { path: '/admin/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
       // Login logs shortcut page (wraps Audit with preset kind=login)
-      { path: '/admin/login-logs', name: 'LoginLogs', access: 'canAuditRead', component: './Admin/LoginLogs' },
+      {
+        path: '/admin/login-logs',
+        name: 'LoginLogs',
+        access: 'canAuditRead',
+        component: './Admin/LoginLogs',
+      },
       // Operation logs (audit view focused on non-login events)
-      { path: '/admin/operation-logs', name: 'OperationLogs', access: 'canAuditRead', component: './Admin/OperationLogs' },
+      {
+        path: '/admin/operation-logs',
+        name: 'OperationLogs',
+        access: 'canAuditRead',
+        component: './Admin/OperationLogs',
+      },
     ],
   },
   {
