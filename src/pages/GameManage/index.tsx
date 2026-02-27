@@ -81,6 +81,13 @@ export default function GameManagePage() {
                 <Popconfirm
                   title={`Delete game "${row.name}"?`}
                   onConfirm={async () => {
+                    if ((data || []).length <= 1) {
+                      Modal.warning({
+                        title: '无法删除',
+                        content: '至少需要保留一个游戏，当前仅剩 1 个。',
+                      });
+                      return;
+                    }
                     if (!row.id) {
                       Modal.warning({ title: '无法删除', content: '该游戏缺少 ID，无法调用删除接口。' });
                       return;
@@ -89,7 +96,7 @@ export default function GameManagePage() {
                     await reload();
                   }}
                 >
-                  <Button danger size="small">Delete</Button>
+                  <Button danger size="small" disabled={(data || []).length <= 1}>Delete</Button>
                 </Popconfirm>
               ),
             },
