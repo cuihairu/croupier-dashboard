@@ -28,6 +28,7 @@ export default {
 
   // New game management structure
   'menu.GameManagement': 'Game Management',
+  'menu.GameManagement.GameCatalog': 'Games',
   'menu.GameManagement.GameEnvironments': 'Game Environments',
   'menu.GameManagement.GameEntities': 'Entity Management',
   'menu.GameManagement.FunctionManagement': 'Function Management',

@@ -23,6 +23,12 @@ export default [
       },
       // 游戏基础配置页面已下线，合并到环境/实体等页面
       {
+        path: '/game/manage',
+        name: 'GameCatalog',
+        access: 'canGamesManage',
+        component: './GameManage',
+      },
+      {
         path: '/game/environments',
         name: 'GameEnvironments',
         access: 'canGamesRead',
