@@ -4,11 +4,13 @@ import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { listGamesMeta, listMyGames, type Game as GameMeta } from '@/services/api';
 import { listGameEnvs, addGameEnv, updateGameEnv, deleteGameEnv, type GameEnv } from '@/services/api/envs';
+import { getScope, subscribeScope } from '@/stores/scope';
 
 export default function GamesEnvsPage() {
   const { message } = App.useApp();
   const [games, setGames] = useState<GameMeta[]>([]);
   const [gameId, setGameId] = useState<number | undefined>(undefined);
+  const [scopeGameId, setScopeGameId] = useState<string | undefined>(() => getScope().gameId || undefined);
   const [envs, setEnvs] = useState<GameEnv[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +49,28 @@ export default function GamesEnvsPage() {
   };
 
   useEffect(() => { loadGames(); }, []);
+  useEffect(() => {
+    const off = subscribeScope((scope) => {
+      setScopeGameId(scope.gameId || undefined);
+    });
+    const onStorage = () => {
+      setScopeGameId(localStorage.getItem('game_id') || undefined);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      off();
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!scopeGameId || !games.length) return;
+    const matched = games.find((g) => g.name === scopeGameId || String(g.id) === scopeGameId);
+    if (matched?.id && matched.id !== gameId) {
+      setGameId(matched.id);
+    }
+  }, [scopeGameId, games, gameId]);
+
   useEffect(() => {
     if (!games.length || !gameId) return;
     if (!games.some((g) => g.id === gameId)) {
