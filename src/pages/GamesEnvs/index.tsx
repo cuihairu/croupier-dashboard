@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Card, Space, Select, Button, Table, Modal, Form, Input, App, Tag } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { listGamesMeta, type Game as GameMeta } from '@/services/api';
+import { listGamesMeta, listMyGames, type Game as GameMeta } from '@/services/api';
 import { listGameEnvs, addGameEnv, updateGameEnv, deleteGameEnv, type GameEnv } from '@/services/api/envs';
 
 export default function GamesEnvsPage() {
@@ -19,9 +19,24 @@ export default function GamesEnvsPage() {
   const [editing, setEditing] = useState<GameEnv | null>(null);
 
   const loadGames = async () => {
-    const res = await listGamesMeta();
-    setGames(res.games || []);
-    if (!gameId && res.games?.[0]?.id) setGameId(res.games[0].id);
+    // Prefer full game list; fallback to scoped list so page still works with limited permissions.
+    let gameList = (await listGamesMeta()).games || [];
+    if (!gameList.length) {
+      gameList = (await listMyGames()).games || [];
+    }
+
+    setGames(gameList);
+
+    if (!gameId && gameList.length > 0) {
+      const preferred = localStorage.getItem('game_id') || undefined;
+      const matched =
+        gameList.find((g) => g.name === preferred) ||
+        gameList.find((g) => String(g.id) === preferred);
+      const fallback = matched || gameList[0];
+      if (fallback?.id) {
+        setGameId(fallback.id);
+      }
+    }
   };
   const loadEnvs = async (gid?: number) => {
     if (!gid) return;
@@ -32,6 +47,12 @@ export default function GamesEnvsPage() {
   };
 
   useEffect(() => { loadGames(); }, []);
+  useEffect(() => {
+    if (!games.length || !gameId) return;
+    if (!games.some((g) => g.id === gameId)) {
+      setGameId(games[0]?.id);
+    }
+  }, [games, gameId]);
   useEffect(() => { if (gameId) loadEnvs(gameId); }, [gameId]);
 
   const columns: ColumnsType<GameEnv> = useMemo(() => ([
