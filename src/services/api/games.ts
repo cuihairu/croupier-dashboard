@@ -70,7 +70,8 @@ function normalizeGame(g: any): Game {
 
 export async function listGamesMeta() {
   const res = await request<any>("/api/v1/games");
-  const games = Array.isArray(res?.games) ? res.games.map(normalizeGame) : [];
+  const payload = res?.data?.games ?? res?.games;
+  const games = Array.isArray(payload) ? payload.map(normalizeGame) : [];
   return { games } as { games: Game[] };
 }
 
