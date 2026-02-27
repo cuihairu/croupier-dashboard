@@ -41,7 +41,7 @@ const normalizeEnvMeta = (envs: any): GameEnvMeta[] | undefined => {
 // Normalize server payload shape to our frontend's camel/snake case keys.
 function normalizeGame(g: any): Game {
   const slug = g?.gameId ?? g?.game_id ?? g?.name ?? g?.Name;
-  const alias = g?.alias_name ?? g?.AliasName ?? g?.gameName ?? g?.game_name;
+  const alias = g?.aliasName ?? g?.alias_name ?? g?.AliasName ?? g?.gameName ?? g?.game_name;
   const normalized: Game = {
     id: g?.id ?? g?.ID,
     name: slug,
@@ -84,13 +84,27 @@ export async function listMyGames() {
 }
 
 export async function upsertGame(g: Game) {
-  // POST /api/v1/games: id==0/undefined -> create; else update
   return request<{ id: number } | void>("/api/v1/games", {
     method: "POST",
-    data: g,
+    data: {
+      name: g.name,
+      aliasName: g.alias_name,
+      description: g.description,
+      config: (g as any)?.config,
+    },
   });
 }
 
 export async function deleteGame(id: number) {
   return request<void>(`/api/v1/games/${id}`, { method: "DELETE" });
+}
+
+export async function updateGame(id: number, g: Pick<Game, "alias_name" | "description">) {
+  return request<void>(`/api/v1/games/${id}`, {
+    method: "PUT",
+    data: {
+      aliasName: g.alias_name,
+      description: g.description,
+    },
+  });
 }

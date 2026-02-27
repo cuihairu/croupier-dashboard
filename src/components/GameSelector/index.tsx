@@ -89,6 +89,20 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const reloadGames = async () => {
+    if (!canListGames) return;
+    setLoading(true);
+    try {
+      const res = await listMyGames();
+      const scopedGames = Array.isArray(res?.games) ? res.games : [];
+      setGames(scopedGames);
+    } catch (err) {
+      console.error('Failed to load games', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isGameControlled = typeof value !== 'undefined';
   const [gameState, setGameState] = useState<string | undefined>(
     () => value ?? getScope().gameId ?? undefined,
@@ -112,27 +126,19 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   }, [envValue, isEnvControlled]);
 
   useEffect(() => {
-    if (!canListGames) return;
-    let mounted = true;
-    setLoading(true);
-    listMyGames()
-      .then((res) => {
-        if (!mounted) return;
-        const scopedGames = Array.isArray(res?.games) ? res.games : [];
-        setGames(scopedGames);
-      })
-      .catch((err) => {
-        console.error('Failed to load games', err);
-      })
-      .finally(() => {
-        if (mounted) {
-          setLoading(false);
-        }
-      });
-    return () => {
-      mounted = false;
-    };
+    reloadGames();
   }, [canListGames]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onGamesChanged = () => {
+      reloadGames();
+    };
+    window.addEventListener('games:changed', onGamesChanged);
+    return () => {
+      window.removeEventListener('games:changed', onGamesChanged);
+    };
+  }, []);
 
   const activeGame = useMemo(() => {
     if (!games.length) return undefined;
