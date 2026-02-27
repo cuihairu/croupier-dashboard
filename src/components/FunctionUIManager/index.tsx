@@ -50,6 +50,8 @@ export default function FunctionUIManager({
   }>({});
   const [useCustomUI, setUseCustomUI] = useState(false);
   const [hasDefaultUI, setHasDefaultUI] = useState(false);
+  const [uiSource, setUISource] = useState<string>('none');
+  const [uiSourceDetail, setUISourceDetail] = useState<string>('');
   const [originalSchema, setOriginalSchema] = useState<any>(undefined);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -73,12 +75,16 @@ export default function FunctionUIManager({
       const hasDefault = typeof res?.hasDefault === 'boolean' ? res.hasDefault : (!!config.schema && !custom);
       setUseCustomUI(custom);
       setHasDefaultUI(hasDefault);
+      setUISource(res?.uiSource || (custom ? 'custom_metadata' : hasDefault ? 'openapi_x_ui' : 'none'));
+      setUISourceDetail(res?.uiSourceDetail || '');
     } catch (e: any) {
       if (e?.response?.status === 404) {
         setUiConfig({});
         setOriginalSchema(undefined);
         setUseCustomUI(false);
         setHasDefaultUI(false);
+        setUISource('none');
+        setUISourceDetail('');
         setIsDirty(false);
       } else {
         message.error(e?.message || '加载 UI 配置失败');
@@ -172,6 +178,9 @@ export default function FunctionUIManager({
           <Tag color={useCustomUI ? 'blue' : hasDefaultUI ? 'green' : 'default'}>
             {useCustomUI ? '当前: 自定义' : hasDefaultUI ? '当前: 默认' : '当前: 未配置'}
           </Tag>
+          <Tag>
+            来源: {uiSource}
+          </Tag>
           <Button
             icon={<ReloadOutlined />}
             onClick={loadUIConfig}
@@ -220,6 +229,15 @@ export default function FunctionUIManager({
               showIcon
               style={{ marginBottom: 16 }}
             />
+            {uiSourceDetail && (
+              <Alert
+                message="UI 来源详情"
+                description={uiSourceDetail}
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+            )}
 
             <SchemaRenderer
               schema={uiConfig.schema}
