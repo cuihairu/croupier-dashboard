@@ -1,16 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Card,
-  Button,
-  Space,
-  Alert,
-  Switch,
-  Tag,
-  Spin,
-  Empty,
-  Divider,
-  App
-} from 'antd';
+import { Card, Button, Space, Alert, Switch, Tag, Spin, Empty, Divider, App } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { history, useModel } from '@umijs/max';
 import { fetchFunctionUiSchema } from '@/services/api/functions';
@@ -37,7 +26,7 @@ interface FunctionUIManagerProps {
 export default function FunctionUIManager({
   functionId,
   jsonSchema,
-  onSave
+  onSave,
 }: FunctionUIManagerProps) {
   const { message } = App.useApp();
   const { initialState } = useModel('@@initialState');
@@ -52,8 +41,18 @@ export default function FunctionUIManager({
   const [hasDefaultUI, setHasDefaultUI] = useState(false);
   const [uiSource, setUISource] = useState<string>('none');
   const [uiSourceDetail, setUISourceDetail] = useState<string>('');
+  const [updatedAt, setUpdatedAt] = useState<string>('');
   const [originalSchema, setOriginalSchema] = useState<any>(undefined);
   const [isDirty, setIsDirty] = useState(false);
+
+  const sourceMeta: Record<string, { label: string; color: string }> = {
+    custom_metadata: { label: '自定义元数据', color: 'blue' },
+    config_file_override: { label: '配置文件覆盖', color: 'purple' },
+    openapi_x_ui: { label: 'OpenAPI x-ui', color: 'green' },
+    legacy_schema: { label: 'Legacy Schema', color: 'orange' },
+    none: { label: '未配置', color: 'default' },
+  };
+  const sourceDisplay = sourceMeta[uiSource] || { label: uiSource || '未知', color: 'default' };
 
   // 加载 UI 配置
   const loadUIConfig = async () => {
@@ -65,18 +64,22 @@ export default function FunctionUIManager({
       const config = {
         schema: res?.schema,
         layout: res?.layout,
-        components: res?.components
+        components: res?.components,
       };
       setUiConfig(config);
       setOriginalSchema(config.schema);
       setIsDirty(false);
 
       const custom = !!res?.custom;
-      const hasDefault = typeof res?.hasDefault === 'boolean' ? res.hasDefault : (!!config.schema && !custom);
+      const hasDefault =
+        typeof res?.hasDefault === 'boolean' ? res.hasDefault : !!config.schema && !custom;
       setUseCustomUI(custom);
       setHasDefaultUI(hasDefault);
-      setUISource(res?.uiSource || (custom ? 'custom_metadata' : hasDefault ? 'openapi_x_ui' : 'none'));
+      setUISource(
+        res?.uiSource || (custom ? 'custom_metadata' : hasDefault ? 'openapi_x_ui' : 'none'),
+      );
       setUISourceDetail(res?.uiSourceDetail || '');
+      setUpdatedAt(res?.updated_at || '');
     } catch (e: any) {
       if (e?.response?.status === 404) {
         setUiConfig({});
@@ -85,6 +88,7 @@ export default function FunctionUIManager({
         setHasDefaultUI(false);
         setUISource('none');
         setUISourceDetail('');
+        setUpdatedAt('');
         setIsDirty(false);
       } else {
         message.error(e?.message || '加载 UI 配置失败');
@@ -110,7 +114,7 @@ export default function FunctionUIManager({
       await onSave({
         schema: newUISchema,
         layout: uiConfig.layout,
-        components: uiConfig.components
+        components: uiConfig.components,
       });
       message.success('UI 配置保存成功');
       await loadUIConfig(); // 重新加载
@@ -139,7 +143,7 @@ export default function FunctionUIManager({
         await onSave({
           schema: initialSchema,
           layout: uiConfig.layout,
-          components: uiConfig.components
+          components: uiConfig.components,
         });
         setUseCustomUI(true);
       } else {
@@ -147,7 +151,7 @@ export default function FunctionUIManager({
         await onSave({
           schema: { __clear_custom_ui: true },
           layout: uiConfig.layout,
-          components: uiConfig.components
+          components: uiConfig.components,
         });
         setUseCustomUI(false);
       }
@@ -178,20 +182,17 @@ export default function FunctionUIManager({
           <Tag color={useCustomUI ? 'blue' : hasDefaultUI ? 'green' : 'default'}>
             {useCustomUI ? '当前: 自定义' : hasDefaultUI ? '当前: 默认' : '当前: 未配置'}
           </Tag>
-          <Tag>
-            来源: {uiSource}
-          </Tag>
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={loadUIConfig}
-            loading={loading}
-          >
+          <Tag>来源: {sourceDisplay.label}</Tag>
+          <Tag color={sourceDisplay.color}>source={uiSource}</Tag>
+          <Button icon={<ReloadOutlined />} onClick={loadUIConfig} loading={loading}>
             刷新
           </Button>
           {featureFlags.formilyDesigner && (
             <Button
               type="primary"
-              onClick={() => history.push(`/game/functions/${encodeURIComponent(functionId)}/ui-designer`)}
+              onClick={() =>
+                history.push(`/game/functions/${encodeURIComponent(functionId)}/ui-designer`)
+              }
             >
               打开设计器
             </Button>
@@ -213,148 +214,167 @@ export default function FunctionUIManager({
     >
       {!hasDefaultUI && !uiConfig.schema ? (
         <Empty description="该函数没有配置 UI Schema" />
-      ) : (
-        featureFlags.formilyDesigner ? (
-          <>
+      ) : featureFlags.formilyDesigner ? (
+        <>
+          <Alert
+            message="UI 预览"
+            description={
+              useCustomUI
+                ? '当前使用自定义 UI 配置'
+                : hasDefaultUI
+                ? '当前使用默认 UI 配置（来自 OpenAPI x-ui 扩展）'
+                : '当前无 UI 配置'
+            }
+            type={useCustomUI ? 'success' : 'info'}
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          {uiSourceDetail && (
             <Alert
-              message="UI 预览"
-              description={
-                useCustomUI
-                  ? "当前使用自定义 UI 配置"
-                  : hasDefaultUI
-                  ? "当前使用默认 UI 配置（来自 OpenAPI x-ui 扩展）"
-                  : "当前无 UI 配置"
-              }
-              type={useCustomUI ? "success" : "info"}
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-            {uiSourceDetail && (
-              <Alert
-                message="UI 来源详情"
-                description={uiSourceDetail}
-                type="info"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-            )}
-
-            <SchemaRenderer
-              schema={uiConfig.schema}
-              readOnly={false}
-              context={{
-                gameId: typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined,
-                env: typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined,
-                functionId,
-                permissions: String((initialState as any)?.currentUser?.access || '')
-                  .split(',')
-                  .filter(Boolean),
-              }}
-              scope={{
-                hasPerm: (perm: string) =>
-                  String((initialState as any)?.currentUser?.access || '')
-                    .split(',')
-                    .filter(Boolean)
-                    .includes(perm),
-                fetchOptions,
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <Alert
-              message="UI 预览（Legacy）"
-              description="当前使用旧版 UI Schema 预览与编辑"
+              message="UI 来源详情"
+              description={uiSourceDetail}
               type="info"
               showIcon
               style={{ marginBottom: 16 }}
             />
+          )}
+          {updatedAt && (
+            <Alert
+              message="最近更新时间"
+              description={new Date(updatedAt).toLocaleString('zh-CN')}
+              type="success"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
 
-            {jsonSchema ? (
-              <FunctionFormRenderer
-                schema={jsonSchema}
-                uiSchema={uiConfig.schema}
-                compact
-                submitText="预览提交"
-                showReset={false}
-              />
-            ) : (
-              <Alert
-                message="无法预览"
-                description="缺少函数的 JSON Schema，无法渲染表单预览"
-                type="warning"
-                showIcon
-              />
-            )}
+          <SchemaRenderer
+            schema={uiConfig.schema}
+            readOnly={false}
+            context={{
+              gameId:
+                typeof window !== 'undefined'
+                  ? localStorage.getItem('game_id') || undefined
+                  : undefined,
+              env:
+                typeof window !== 'undefined'
+                  ? localStorage.getItem('env') || undefined
+                  : undefined,
+              functionId,
+              permissions: String((initialState as any)?.currentUser?.access || '')
+                .split(',')
+                .filter(Boolean),
+            }}
+            scope={{
+              hasPerm: (perm: string) =>
+                String((initialState as any)?.currentUser?.access || '')
+                  .split(',')
+                  .filter(Boolean)
+                  .includes(perm),
+              fetchOptions,
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <Alert
+            message="UI 预览（Legacy）"
+            description="当前使用旧版 UI Schema 预览与编辑"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
 
-            <Divider />
+          {jsonSchema ? (
+            <FunctionFormRenderer
+              schema={jsonSchema}
+              uiSchema={uiConfig.schema}
+              compact
+              submitText="预览提交"
+              showReset={false}
+            />
+          ) : (
+            <Alert
+              message="无法预览"
+              description="缺少函数的 JSON Schema，无法渲染表单预览"
+              type="warning"
+              showIcon
+            />
+          )}
 
-            {!useCustomUI && hasDefaultUI ? (
-              <Alert
-                message="启用自定义编辑"
-                description="请先启用自定义 UI 开关，才能编辑 UI 配置"
-                type="warning"
-                showIcon
-                action={
-                  <Button
-                    type="primary"
-                    size="small"
-                    onClick={() => handleToggleCustomUI(true)}
-                  >
-                    启用自定义 UI
-                  </Button>
-                }
+          <Divider />
+
+          {!useCustomUI && hasDefaultUI ? (
+            <Alert
+              message="启用自定义编辑"
+              description="请先启用自定义 UI 开关，才能编辑 UI 配置"
+              type="warning"
+              showIcon
+              action={
+                <Button type="primary" size="small" onClick={() => handleToggleCustomUI(true)}>
+                  启用自定义 UI
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              {isDirty && (
+                <Alert
+                  message="有未保存修改"
+                  description="请点击“保存更改”提交，或“重置更改/取消”放弃本次编辑。"
+                  type="warning"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+              )}
+              <UISchemaEditor
+                value={uiConfig.schema}
+                jsonSchema={jsonSchema}
+                onChange={(newSchema) => {
+                  const changed =
+                    JSON.stringify(newSchema ?? null) !== JSON.stringify(originalSchema ?? null);
+                  setUiConfig((prev) => ({
+                    ...prev,
+                    schema: newSchema,
+                  }));
+                  setIsDirty(changed);
+                }}
               />
-            ) : (
-              <>
-                <UISchemaEditor
-                  value={uiConfig.schema}
-                  jsonSchema={jsonSchema}
-                  onChange={(newSchema) => {
-                    const changed = JSON.stringify(newSchema ?? null) !== JSON.stringify(originalSchema ?? null);
+
+              <Divider />
+
+              <Space>
+                <Button
+                  type="primary"
+                  onClick={() => handleSave(uiConfig.schema)}
+                  loading={saving}
+                  disabled={!isDirty}
+                >
+                  保存更改
+                </Button>
+                <Button
+                  disabled={!isDirty}
+                  onClick={() => {
                     setUiConfig((prev) => ({
                       ...prev,
-                      schema: newSchema
+                      schema: originalSchema,
                     }));
-                    setIsDirty(changed);
+                    setIsDirty(false);
                   }}
-                />
-
-                <Divider />
-
-                <Space>
-                  <Button
-                    type="primary"
-                    onClick={() => handleSave(uiConfig.schema)}
-                    loading={saving}
-                    disabled={!isDirty}
-                  >
-                    保存更改
-                  </Button>
-                  <Button
-                    disabled={!isDirty}
-                    onClick={() => {
-                      setUiConfig((prev) => ({
-                        ...prev,
-                        schema: originalSchema
-                      }));
-                      setIsDirty(false);
-                    }}
-                  >
-                    重置更改
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      loadUIConfig();
-                    }}
-                  >
-                    取消
-                  </Button>
-                </Space>
-              </>
-            )}
-          </>
-        )
+                >
+                  重置更改
+                </Button>
+                <Button
+                  onClick={() => {
+                    loadUIConfig();
+                  }}
+                >
+                  取消
+                </Button>
+              </Space>
+            </>
+          )}
+        </>
       )}
     </Card>
   );

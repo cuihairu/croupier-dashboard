@@ -42,22 +42,41 @@ import {
 import { useModel } from '@umijs/max';
 import { useIntl } from '@umijs/max';
 import { history as routerHistory } from '@umijs/max';
-import GameSelector from '@/components/GameSelector';
 import {
   listDescriptors,
   fetchAssignments,
   setAssignments,
   FunctionDescriptor,
-  AssignmentConfig,
-  AssignmentHistory,
-  CanaryConfig,
 } from '@/services/api';
+
+type CanaryConfig = {
+  enabled?: boolean;
+  percentage?: number;
+  rules?: Record<string, any>;
+  duration?: string;
+};
+
+type AssignmentHistory = {
+  id: string;
+  game_id: string;
+  env: string;
+  function_id: string;
+  action: 'assign' | 'remove' | string;
+  count: number;
+  operated_by: string;
+  operated_at: string;
+  details?: Record<string, any>;
+};
 
 type AssignmentItem = {
   id: string;
   name: string;
   version: string;
   category: string;
+  menuSection?: string;
+  menuGroup?: string;
+  menuPath?: string;
+  menuSource?: string;
   status: 'active' | 'canary' | 'disabled';
   canary?: CanaryConfig;
   assignedAt?: string;
@@ -67,13 +86,19 @@ type AssignmentItem = {
 type AssignmentGroup = {
   category: string;
   items: AssignmentItem[];
+  activeCount: number;
+  canaryCount: number;
 };
+
+const ASSIGNMENT_HISTORY_KEY = 'assignment_history_v1';
 
 export default function AssignmentsPage() {
   const { message } = App.useApp();
   const intl = useIntl();
   const [descs, setDescs] = useState<FunctionDescriptor[]>([]);
-  const [gameId, setGameId] = useState<string | undefined>(localStorage.getItem('game_id') || undefined);
+  const [gameId, setGameId] = useState<string | undefined>(
+    localStorage.getItem('game_id') || undefined,
+  );
   const [env, setEnv] = useState<string | undefined>(localStorage.getItem('env') || undefined);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -84,14 +109,33 @@ export default function AssignmentsPage() {
   const [canaryModalVisible, setCanaryModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
 
+  const appendHistory = (entry: AssignmentHistory) => {
+    try {
+      const raw = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      const next = [entry, ...(Array.isArray(arr) ? arr : [])].slice(0, 100);
+      localStorage.setItem(ASSIGNMENT_HISTORY_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  };
+
   const options = useMemo(
-    () => (Array.isArray(descs) ? descs : []).map((d) => ({
-      label: `${d.id} v${d.version || ''}`,
-      value: d.id,
-      version: d.version,
-      category: d.category || 'general',
-      displayName: d.display_name || d.id,
-    })),
+    () =>
+      (Array.isArray(descs) ? descs : []).map((d) => ({
+        label: `${d.id} v${d.version || ''}`,
+        value: d.id,
+        version: d.version,
+        category: d.category || 'general',
+        displayName:
+          (typeof d.display_name === 'object'
+            ? d.display_name?.zh || d.display_name?.en
+            : d.display_name) || d.id,
+        menuSection: d.menu?.section || '',
+        menuGroup: d.menu?.group || '',
+        menuPath: d.menu?.path || '',
+        menuSource: (d as any).menuSource || 'default',
+      })),
     [descs],
   );
 
@@ -118,8 +162,11 @@ export default function AssignmentsPage() {
         name: opt.displayName,
         version: opt.version,
         category: opt.category,
+        menuSection: opt.menuSection,
+        menuGroup: opt.menuGroup,
+        menuPath: opt.menuPath,
+        menuSource: opt.menuSource,
         status,
-        assignedAt: isSelected ? new Date().toISOString() : undefined,
       });
     });
 
@@ -176,8 +223,16 @@ export default function AssignmentsPage() {
       setGameId(localStorage.getItem('game_id') || undefined);
       setEnv(localStorage.getItem('env') || undefined);
     };
+    const onGamesChanged = () => onStorage();
+    const onRouteChanged = () => load().catch(() => {});
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener('games:changed', onGamesChanged as EventListener);
+    window.addEventListener('function-route:changed', onRouteChanged as EventListener);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('games:changed', onGamesChanged as EventListener);
+      window.removeEventListener('function-route:changed', onRouteChanged as EventListener);
+    };
   }, []);
 
   const onSave = async () => {
@@ -199,6 +254,17 @@ export default function AssignmentsPage() {
       } else {
         message.success(intl.formatMessage({ id: 'pages.assignments.save.success' }));
       }
+      appendHistory({
+        id: `${Date.now()}`,
+        game_id: gameId,
+        env: env || 'prod',
+        function_id: 'all',
+        action: 'assign',
+        count: selected.length,
+        operated_by: 'current_user',
+        operated_at: new Date().toISOString(),
+        details: { functions: selected.slice(0, 20), unknown },
+      });
       await load();
     } finally {
       setLoading(false);
@@ -222,6 +288,17 @@ export default function AssignmentsPage() {
     try {
       await setAssignments({ game_id: gameId, env: targetEnv, functions: selected });
       message.success(`已克隆分配到 ${targetEnv} 环境`);
+      appendHistory({
+        id: `${Date.now()}-${targetEnv}`,
+        game_id: gameId,
+        env: targetEnv,
+        function_id: 'all',
+        action: 'clone',
+        count: selected.length,
+        operated_by: 'current_user',
+        operated_at: new Date().toISOString(),
+        details: { fromEnv: env || 'prod', functions: selected.slice(0, 20) },
+      });
     } catch (e: any) {
       message.error(`克隆失败: ${e.message}`);
     } finally {
@@ -230,31 +307,16 @@ export default function AssignmentsPage() {
   };
 
   const loadHistory = async () => {
-    // Mock history data
-    setHistory([
-      {
-        id: '1',
-        game_id: gameId || '',
-        env: env || 'prod',
-        function_id: 'all',
-        action: 'assign',
-        count: selected.length,
-        operated_by: 'admin',
-        operated_at: new Date(Date.now() - 3600000).toISOString(),
-        details: { functions: selected.slice(0, 5) },
-      },
-      {
-        id: '2',
-        game_id: gameId || '',
-        env: env || 'prod',
-        function_id: 'player.ban',
-        action: 'remove',
-        count: 1,
-        operated_by: 'admin',
-        operated_at: new Date(Date.now() - 86400000).toISOString(),
-        details: { reason: '功能维护中' },
-      },
-    ]);
+    try {
+      const raw = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      const list = (Array.isArray(arr) ? arr : []).filter((x) =>
+        !gameId ? true : x?.game_id === gameId,
+      );
+      setHistory(list);
+    } catch {
+      setHistory([]);
+    }
     setHistoryVisible(true);
   };
 
@@ -303,6 +365,26 @@ export default function AssignmentsPage() {
         } as const;
         const c = config[text as keyof typeof config] || config.disabled;
         return <Tag color={c.color}>{c.text}</Tag>;
+      },
+    },
+    {
+      title: '路由展示',
+      width: 320,
+      render: (_, record) => {
+        const hasRoute = !!(record.menuSection || record.menuGroup || record.menuPath);
+        if (!hasRoute) {
+          return <Tag color="default">未配置</Tag>;
+        }
+        return (
+          <Space wrap size={[4, 6]}>
+            {record.menuSection && <Tag color="blue">{record.menuSection}</Tag>}
+            {record.menuGroup && <Tag color="purple">{record.menuGroup}</Tag>}
+            {record.menuPath && <Tag color="geekblue">{record.menuPath}</Tag>}
+            <Tag color={record.menuSource === 'metadata' ? 'green' : 'default'}>
+              {record.menuSource === 'metadata' ? '已自定义' : '默认'}
+            </Tag>
+          </Space>
+        );
       },
     },
     {
@@ -355,7 +437,22 @@ export default function AssignmentsPage() {
               icon={<SettingOutlined />}
               onClick={() => {
                 // 跳转到函数详情页的 UI 配置标签
-                const targetUrl = `/game/functions/${encodeURIComponent(record.id)}?tab=config&subTab=ui`;
+                const targetUrl = `/game/functions/${encodeURIComponent(
+                  record.id,
+                )}?tab=config&subTab=ui`;
+                routerHistory.push(targetUrl);
+              }}
+            />
+          </Tooltip>
+          <Tooltip title="路由配置">
+            <Button
+              type="link"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => {
+                const targetUrl = `/game/functions/${encodeURIComponent(
+                  record.id,
+                )}?tab=config&subTab=route`;
                 routerHistory.push(targetUrl);
               }}
             />
@@ -370,7 +467,6 @@ export default function AssignmentsPage() {
       title="函数分配管理"
       subTitle="管理不同游戏环境中可用的函数列表"
       extra={[
-        <GameSelector key="game" />,
         <Button key="history" icon={<HistoryOutlined />} onClick={loadHistory}>
           变更历史
         </Button>,
@@ -406,11 +502,7 @@ export default function AssignmentsPage() {
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card>
-            <Statistic
-              title="总函数数"
-              value={stats.total}
-              prefix={<SettingOutlined />}
-            />
+            <Statistic title="总函数数" value={stats.total} prefix={<SettingOutlined />} />
           </Card>
         </Col>
         <Col span={6}>
@@ -435,11 +527,7 @@ export default function AssignmentsPage() {
         </Col>
         <Col span={6}>
           <Card>
-            <Statistic
-              title="分类数"
-              value={stats.categories}
-              prefix={<ExperimentOutlined />}
-            />
+            <Statistic title="分类数" value={stats.categories} prefix={<ExperimentOutlined />} />
           </Card>
         </Col>
       </Row>
@@ -462,10 +550,7 @@ export default function AssignmentsPage() {
                     >
                       全选
                     </Button>
-                    <Button
-                      icon={<DeleteOutlined />}
-                      onClick={() => setSelected([])}
-                    >
+                    <Button icon={<DeleteOutlined />} onClick={() => setSelected([])}>
                       清空
                     </Button>
                     <Divider type="vertical" />
@@ -612,6 +697,84 @@ export default function AssignmentsPage() {
                 />
               ),
             },
+            {
+              key: 'route',
+              label: `路由展示 (${selected.length})`,
+              children: (
+                <ProTable<AssignmentItem>
+                  rowKey="id"
+                  columns={[
+                    {
+                      title: '函数ID',
+                      dataIndex: 'id',
+                      width: 240,
+                      copyable: true,
+                    },
+                    {
+                      title: '名称',
+                      dataIndex: 'name',
+                      width: 180,
+                      ellipsis: true,
+                    },
+                    {
+                      title: '路由展示',
+                      width: 420,
+                      render: (_, record) => (
+                        <Space wrap size={[4, 6]}>
+                          {record.menuSection ? (
+                            <Tag color="blue">{record.menuSection}</Tag>
+                          ) : (
+                            <Tag>未分组</Tag>
+                          )}
+                          {record.menuGroup ? <Tag color="purple">{record.menuGroup}</Tag> : null}
+                          {record.menuPath ? (
+                            <Tag color="geekblue">{record.menuPath}</Tag>
+                          ) : (
+                            <Tag color="default">默认调用页</Tag>
+                          )}
+                          <Tag color={record.menuSource === 'metadata' ? 'green' : 'default'}>
+                            {record.menuSource === 'metadata' ? '已自定义' : '默认'}
+                          </Tag>
+                        </Space>
+                      ),
+                    },
+                    {
+                      title: '操作',
+                      width: 150,
+                      render: (_, record) => (
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => {
+                            const targetUrl = `/game/functions/${encodeURIComponent(
+                              record.id,
+                            )}?tab=config&subTab=route`;
+                            routerHistory.push(targetUrl);
+                          }}
+                        >
+                          编辑路由
+                        </Button>
+                      ),
+                    },
+                  ]}
+                  dataSource={groupedAssignments
+                    .flatMap((g) => g.items)
+                    .filter((item) => selected.includes(item.id))}
+                  pagination={{ pageSize: 10 }}
+                  search={false}
+                  toolBarRender={() => [
+                    <Alert
+                      key="hint"
+                      message="分配后路由展示说明"
+                      description="这里显示的是函数描述符中的 menu 路由信息（section/group/path）。如需调整请点击“编辑路由”。"
+                      type="info"
+                      showIcon
+                    />,
+                  ]}
+                />
+              ),
+            },
           ]}
         />
       </Card>
@@ -688,10 +851,7 @@ export default function AssignmentsPage() {
               <Input type="number" min={1} max={100} defaultValue={10} />
             </Form.Item>
             <Form.Item label="灰度规则">
-              <Input.TextArea
-                rows={4}
-                placeholder='例如: {"user_id": "prefix:1000"}'
-              />
+              <Input.TextArea rows={4} placeholder='例如: {"user_id": "prefix:1000"}' />
             </Form.Item>
             <Form.Item label="灰度时长">
               <Select

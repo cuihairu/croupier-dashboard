@@ -20,7 +20,7 @@ import {
   Col,
   Statistic,
   Modal,
-  Select
+  Select,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -33,7 +33,7 @@ import {
   CloseOutlined,
   CopyOutlined,
   DeleteOutlined,
-  ReloadOutlined
+  ReloadOutlined,
 } from '@ant-design/icons';
 import FunctionUIManager from '@/components/FunctionUIManager';
 import { useParams, history, useLocation } from '@umijs/max';
@@ -52,10 +52,11 @@ import {
   disableFunction,
   getFunctionPermissions,
   updateFunctionPermissions,
-  fetchFunctionUiSchema,
+  fetchFunctionRoute,
   saveFunctionUiSchema,
+  saveFunctionRoute,
   listDescriptors,
-  type FunctionPermission
+  type FunctionPermission,
 } from '@/services/api/functions';
 
 const { TabPane } = Tabs;
@@ -122,6 +123,7 @@ export default function FunctionDetailPage() {
   const [uiConfigForm] = Form.useForm();
   const [routeConfigSaving, setRouteConfigSaving] = useState(false);
   const [routeConfigForm] = Form.useForm();
+  const routePreview = Form.useWatch([], routeConfigForm);
 
   const buildSearch = (tab: string, subTab?: string) => {
     const search = new URLSearchParams(location.search);
@@ -183,12 +185,32 @@ export default function FunctionDetailPage() {
       // Load UI Config
       const descriptor = detail?.descriptor || {};
       const menuConfig = descriptor?.menu || {};
+      const mergedRoute = {
+        section: menuConfig.section ?? '',
+        group: menuConfig.group ?? '',
+        path: menuConfig.path ?? '',
+        order: menuConfig.order ?? 10,
+        hidden: menuConfig.hidden ?? false,
+      };
+      if (params.id) {
+        try {
+          const routeRes = await fetchFunctionRoute(params.id);
+          const rm = routeRes?.menu || {};
+          mergedRoute.section = rm.section ?? mergedRoute.section;
+          mergedRoute.group = rm.group ?? mergedRoute.group;
+          mergedRoute.path = rm.path ?? mergedRoute.path;
+          mergedRoute.order = rm.order ?? mergedRoute.order;
+          mergedRoute.hidden = rm.hidden ?? mergedRoute.hidden;
+        } catch {
+          // Keep descriptor defaults when route API is unavailable.
+        }
+      }
       routeConfigForm.setFieldsValue({
-        section: menuConfig.section || '',
-        group: menuConfig.group || '',
-        path: menuConfig.path || '',
-        order: menuConfig.order || 10,
-        hidden: menuConfig.hidden || false,
+        section: mergedRoute.section,
+        group: mergedRoute.group,
+        path: mergedRoute.path,
+        order: mergedRoute.order,
+        hidden: mergedRoute.hidden,
       });
 
       // UI Schema config would be loaded from function UI endpoint
@@ -261,7 +283,12 @@ export default function FunctionDetailPage() {
         name: values.name,
         description: values.description,
         category: values.category,
-        tags: values.tags ? values.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
+        tags: values.tags
+          ? values.tags
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [],
       });
       message.success('保存成功');
       setEditing(false);
@@ -345,18 +372,18 @@ export default function FunctionDetailPage() {
           {
             title: '操作人',
             dataIndex: 'operator',
-            width: 120
+            width: 120,
           },
           {
             title: '时间',
             dataIndex: 'timestamp',
             width: 180,
-            render: (text: string) => new Date(text).toLocaleString()
+            render: (text: string) => new Date(text).toLocaleString(),
           },
           {
             title: '详情',
             dataIndex: 'details',
-            ellipsis: true
+            ellipsis: true,
           },
         ]}
         pagination={{
@@ -422,10 +449,7 @@ export default function FunctionDetailPage() {
         </Col>
         <Col span={6}>
           <Card loading={analyticsLoading}>
-            <Statistic
-              title="今日调用"
-              value={analyticsData?.callsToday || 0}
-            />
+            <Statistic title="今日调用" value={analyticsData?.callsToday || 0} />
           </Card>
         </Col>
       </Row>
@@ -466,27 +490,13 @@ export default function FunctionDetailPage() {
       }
       extra={[
         <Space key="actions">
-          <Button
-            key="reload"
-            icon={<ReloadOutlined />}
-            onClick={loadDetail}
-            loading={loading}
-          >
+          <Button key="reload" icon={<ReloadOutlined />} onClick={loadDetail} loading={loading}>
             刷新
           </Button>
-          <Button
-            key="copy"
-            icon={<CopyOutlined />}
-            onClick={handleCopy}
-          >
+          <Button key="copy" icon={<CopyOutlined />} onClick={handleCopy}>
             复制
           </Button>
-          <Button
-            key="delete"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={handleDelete}
-          >
+          <Button key="delete" danger icon={<DeleteOutlined />} onClick={handleDelete}>
             删除
           </Button>
           <Button
@@ -503,7 +513,7 @@ export default function FunctionDetailPage() {
           >
             {editing ? '保存' : '编辑'}
           </Button>
-        </Space>
+        </Space>,
       ]}
     >
       <Card loading={loading}>
@@ -512,7 +522,12 @@ export default function FunctionDetailPage() {
             activeKey={activeTab}
             onChange={(key) => {
               setActiveTab(key);
-              history.replace(`${location.pathname}${buildSearch(key, key === 'config' ? activeSubTab : undefined)}`);
+              history.replace(
+                `${location.pathname}${buildSearch(
+                  key,
+                  key === 'config' ? activeSubTab : undefined,
+                )}`,
+              );
             }}
           >
             <TabPane tab="基本信息" key="basic">
@@ -541,22 +556,32 @@ export default function FunctionDetailPage() {
                 <Descriptions.Item label="健康状态">
                   <Tag
                     color={
-                      functionDetail?.health === 'healthy' ? 'green' :
-                      functionDetail?.health === 'unhealthy' ? 'red' : 'gray'
+                      functionDetail?.health === 'healthy'
+                        ? 'green'
+                        : functionDetail?.health === 'unhealthy'
+                        ? 'red'
+                        : 'gray'
                     }
                   >
-                    {functionDetail?.health === 'healthy' ? '健康' :
-                     functionDetail?.health === 'unhealthy' ? '异常' : '未知'}
+                    {functionDetail?.health === 'healthy'
+                      ? '健康'
+                      : functionDetail?.health === 'unhealthy'
+                      ? '异常'
+                      : '未知'}
                   </Tag>
                 </Descriptions.Item>
                 <Descriptions.Item label="Agent 数量">
                   {functionDetail?.agentCount || 0}
                 </Descriptions.Item>
                 <Descriptions.Item label="创建时间">
-                  {functionDetail?.createdAt ? new Date(functionDetail.createdAt).toLocaleString() : '-'}
+                  {functionDetail?.createdAt
+                    ? new Date(functionDetail.createdAt).toLocaleString()
+                    : '-'}
                 </Descriptions.Item>
                 <Descriptions.Item label="更新时间">
-                  {functionDetail?.updatedAt ? new Date(functionDetail.updatedAt).toLocaleString() : '-'}
+                  {functionDetail?.updatedAt
+                    ? new Date(functionDetail.updatedAt).toLocaleString()
+                    : '-'}
                 </Descriptions.Item>
               </Descriptions>
 
@@ -599,7 +624,7 @@ export default function FunctionDetailPage() {
                 <>
                   <Divider>标签</Divider>
                   <Space wrap>
-                    {functionDetail.tags.map(tag => (
+                    {functionDetail.tags.map((tag) => (
                       <Tag key={tag} color="geekblue">
                         {tag}
                       </Tag>
@@ -626,7 +651,16 @@ export default function FunctionDetailPage() {
                     type="info"
                     showIcon
                   />
-                  <pre style={{ marginTop: 16, padding: 16, background: '#f5f5f5', borderRadius: 4, maxHeight: 500, overflow: 'auto' }}>
+                  <pre
+                    style={{
+                      marginTop: 16,
+                      padding: 16,
+                      background: '#f5f5f5',
+                      borderRadius: 4,
+                      maxHeight: 500,
+                      overflow: 'auto',
+                    }}
+                  >
                     {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
                   </pre>
                 </TabPane>
@@ -650,6 +684,21 @@ export default function FunctionDetailPage() {
                     showIcon
                     style={{ marginBottom: 16 }}
                   />
+                  <Card size="small" style={{ marginBottom: 16 }}>
+                    <Space wrap>
+                      <Tag color="blue">{routePreview?.section || '未设置一级菜单'}</Tag>
+                      <Tag color="purple">{routePreview?.group || '未设置二级分组'}</Tag>
+                      <Tag color="geekblue">
+                        {routePreview?.path || '/game/functions/invoke（默认）'}
+                      </Tag>
+                      <Button
+                        size="small"
+                        onClick={() => history.push('/game/functions/assignments')}
+                      >
+                        去分配页查看展示
+                      </Button>
+                    </Space>
+                  </Card>
                   <Card title="菜单配置" size="small">
                     <Form form={routeConfigForm} layout="vertical">
                       <Row gutter={16}>
@@ -666,7 +715,11 @@ export default function FunctionDetailPage() {
                       </Row>
                       <Row gutter={16}>
                         <Col span={12}>
-                          <Form.Item label="路由路径" name="path" tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get">
+                          <Form.Item
+                            label="路由路径"
+                            name="path"
+                            tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get"
+                          >
                             <Input placeholder="/game/functions/invoke（默认）" />
                           </Form.Item>
                         </Col>
@@ -683,10 +736,59 @@ export default function FunctionDetailPage() {
                       </Row>
                       <Alert
                         message="提示"
-                        description="修改路由配置后需要重新导出并上传 Pack 才能生效。此功能正在开发中，目前仅作为预览。"
+                        description="当前为前端本地保存模式（便于快速调试展示）。服务端持久化接口后续会补齐。"
                         type="warning"
                         showIcon
                       />
+                      <Space style={{ marginTop: 16 }}>
+                        <Button
+                          type="primary"
+                          loading={routeConfigSaving}
+                          onClick={async () => {
+                            if (!params.id) return;
+                            try {
+                              setRouteConfigSaving(true);
+                              const v = await routeConfigForm.validateFields();
+                              await saveFunctionRoute(params.id, {
+                                section: v.section || '',
+                                group: v.group || '',
+                                path: v.path || '',
+                                order: v.order ?? 10,
+                                hidden: !!v.hidden,
+                              });
+                              window.dispatchEvent(new CustomEvent('function-route:changed'));
+                              message.success('路由配置已保存');
+                            } catch {
+                              // validation error
+                            } finally {
+                              setRouteConfigSaving(false);
+                            }
+                          }}
+                        >
+                          保存路由配置
+                        </Button>
+                        <Button
+                          onClick={async () => {
+                            const descriptor = functionDetail?.descriptor || {};
+                            const menuConfig = descriptor?.menu || {};
+                            const resetRoute = {
+                              section: menuConfig.section || '',
+                              group: menuConfig.group || '',
+                              path: menuConfig.path || '',
+                              order: menuConfig.order || 10,
+                              hidden: menuConfig.hidden || false,
+                            };
+                            routeConfigForm.setFieldsValue(resetRoute);
+                            if (params.id) {
+                              await saveFunctionRoute(params.id, resetRoute);
+                            }
+                            window.dispatchEvent(new CustomEvent('function-route:changed'));
+                            message.success('已恢复为默认路由');
+                          }}
+                        >
+                          恢复默认
+                        </Button>
+                      </Space>
                     </Form>
                   </Card>
                 </TabPane>
@@ -702,10 +804,21 @@ export default function FunctionDetailPage() {
               />
 
               {permError && (
-                <Alert style={{ marginTop: 16 }} type="error" showIcon message="无法读取权限" description={permError} />
+                <Alert
+                  style={{ marginTop: 16 }}
+                  type="error"
+                  showIcon
+                  message="无法读取权限"
+                  description={permError}
+                />
               )}
 
-              <Card style={{ marginTop: 16 }} loading={permLoading} size="small" title="函数权限规则">
+              <Card
+                style={{ marginTop: 16 }}
+                loading={permLoading}
+                size="small"
+                title="函数权限规则"
+              >
                 <Form form={permForm} layout="vertical">
                   <Form.List name="items">
                     {(fields, { add, remove }) => (
@@ -750,7 +863,10 @@ export default function FunctionDetailPage() {
                                   name={[field.name, 'roles']}
                                   rules={[{ required: true, message: 'roles 必填（至少 1 个）' }]}
                                 >
-                                  <Select mode="tags" placeholder="例如：ops / admin / functions:manage" />
+                                  <Select
+                                    mode="tags"
+                                    placeholder="例如：ops / admin / functions:manage"
+                                  />
                                 </Form.Item>
                               </Col>
                               <Col span={3}>
@@ -768,7 +884,11 @@ export default function FunctionDetailPage() {
                         ))}
 
                         <Space>
-                          <Button onClick={() => add({ resource: 'function', actions: ['invoke'], roles: [] })}>
+                          <Button
+                            onClick={() =>
+                              add({ resource: 'function', actions: ['invoke'], roles: [] })
+                            }
+                          >
                             添加规则
                           </Button>
                           <Button

@@ -3,7 +3,7 @@ import { createEventSource } from '../core/http';
 
 export type FunctionDescriptor = {
   id: string;
-  type?: 'function' | 'entity';  // Type of descriptor: function or entity
+  type?: 'function' | 'entity'; // Type of descriptor: function or entity
   version?: string;
   category?: string;
   description?: string;
@@ -28,8 +28,8 @@ export type FunctionDescriptor = {
   operations?: any;
   ui?: any;
   // OpenAPI 3.0.3 Schema fields (JSON Schema format, stringified)
-  input_schema?: string;   // JSON Schema for request body (from proto)
-  output_schema?: string;  // JSON Schema for response body (from proto)
+  input_schema?: string; // JSON Schema for request body (from proto)
+  output_schema?: string; // JSON Schema for response body (from proto)
 };
 
 export type FunctionPermission = {
@@ -56,14 +56,21 @@ export async function invokeFunction(
   },
 ) {
   const data: any = { function_id, payload };
-  const game_id = opts?.game_id ?? (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
-  const env = opts?.env ?? (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
+  const game_id =
+    opts?.game_id ??
+    (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
+  const env =
+    opts?.env ??
+    (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
   if (game_id) data.game_id = game_id;
   if (env) data.env = env;
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
-  return request<any>(`/api/v1/functions/${encodeURIComponent(function_id)}/invoke`, { method: 'POST', data });
+  return request<any>(`/api/v1/functions/${encodeURIComponent(function_id)}/invoke`, {
+    method: 'POST',
+    data,
+  });
 }
 
 export async function startJob(
@@ -78,14 +85,21 @@ export async function startJob(
   },
 ) {
   const data: any = { function_id, payload };
-  const game_id = opts?.game_id ?? (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
-  const env = opts?.env ?? (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
+  const game_id =
+    opts?.game_id ??
+    (typeof window !== 'undefined' ? localStorage.getItem('game_id') || undefined : undefined);
+  const env =
+    opts?.env ??
+    (typeof window !== 'undefined' ? localStorage.getItem('env') || undefined : undefined);
   if (game_id) data.game_id = game_id;
   if (env) data.env = env;
   if (opts?.route) data.route = opts.route;
   if (opts?.target_service_id) data.target_service_id = opts.target_service_id;
   if (opts?.hash_key) data.hash_key = opts.hash_key;
-  return request<{ job_id: string }>(`/api/v1/functions/${encodeURIComponent(function_id)}/invoke?mode=job`, { method: 'POST', data });
+  return request<{ job_id: string }>(
+    `/api/v1/functions/${encodeURIComponent(function_id)}/invoke?mode=job`,
+    { method: 'POST', data },
+  );
 }
 
 export async function cancelJob(job_id: string) {
@@ -93,14 +107,15 @@ export async function cancelJob(job_id: string) {
 }
 
 export async function fetchJobResult(id: string) {
-  return request<{ state: string; payload?: any; error?: string }>(`/api/v1/jobs/${id}/result`, { method: 'GET' });
+  return request<{ state: string; payload?: any; error?: string }>(`/api/v1/jobs/${id}/result`, {
+    method: 'GET',
+  });
 }
 
 export async function listFunctionInstances(params: { game_id?: string; function_id: string }) {
-  return request<{ instances: { agent_id: string; service_id: string; addr: string; version: string }[] }>(
-    `/api/v1/functions/${encodeURIComponent(params.function_id)}/instances`,
-    { params },
-  );
+  return request<{
+    instances: { agent_id: string; service_id: string; addr: string; version: string }[];
+  }>(`/api/v1/functions/${encodeURIComponent(params.function_id)}/instances`, { params });
 }
 
 export async function fetchFunctionUiSchema(functionId: string) {
@@ -116,28 +131,65 @@ export async function fetchFunctionUiSchema(functionId: string) {
   }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });
 }
 
-export async function saveFunctionUiSchema(functionId: string, uiConfig: {
-  schema?: any;
-  layout?: any;
-  components?: any;
-}) {
+export async function saveFunctionUiSchema(
+  functionId: string,
+  uiConfig: {
+    schema?: any;
+    layout?: any;
+    components?: any;
+  },
+) {
   return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, {
     method: 'PUT',
     data: uiConfig,
   });
 }
 
-export async function getFunctionPermissions(functionId: string) {
-  return request<{ items?: FunctionPermission[] }>(`/api/v1/functions/${encodeURIComponent(functionId)}/permissions`, {
-    method: 'GET',
+export type FunctionRouteConfig = {
+  section?: string;
+  group?: string;
+  path?: string;
+  order?: number;
+  hidden?: boolean;
+};
+
+export async function fetchFunctionRoute(functionId: string) {
+  return request<{
+    menu?: FunctionRouteConfig;
+    source?: 'metadata' | 'default' | string;
+  }>(`/api/v1/functions/${encodeURIComponent(functionId)}/route`, { method: 'GET' });
+}
+
+export async function saveFunctionRoute(functionId: string, route: FunctionRouteConfig) {
+  return request<{
+    menu?: FunctionRouteConfig;
+    source?: 'metadata' | 'default' | string;
+  }>(`/api/v1/functions/${encodeURIComponent(functionId)}/route`, {
+    method: 'PUT',
+    data: route,
   });
 }
 
-export async function updateFunctionPermissions(functionId: string, permissions: FunctionPermission[]) {
-  return request<{ items?: FunctionPermission[] }>(`/api/v1/functions/${encodeURIComponent(functionId)}/permissions`, {
-    method: 'PUT',
-    data: { permissions },
-  });
+export async function getFunctionPermissions(functionId: string) {
+  return request<{ items?: FunctionPermission[] }>(
+    `/api/v1/functions/${encodeURIComponent(functionId)}/permissions`,
+    {
+      method: 'GET',
+    },
+  );
+}
+
+export async function updateFunctionPermissions(
+  functionId: string,
+  permissions: FunctionPermission[],
+) {
+  return request<{ items?: FunctionPermission[] }>(
+    `/api/v1/functions/${encodeURIComponent(functionId)}/permissions`,
+    {
+      method: 'PUT',
+      data: { permissions },
+    },
+  );
 }
 
 export function openJobEventSource(jobId: string) {
@@ -172,9 +224,12 @@ export async function batchUpdateFunctions(data: { function_ids: string[]; enabl
 }
 
 export async function copyFunction(functionId: string) {
-  return request<{ function_id: string; new_id: string }>(`/api/v1/functions/${encodeURIComponent(functionId)}/copy`, {
-    method: 'POST',
-  });
+  return request<{ function_id: string; new_id: string }>(
+    `/api/v1/functions/${encodeURIComponent(functionId)}/copy`,
+    {
+      method: 'POST',
+    },
+  );
 }
 
 export async function deleteFunction(functionId: string) {
@@ -188,13 +243,15 @@ export async function getFunctionDetail(functionId: string) {
 }
 
 export async function getFunctionHistory(functionId: string) {
-  return request<Array<{
-    id: string;
-    action: string;
-    operator?: string;
-    timestamp: string;
-    details?: any;
-  }>>(`/api/v1/functions/${encodeURIComponent(functionId)}/history`);
+  return request<
+    Array<{
+      id: string;
+      action: string;
+      operator?: string;
+      timestamp: string;
+      details?: any;
+    }>
+  >(`/api/v1/functions/${encodeURIComponent(functionId)}/history`);
 }
 
 export async function getFunctionAnalytics(functionId: string) {
@@ -208,13 +265,16 @@ export async function getFunctionAnalytics(functionId: string) {
   }>(`/api/v1/functions/${encodeURIComponent(functionId)}/analytics`);
 }
 
-export async function updateFunction(functionId: string, data: {
-  name?: string;
-  description?: string;
-  category?: string;
-  tags?: string[];
-  enabled?: boolean;
-}) {
+export async function updateFunction(
+  functionId: string,
+  data: {
+    name?: string;
+    description?: string;
+    category?: string;
+    tags?: string[];
+    enabled?: boolean;
+  },
+) {
   return request<void>(`/api/v1/functions/${encodeURIComponent(functionId)}`, {
     method: 'PUT',
     data,
