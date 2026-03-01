@@ -100,9 +100,13 @@ export async function getFunctionSummary(params?: {
     const res = await request('/api/v1/functions', { params });
     if (Array.isArray(res)) return res;
     if (res?.functions && Array.isArray(res.functions)) return res.functions;
+    // If empty, fallback to descriptors
+    if (!res?.items?.length) {
+      throw new Error('No functions found, fallback to descriptors');
+    }
     return [];
   } catch (error) {
-    console.warn('Failed to fetch function summary, falling back to descriptors');
+    console.warn('Failed to fetch function summary, falling back to descriptors', error);
     const descriptors = await request('/api/v1/functions/descriptors');
     return descriptors.map((desc: FunctionDescriptor) => ({
       id: desc.id,
@@ -111,7 +115,7 @@ export async function getFunctionSummary(params?: {
       display_name: desc.display_name,
       summary: desc.summary,
       tags: desc.tags || [],
-      category: desc.category
+      category: desc.category,
     }));
   }
 }
@@ -119,10 +123,13 @@ export async function getFunctionSummary(params?: {
 /**
  * 获取函数详细信息
  */
-export async function getFunctionDetail(functionId: string, params?: {
-  game_id?: string;
-  env?: string;
-}): Promise<FunctionDescriptor & { instances?: FunctionInstance[]; metrics?: FunctionMetrics }> {
+export async function getFunctionDetail(
+  functionId: string,
+  params?: {
+    game_id?: string;
+    env?: string;
+  },
+): Promise<FunctionDescriptor & { instances?: FunctionInstance[]; metrics?: FunctionMetrics }> {
   const res = await request(`/api/v1/functions/${functionId}`, { method: 'GET' });
   return res;
 }
@@ -145,7 +152,7 @@ export async function getFunctionCalls(params?: {
   return {
     calls: res.calls || [],
     total: res.total || 0,
-    has_more: res.has_more || false
+    has_more: res.has_more || false,
   };
 }
 
@@ -188,7 +195,7 @@ export async function getFunctionInstances(params?: {
     const res = await request(url, { params: queryParams });
     return {
       instances: res.items || res.instances || [],
-      total: res.total || res.items?.length || res.instances?.length || 0
+      total: res.total || res.items?.length || res.instances?.length || 0,
     };
   } catch (error) {
     console.warn('Failed to fetch function instances:', error);
@@ -217,7 +224,7 @@ export async function getRegistryServices(params?: {
   const res = await request('/api/v1/registry/services', { params });
   return {
     services: res.services || [],
-    total: res.total || 0
+    total: res.total || 0,
   };
 }
 
@@ -233,7 +240,7 @@ export async function getFunctionMetrics(params?: {
   const res = await request('/api/functions/metrics', { params });
   return {
     metrics: res.metrics || [],
-    summary: res.summary
+    summary: res.summary,
   };
 }
 
@@ -248,7 +255,7 @@ export async function batchUpdateFunctions(params: {
 }): Promise<{ success: number; failed: number; errors: string[] }> {
   return request('/api/functions/batch', {
     method: 'POST',
-    data: params
+    data: params,
   });
 }
 
@@ -266,7 +273,7 @@ export async function searchFunctions(params: {
   const res = await request('/api/functions/search', { params });
   return {
     functions: res.functions || [],
-    total: res.total || 0
+    total: res.total || 0,
   };
 }
 
@@ -280,7 +287,7 @@ export async function getFunctionCategories(params?: {
   const res = await request('/api/functions/categories', { params });
   return {
     categories: res.categories || [],
-    counts: res.counts || {}
+    counts: res.counts || {},
   };
 }
 
@@ -295,7 +302,7 @@ export async function getFunctionTags(params?: {
   const res = await request('/api/functions/tags', { params });
   return {
     tags: res.tags || [],
-    counts: res.counts || {}
+    counts: res.counts || {},
   };
 }
 
@@ -309,7 +316,7 @@ export async function exportFunctions(params: {
 }): Promise<{ download_url: string; expires_at: string }> {
   return request('/api/functions/export', {
     method: 'POST',
-    data: params
+    data: params,
   });
 }
 
@@ -325,7 +332,7 @@ export async function importFunctions(params: {
 }): Promise<{ imported: number; skipped: number; errors: string[] }> {
   return request('/api/functions/import', {
     method: 'POST',
-    data: params
+    data: params,
   });
 }
 
@@ -338,7 +345,7 @@ export async function validateFunctionConfig(params: {
 }): Promise<{ valid: boolean; errors: string[]; warnings: string[] }> {
   return request('/api/functions/validate', {
     method: 'POST',
-    data: params
+    data: params,
   });
 }
 
@@ -365,7 +372,7 @@ export async function testFunction(params: {
 }): Promise<{ valid: boolean; result?: any; error?: string; duration?: number }> {
   return request('/api/functions/test', {
     method: 'POST',
-    data: params
+    data: params,
   });
 }
 
@@ -408,7 +415,7 @@ export async function getFunctionOpenAPIDetail(functionId: string): Promise<{
 export async function batchGetFunctionOpenAPI(functionIds: string[]): Promise<Record<string, any>> {
   return request('/api/v1/functions/_openapi-batch', {
     method: 'POST',
-    data: { function_ids: functionIds }
+    data: { function_ids: functionIds },
   });
 }
 
