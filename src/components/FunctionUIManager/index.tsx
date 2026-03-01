@@ -206,7 +206,8 @@ export default function FunctionUIManager({
     return (
       <Card>
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <Spin tip="加载 UI 配置..." />
+          <Spin />
+          <div style={{ marginTop: 12, color: 'rgba(0,0,0,0.45)' }}>加载 UI 配置...</div>
         </div>
       </Card>
     );

@@ -38,6 +38,8 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionInstances': 'Instance Management',
   'menu.GameManagement.FunctionManagement.FunctionAssignments': 'Permission Assignments',
   'menu.GameManagement.FunctionManagement.FunctionPacks': 'Pack Management',
+  'menu.GameManagement.RegisteredFunctions': 'Registered Functions',
+  'menu.RegisteredFunctions': 'Registered Functions',
   'menu.GameManagement.GameFunctionsLegacy': 'Legacy Function Center',
   'menu.GameManagement.ComponentManagement': 'Component Management',
   'menu.GameManagement.CreateVirtualObject': 'Create Virtual Object',
@@ -85,6 +87,7 @@ export default {
   'menu.Functions': 'Function Management',
   'menu.Functions.FunctionList': 'Function List',
   'menu.Functions.FunctionDetail': 'Function Detail',
+  'menu.Registered': 'Registered Functions',
 
   // Legacy menu items (for backward compatibility)
   'menu.GameAssignments': 'Assignments',

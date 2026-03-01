@@ -100,11 +100,20 @@ export async function getFunctionSummary(params?: {
     const res = await request('/api/v1/functions', { params });
     if (Array.isArray(res)) return res;
     if (res?.functions && Array.isArray(res.functions)) return res.functions;
-    // If empty, fallback to descriptors
-    if (!res?.items?.length) {
-      throw new Error('No functions found, fallback to descriptors');
+    if (res?.items && Array.isArray(res.items)) {
+      return res.items.map((item: any) => ({
+        id: item.id || item.function_id || '',
+        version: item.version,
+        enabled: item.status === 1 || item.enabled === true,
+        display_name: item.display_name,
+        summary: item.summary,
+        tags: item.tags || [],
+        category: item.category,
+        menu: item.menu,
+      }));
     }
-    return [];
+    // If empty, fallback to descriptors
+    throw new Error('No functions found, fallback to descriptors');
   } catch (error) {
     console.warn('Failed to fetch function summary, falling back to descriptors', error);
     const descriptors = await request('/api/v1/functions/descriptors');

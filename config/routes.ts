@@ -123,6 +123,13 @@ export default [
     ],
   },
   {
+    path: '/console',
+    name: 'ControlConsole',
+    icon: 'appstore',
+    access: 'canFunctionsRead',
+    redirect: '/game/functions/invoke',
+  },
+  {
     path: '/analytics',
     name: 'Analytics',
     icon: 'areaChart',

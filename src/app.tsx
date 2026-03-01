@@ -21,6 +21,23 @@ import { setAppApi } from './utils/antdApp';
 import { loadPackPlugins } from './plugin/registry';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
+let cachedConsoleSignature = '';
+let cachedConsoleItems: { key: string; name: string; path: string; locale: false }[] = [];
+
+const humanizeToken = (token: string) =>
+  token
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim();
+
+const fallbackNameFromId = (id?: string) => {
+  const parts = String(id || '')
+    .split('.')
+    .filter(Boolean);
+  if (parts.length === 0) return 'unknown';
+  const tail = parts.slice(-2).map(humanizeToken);
+  return tail.join(' · ');
+};
 
 /**
  * @see  https://umijs.org/zh-CN/plugins/plugin-initial-state
@@ -109,6 +126,28 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         loadPackPlugins().catch(() => {});
       }
     }, [initialState?.currentUser]);
+    useEffect(() => {
+      const refreshDescriptors = async () => {
+        if (!initialState?.currentUser) return;
+        try {
+          const descriptors = await listDescriptors();
+          const next = Array.isArray(descriptors) ? descriptors : [];
+          setInitialState((prev) => ({
+            ...prev,
+            functionDescriptors: next,
+          }));
+        } catch {
+          // ignore refresh errors
+        }
+      };
+      const onRouteChanged = () => {
+        refreshDescriptors().catch(() => {});
+      };
+      window.addEventListener('function-route:changed', onRouteChanged as EventListener);
+      return () => {
+        window.removeEventListener('function-route:changed', onRouteChanged as EventListener);
+      };
+    }, [initialState?.currentUser, setInitialState]);
     return null;
   };
   const isAuthed = !!initialState?.currentUser;
@@ -135,7 +174,11 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       if (!Array.isArray(descriptors) || descriptors.length === 0) return menuData;
 
       const safeName = (d: FunctionDescriptor) =>
-        d?.display_name?.zh || d?.display_name?.en || d?.id || 'unknown';
+        d?.display_name?.zh ||
+        d?.display_name?.en ||
+        d?.summary?.zh ||
+        d?.summary?.en ||
+        fallbackNameFromId(d?.id);
 
       const isEntity = (d: FunctionDescriptor) => d?.type === 'entity';
 
@@ -161,37 +204,26 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 
       if (visible.length === 0) return menuData;
 
-      const byCategory = new Map<string, typeof visible>();
-      for (const it of visible) {
-        const arr = byCategory.get(it.category) || [];
-        arr.push(it);
-        byCategory.set(it.category, arr);
+      const signature = visible
+        .map((it) => `${it.id}|${it.order}|${it.name}|${it.path}`)
+        .sort()
+        .join('||');
+      const consoleItems =
+        signature === cachedConsoleSignature
+          ? cachedConsoleItems
+          : visible
+              .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+              .map((it) => ({
+                key: `console-fn-${it.id}`,
+                name: it.name,
+                path: it.path,
+                // Runtime-registered functions do not have stable locale keys.
+                locale: false as const,
+              }));
+      if (signature !== cachedConsoleSignature) {
+        cachedConsoleSignature = signature;
+        cachedConsoleItems = consoleItems;
       }
-
-      const categoryItems = Array.from(byCategory.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([category, items]) => {
-          const children = items
-            .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-            .map((it) => ({
-              name: it.name,
-              path: it.path,
-              locale: false, // 禁用国际化，直接使用 name 作为显示文本
-            }));
-          return {
-            name: category === 'uncategorized' ? 'Other' : category,
-            path: `/game/functions/catalog?category=${encodeURIComponent(category)}`,
-            children,
-            locale: false, // 禁用国际化
-          };
-        });
-
-      const registeredGroup = {
-        name: 'Registered', // 将通过国际化键 menu.Registered 查找翻译
-        locale: 'menu.Registered',
-        path: '/game/functions/catalog?tab=registered',
-        children: categoryItems,
-      };
 
       const inject = (items: any[]): any[] =>
         (items || []).map((it: any) => {
@@ -203,20 +235,12 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
               ? { children: patchedChildren, routes: patchedChildren }
               : {}),
           };
-          if (out.path === '/game/functions') {
-            const curChildren = Array.isArray(out.children) ? out.children : [];
-            // 检查是否已经有 catalog 相关的子菜单（静态配置）
-            const hasCatalog = curChildren.some((c: any) =>
-              c?.path?.includes('/game/functions/catalog'),
-            );
-            if (!hasCatalog) {
-              const exists = curChildren.some(
-                (c: any) => c?.path === registeredGroup.path || c?.name === registeredGroup.name,
-              );
-              if (!exists) {
-                out.children = [...curChildren, registeredGroup];
-                out.routes = out.children;
-              }
+          if (out.path === '/console') {
+            out.children = consoleItems;
+            out.routes = consoleItems;
+            if (consoleItems[0]?.path) {
+              // Top-level "Control Console" should land on the first registered function's runtime UI.
+              out.path = consoleItems[0].path;
             }
           }
           return out;

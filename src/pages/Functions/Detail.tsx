@@ -119,7 +119,6 @@ export default function FunctionDetailPage() {
   const [permError, setPermError] = useState<string>('');
   const [permForm] = Form.useForm();
   const [uiConfigSaving, setUiConfigSaving] = useState(false);
-  const [uiConfigForm] = Form.useForm();
   const [routeConfigSaving, setRouteConfigSaving] = useState(false);
   const [routeConfigForm] = Form.useForm();
   const routePreview = Form.useWatch([], routeConfigForm);
@@ -210,13 +209,6 @@ export default function FunctionDetailPage() {
         path: mergedRoute.path,
         order: mergedRoute.order,
         hidden: mergedRoute.hidden,
-      });
-
-      // UI Schema config would be loaded from function UI endpoint
-      // For now initialize with empty values
-      uiConfigForm.setFieldsValue({
-        layoutType: 'grid',
-        cols: 2,
       });
     } catch (error: any) {
       // 运行时注册的函数不在数据库中，尝试从 descriptors API 获取
@@ -936,7 +928,7 @@ export default function FunctionDetailPage() {
       ]}
     >
       <Card loading={loading}>
-        <Form form={form} layout="vertical" onFinish={handleSave}>
+        <Form form={form} layout="vertical" onFinish={handleSave} component={false}>
           <Tabs
             activeKey={activeTab}
             onChange={(key) => {

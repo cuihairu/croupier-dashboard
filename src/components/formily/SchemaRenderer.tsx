@@ -12,6 +12,7 @@ import {
   DatePicker,
   ArrayTable,
   ArrayItems,
+  FormGrid,
   Space,
   Card,
   Checkbox,
@@ -33,6 +34,34 @@ interface SchemaRendererProps {
   effects?: (form: FormilyForm) => void;
 }
 
+function withDefaultDecorator(schema: any): any {
+  if (!schema || typeof schema !== 'object') return schema;
+  const walk = (node: any, fieldName = ''): any => {
+    if (!node || typeof node !== 'object') return node;
+    const next: Record<string, any> = { ...node };
+
+    if (!next.title && fieldName) {
+      next.title = fieldName.replace(/_/g, ' ');
+    }
+    if (next['x-component'] && !next['x-decorator'] && next.type !== 'void') {
+      next['x-decorator'] = 'FormItem';
+    }
+
+    if (next.properties && typeof next.properties === 'object') {
+      const mapped: Record<string, any> = {};
+      Object.keys(next.properties).forEach((key) => {
+        mapped[key] = walk(next.properties[key], key);
+      });
+      next.properties = mapped;
+    }
+    if (next.items && typeof next.items === 'object') {
+      next.items = walk(next.items, fieldName ? `${fieldName}Item` : 'item');
+    }
+    return next;
+  };
+  return walk(schema);
+}
+
 const SchemaField = createSchemaField({
   components: {
     FormItem,
@@ -43,6 +72,7 @@ const SchemaField = createSchemaField({
     DatePicker,
     ArrayTable,
     ArrayItems,
+    FormGrid,
     Space,
     Card,
     Checkbox,
@@ -50,7 +80,15 @@ const SchemaField = createSchemaField({
   },
 });
 
-export default function SchemaRenderer({ schema, value, readOnly, onChange, scope, context, effects }: SchemaRendererProps) {
+export default function SchemaRenderer({
+  schema,
+  value,
+  readOnly,
+  onChange,
+  scope,
+  context,
+  effects,
+}: SchemaRendererProps) {
   const formRef = useRef<FormilyForm | null>(null);
   const form = useMemo(() => {
     if (formRef.current) return formRef.current;
@@ -86,8 +124,10 @@ export default function SchemaRenderer({ schema, value, readOnly, onChange, scop
     return () => form.removeEffects(effectId);
   }, [form, onChange]);
 
+  const normalizedSchema = useMemo(() => withDefaultDecorator(schema), [schema]);
+
   useEffect(() => {
-    if (!schema || !scope?.fetchOptions) return;
+    if (!normalizedSchema || !scope?.fetchOptions) return;
     const tasks: Array<{ path: string; source: any }> = [];
     const walk = (node: any, path: string) => {
       if (!node || typeof node !== 'object') return;
@@ -100,7 +140,7 @@ export default function SchemaRenderer({ schema, value, readOnly, onChange, scop
         });
       }
     };
-    walk(schema, '');
+    walk(normalizedSchema, '');
     if (tasks.length === 0) return;
     tasks.forEach(async ({ path, source }) => {
       try {
@@ -115,9 +155,9 @@ export default function SchemaRenderer({ schema, value, readOnly, onChange, scop
         // ignore async option errors
       }
     });
-  }, [form, schema, scope]);
+  }, [form, normalizedSchema, scope]);
 
-  if (!schema || typeof schema !== 'object') {
+  if (!normalizedSchema || typeof normalizedSchema !== 'object') {
     return <Empty description="暂无可渲染的 Schema" />;
   }
 
@@ -125,7 +165,7 @@ export default function SchemaRenderer({ schema, value, readOnly, onChange, scop
     <FormilyContextProvider value={context || {}}>
       <FormilyProvider form={form}>
         <FormilyFormLayout layout="vertical" form={form}>
-          <SchemaField schema={schema} scope={scope} />
+          <SchemaField schema={normalizedSchema} scope={scope} />
           {readOnly && <PreviewText />}
         </FormilyFormLayout>
       </FormilyProvider>
