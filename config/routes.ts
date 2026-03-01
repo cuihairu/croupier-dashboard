@@ -34,13 +34,6 @@ export default [
         access: 'canGamesRead',
         component: './GamesEnvs',
       },
-      // 游戏内容管理
-      {
-        path: '/game/entities',
-        name: 'GameEntities',
-        access: 'canEntitiesRead',
-        component: './Entities',
-      },
       // 函数管理模块 - 重构后的统一函数管理菜单
       {
         path: '/game/functions',
@@ -426,10 +419,6 @@ export default [
   {
     path: '/game-mgmt/games-meta',
     redirect: '/game/environments',
-  },
-  {
-    path: '/game-mgmt/entities',
-    redirect: '/game/entities',
   },
   {
     path: '/game-mgmt',
