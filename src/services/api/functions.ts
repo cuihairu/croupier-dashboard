@@ -145,6 +145,41 @@ export async function saveFunctionUiSchema(
   });
 }
 
+export type FunctionUIHistoryItem = {
+  version: number;
+  schema?: any;
+  layout?: any;
+  components?: any;
+  message?: string;
+  createdBy?: string;
+  createdAt?: string;
+};
+
+export async function fetchFunctionUiHistory(functionId: string) {
+  return request<{ items: FunctionUIHistoryItem[] }>(
+    `/api/v1/functions/${encodeURIComponent(functionId)}/ui/history`,
+    { method: 'GET' },
+  );
+}
+
+export async function rollbackFunctionUiSchema(functionId: string, version: number) {
+  return request<{
+    appliedVersion: number;
+    current?: {
+      schema?: any;
+      layout?: any;
+      components?: any;
+      custom?: boolean;
+      hasDefault?: boolean;
+      uiSource?: string;
+      uiSourceDetail?: string;
+    };
+  }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui/rollback`, {
+    method: 'POST',
+    data: { version },
+  });
+}
+
 export type FunctionRouteConfig = {
   section?: string;
   group?: string;

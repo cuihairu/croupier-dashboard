@@ -1,8 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Space, Alert, Switch, Tag, Spin, Empty, Divider, App } from 'antd';
+import {
+  Card,
+  Button,
+  Space,
+  Alert,
+  Switch,
+  Tag,
+  Spin,
+  Empty,
+  Divider,
+  App,
+  Select,
+  Popconfirm,
+} from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import { history, useModel } from '@umijs/max';
-import { fetchFunctionUiSchema } from '@/services/api/functions';
+import {
+  fetchFunctionUiHistory,
+  fetchFunctionUiSchema,
+  rollbackFunctionUiSchema,
+} from '@/services/api/functions';
 import SchemaRenderer from '@/components/formily/SchemaRenderer';
 import UISchemaEditor from '@/components/UISchemaEditor';
 import { FunctionFormRenderer, type JSONSchema } from '@/components/FunctionFormRenderer';
@@ -44,6 +61,11 @@ export default function FunctionUIManager({
   const [updatedAt, setUpdatedAt] = useState<string>('');
   const [originalSchema, setOriginalSchema] = useState<any>(undefined);
   const [isDirty, setIsDirty] = useState(false);
+  const [historyItems, setHistoryItems] = useState<
+    { version: number; createdAt?: string; createdBy?: string; message?: string }[]
+  >([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [rollbackVersion, setRollbackVersion] = useState<number | undefined>();
 
   const sourceMeta: Record<string, { label: string; color: string }> = {
     custom_metadata: { label: '自定义元数据', color: 'blue' },
@@ -97,8 +119,25 @@ export default function FunctionUIManager({
     }
   };
 
+  const loadUIHistory = async () => {
+    if (!functionId) return;
+    setHistoryLoading(true);
+    try {
+      const res = await fetchFunctionUiHistory(functionId);
+      const items = Array.isArray(res?.items) ? res.items : [];
+      setHistoryItems(items);
+      setRollbackVersion(items[0]?.version);
+    } catch {
+      setHistoryItems([]);
+      setRollbackVersion(undefined);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadUIConfig();
+    loadUIHistory();
   }, [functionId]);
 
   // 保存 UI 配置
@@ -186,6 +225,43 @@ export default function FunctionUIManager({
           <Button icon={<ReloadOutlined />} onClick={loadUIConfig} loading={loading}>
             刷新
           </Button>
+          <Select
+            size="small"
+            style={{ minWidth: 220 }}
+            placeholder="选择历史版本"
+            loading={historyLoading}
+            value={rollbackVersion}
+            onChange={setRollbackVersion}
+            options={historyItems.map((it) => ({
+              label: `v${it.version} ${
+                it.createdAt ? new Date(it.createdAt).toLocaleString('zh-CN') : ''
+              }`,
+              value: it.version,
+            }))}
+          />
+          <Popconfirm
+            title="确认回滚 UI 配置？"
+            description={rollbackVersion ? `将回滚到版本 v${rollbackVersion}` : '请选择版本'}
+            onConfirm={async () => {
+              if (!rollbackVersion) return;
+              try {
+                setSaving(true);
+                await rollbackFunctionUiSchema(functionId, rollbackVersion);
+                message.success(`已回滚到版本 v${rollbackVersion}`);
+                await loadUIConfig();
+                await loadUIHistory();
+              } catch (e: any) {
+                message.error(e?.message || '回滚失败');
+              } finally {
+                setSaving(false);
+              }
+            }}
+            okButtonProps={{ disabled: !rollbackVersion }}
+          >
+            <Button size="small" disabled={!rollbackVersion} loading={saving}>
+              回滚
+            </Button>
+          </Popconfirm>
           {featureFlags.formilyDesigner && (
             <Button
               type="primary"

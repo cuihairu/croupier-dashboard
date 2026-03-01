@@ -17,25 +17,29 @@ Croupier Dashboard 是一个现代化的 React 应用，为游戏运营团队提
 ## Features
 
 ### 🚀 函数管理
+
 - **独立函数管理界面**：全新的 `/functions` 模块，提供完整的函数生命周期管理
 - **批量操作支持**：批量启用/禁用、复制、删除函数
-- **高级搜索过滤**：按函数ID、名称、分类、状态快速筛选
-- **实时状态监控**：函数健康状态、Agent数量、调用统计
-- **可视化配置编辑**：JSON Schema编辑器、UI配置实时预览
+- **高级搜索过滤**：按函数 ID、名称、分类、状态快速筛选
+- **实时状态监控**：函数健康状态、Agent 数量、调用统计
+- **可视化配置编辑**：JSON Schema 编辑器、UI 配置实时预览
 
 ### 📊 数据可视化
-- **实时大屏**：KPI指标、留存分析、支付数据、用户行为
+
+- **实时大屏**：KPI 指标、留存分析、支付数据、用户行为
 - **自定义仪表盘**：支持拖拽布局、组件自定义
 - **多维度分析**：渠道投放、关卡数据、人群分层
 
 ### 🔐 安全与合规
-- **RBAC权限控制**：细粒度的角色权限管理
+
+- **RBAC 权限控制**：细粒度的角色权限管理
 - **双人审批流程**：高风险操作需要双人审批
 - **操作审计日志**：完整的操作链路追踪
-- **IP风控提示**：异地登录告警、操作风险提示
+- **IP 风控提示**：异地登录告警、操作风险提示
 
 ### 🎮 游戏运营工具
-- **实体管理**：基于Schema的CRUD，支持白名单、道具、礼包等
+
+- **实体管理**：基于 Schema 的 CRUD，支持白名单、道具、礼包等
 - **玩家管理**：玩家信息查询、余额操作、封禁解封
 - **任务监控**：异步任务执行状态、日志流式展示
 
@@ -68,10 +72,11 @@ pnpm dev
 ```
 
 开发模式特性：
+
 - 🔥 热更新支持
-- 🌐 API代理：`/api` → `http://localhost:8080`
+- 🌐 API 代理：`/api` → `http://localhost:8080`
 - 🐛 调试工具集成
-- 📊 Mock数据支持
+- 📊 Mock 数据支持
 
 ### Production Build
 
@@ -123,6 +128,20 @@ pnpm test
 
 ## API Integration
 
+### Function Display & Edit Flow
+
+Dashboard 当前函数展示与编辑流程如下：
+
+1. 拉取函数目录：`GET /api/v1/functions/descriptors`
+2. 根据 descriptors 动态生成菜单分组（Registered）
+3. 拉取函数 OpenAPI：`GET /api/v1/functions/{id}/openapi`
+4. 使用 OpenAPI `requestBody` + `x-ui` 渲染 Formily 表单
+5. UI 配置编辑：`GET/PUT /api/v1/functions/{id}/ui`
+6. UI 历史与回滚：`GET /api/v1/functions/{id}/ui/history` + `POST /api/v1/functions/{id}/ui/rollback`
+7. 菜单路由编辑：`GET/PUT /api/v1/functions/{id}/route`
+
+> 说明：已不再依赖 X-Render 或 legacy descriptor fallback。
+
 ### Authentication Flow
 
 ```typescript
@@ -147,18 +166,18 @@ Authorization: Bearer jwt_token_here
 
 ### Key API Endpoints
 
-| Module | Endpoint | Description |
-|--------|----------|-------------|
-| **Functions** | `GET /api/v1/functions` | 获取函数列表 |
-| | `POST /api/v1/functions/:id/invoke` | 调用函数 |
-| | `POST /api/v1/functions/batch-update` | 批量更新状态 |
-| | `GET /api/v1/functions/:id/ui` | 获取UI配置 |
-| **Analytics** | `GET /api/v1/analytics/overview` | 获取概览数据 |
-| | `GET /api/v1/analytics/realtime` | 实时数据 |
-| **Jobs** | `GET /api/v1/jobs/:id` | 任务状态 |
-| | `GET /api/v1/jobs/:id/stream` | 任务日志流(SSE) |
-| **Users** | `GET /api/v1/users/current` | 当前用户信息 |
-| | `PUT /api/v1/users/password` | 修改密码 |
+| Module        | Endpoint                              | Description     |
+| ------------- | ------------------------------------- | --------------- |
+| **Functions** | `GET /api/v1/functions`               | 获取函数列表    |
+|               | `POST /api/v1/functions/:id/invoke`   | 调用函数        |
+|               | `POST /api/v1/functions/batch-update` | 批量更新状态    |
+|               | `GET /api/v1/functions/:id/ui`        | 获取 UI 配置    |
+| **Analytics** | `GET /api/v1/analytics/overview`      | 获取概览数据    |
+|               | `GET /api/v1/analytics/realtime`      | 实时数据        |
+| **Jobs**      | `GET /api/v1/jobs/:id`                | 任务状态        |
+|               | `GET /api/v1/jobs/:id/stream`         | 任务日志流(SSE) |
+| **Users**     | `GET /api/v1/users/current`           | 当前用户信息    |
+|               | `PUT /api/v1/users/password`          | 修改密码        |
 
 ## Configuration
 
@@ -197,7 +216,7 @@ export default {
       ws: true,
     },
   },
-}
+};
 ```
 
 ## Development Guide
@@ -285,24 +304,24 @@ spec:
   template:
     spec:
       containers:
-      - name: dashboard
-        image: croupier/dashboard:latest
-        ports:
-        - containerPort: 80
-        env:
-        - name: CROUPIER_API_URL
-          value: "http://croupier-server:8080"
+        - name: dashboard
+          image: croupier/dashboard:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: CROUPIER_API_URL
+              value: 'http://croupier-server:8080'
 ```
 
 ### Production Checklist
 
 - [ ] 更新环境变量配置
-- [ ] 配置CDN加速静态资源
-- [ ] 启用Gzip压缩
-- [ ] 配置CSP策略
+- [ ] 配置 CDN 加速静态资源
+- [ ] 启用 Gzip 压缩
+- [ ] 配置 CSP 策略
 - [ ] 设置错误监控（Sentry）
 - [ ] 配置访问日志
-- [ ] 启用HTTPS
+- [ ] 启用 HTTPS
 - [ ] 配置缓存策略
 
 ## Performance Optimization
@@ -323,7 +342,7 @@ pnpm build:gzip
 2. **组件缓存**：合理使用 `React.memo`
 3. **虚拟滚动**：大数据列表使用虚拟滚动
 4. **防抖节流**：搜索输入等场景使用防抖
-5. **图片优化**：使用WebP格式，配置懒加载
+5. **图片优化**：使用 WebP 格式，配置懒加载
 
 ## Contributing
 

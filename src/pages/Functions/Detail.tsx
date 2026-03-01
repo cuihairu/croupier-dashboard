@@ -736,8 +736,8 @@ export default function FunctionDetailPage() {
                       </Row>
                       <Alert
                         message="提示"
-                        description="当前为前端本地保存模式（便于快速调试展示）。服务端持久化接口后续会补齐。"
-                        type="warning"
+                        description="路由配置会保存到服务端，并用于函数菜单分组与跳转展示。"
+                        type="info"
                         showIcon
                       />
                       <Space style={{ marginTop: 16 }}>
