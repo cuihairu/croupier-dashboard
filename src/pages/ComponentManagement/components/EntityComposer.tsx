@@ -1,16 +1,46 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card, Steps, Form, Input, Select, Transfer, Button, Space, Typography,
-  Table, Tag, Modal, Tree, Divider, Alert, Tabs, Switch, Tooltip,
-  Row, Col, message, Popconfirm, InputNumber, Collapse
+  Card,
+  Steps,
+  Form,
+  Input,
+  Select,
+  Transfer,
+  Button,
+  Space,
+  Typography,
+  Table,
+  Tag,
+  Modal,
+  Tree,
+  Divider,
+  Alert,
+  Tabs,
+  Switch,
+  Tooltip,
+  Row,
+  Col,
+  message,
+  Popconfirm,
+  InputNumber,
+  Collapse,
 } from 'antd';
 import {
-  PlusOutlined, DeleteOutlined, LinkOutlined, FunctionOutlined,
-  ApartmentOutlined, SettingOutlined, SaveOutlined, PlayCircleOutlined,
-  EyeOutlined, ArrowRightOutlined, ApiOutlined, CodeOutlined
+  PlusOutlined,
+  DeleteOutlined,
+  LinkOutlined,
+  FunctionOutlined,
+  ApartmentOutlined,
+  SettingOutlined,
+  SaveOutlined,
+  PlayCircleOutlined,
+  EyeOutlined,
+  ArrowRightOutlined,
+  ApiOutlined,
+  CodeOutlined,
 } from '@ant-design/icons';
 import { useParams, history } from '@umijs/max';
-import { getLegacyDescriptorsMap } from '@/services/api';
+import { listDescriptors } from '@/services/api';
 import { listEntities, getEntity, createEntity, updateEntity } from '@/services/api/entities';
 
 const { Step } = Steps;
@@ -75,7 +105,12 @@ interface EntityComposerProps {
   onCancel?: () => void;
 }
 
-export default function EntityComposer({ entity: entityProp, visible: visibleProp, onSave: onSaveProp, onCancel: onCancelProp }: EntityComposerProps = {}) {
+export default function EntityComposer({
+  entity: entityProp,
+  visible: visibleProp,
+  onSave: onSaveProp,
+  onCancel: onCancelProp,
+}: EntityComposerProps = {}) {
   const { id } = useParams<{ id: string }>();
   const isRouteMode = !entityProp && !visibleProp;
   const isEditMode = !!id;
@@ -89,7 +124,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
     schema: {},
     operations: [],
     resources: [],
-    relationships: []
+    relationships: [],
   });
   const [availableFunctions, setAvailableFunctions] = useState<FunctionInfo[]>([]);
   const [availableEntities, setAvailableEntities] = useState<string[]>([]);
@@ -126,8 +161,8 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       if (entityProp) {
         setComposition(entityProp);
         form.setFieldsValue(entityProp);
-        setSelectedFunctions(entityProp.operations.map(op => op.functionId));
-        setTransferTargetKeys(entityProp.operations.map(op => op.functionId));
+        setSelectedFunctions(entityProp.operations.map((op) => op.functionId));
+        setTransferTargetKeys(entityProp.operations.map((op) => op.functionId));
       } else {
         resetComposer();
       }
@@ -155,7 +190,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       schema: {},
       operations: [],
       resources: [],
-      relationships: []
+      relationships: [],
     });
     setSelectedFunctions([]);
     setTransferTargetKeys([]);
@@ -164,14 +199,13 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
 
   const loadAvailableFunctions = async () => {
     try {
-      const data = await getLegacyDescriptorsMap();
-
-      const functions: FunctionInfo[] = Object.entries(data || {}).map(([key, desc]: [string, any]) => ({
-        key,
-        title: desc.name || key,
+      const descriptors = await listDescriptors();
+      const functions: FunctionInfo[] = (descriptors || []).map((desc: any) => ({
+        key: desc.id,
+        title: desc.name || desc.id,
         description: desc.description || '无描述',
         category: desc.category || 'general',
-        parameters: desc.parameters
+        parameters: desc.params || {},
       }));
 
       setAvailableFunctions(functions);
@@ -192,10 +226,10 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
   const handleBasicInfoNext = async () => {
     try {
       const values = await form.validateFields(['id', 'name', 'description', 'version', 'schema']);
-      setComposition(prev => ({
+      setComposition((prev) => ({
         ...prev,
         ...values,
-        schema: typeof values.schema === 'string' ? JSON.parse(values.schema) : values.schema
+        schema: typeof values.schema === 'string' ? JSON.parse(values.schema) : values.schema,
       }));
       setCurrentStep(1);
     } catch (error) {
@@ -210,26 +244,26 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
     if (direction === 'right') {
       // 添加新操作
       const newOperations = moveKeys.map((functionId, index) => {
-        const func = availableFunctions.find(f => f.key === functionId);
+        const func = availableFunctions.find((f) => f.key === functionId);
         return {
           id: `${functionId}_${Date.now()}_${index}`,
           name: func?.title || functionId,
           functionId,
           description: func?.description || '',
           parameters: func?.parameters || {},
-          order: composition.operations.length + index + 1
+          order: composition.operations.length + index + 1,
         };
       });
 
-      setComposition(prev => ({
+      setComposition((prev) => ({
         ...prev,
-        operations: [...prev.operations, ...newOperations]
+        operations: [...prev.operations, ...newOperations],
       }));
     } else {
       // 移除操作
-      setComposition(prev => ({
+      setComposition((prev) => ({
         ...prev,
-        operations: prev.operations.filter(op => !moveKeys.includes(op.functionId))
+        operations: prev.operations.filter((op) => !moveKeys.includes(op.functionId)),
       }));
     }
   };
@@ -240,28 +274,28 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       title: '新资源',
       description: '',
       functions: [],
-      layout: 'tabs'
+      layout: 'tabs',
     };
 
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      resources: [...prev.resources, newResource]
+      resources: [...prev.resources, newResource],
     }));
   };
 
   const updateResource = (resourceId: string, updates: Partial<EntityResource>) => {
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      resources: prev.resources.map(res =>
-        res.id === resourceId ? { ...res, ...updates } : res
-      )
+      resources: prev.resources.map((res) =>
+        res.id === resourceId ? { ...res, ...updates } : res,
+      ),
     }));
   };
 
   const removeResource = (resourceId: string) => {
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      resources: prev.resources.filter(res => res.id !== resourceId)
+      resources: prev.resources.filter((res) => res.id !== resourceId),
     }));
   };
 
@@ -272,28 +306,28 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       type: 'hasMany',
       targetEntity: '',
       description: '',
-      cardinality: 'many'
+      cardinality: 'many',
     };
 
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      relationships: [...prev.relationships, newRelationship]
+      relationships: [...prev.relationships, newRelationship],
     }));
   };
 
   const updateRelationship = (relationshipId: string, updates: Partial<EntityRelationship>) => {
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      relationships: prev.relationships.map(rel =>
-        rel.id === relationshipId ? { ...rel, ...updates } : rel
-      )
+      relationships: prev.relationships.map((rel) =>
+        rel.id === relationshipId ? { ...rel, ...updates } : rel,
+      ),
     }));
   };
 
   const removeRelationship = (relationshipId: string) => {
-    setComposition(prev => ({
+    setComposition((prev) => ({
       ...prev,
-      relationships: prev.relationships.filter(rel => rel.id !== relationshipId)
+      relationships: prev.relationships.filter((rel) => rel.id !== relationshipId),
     }));
   };
 
@@ -349,7 +383,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
               ops[op.name] = {
                 function: op.functionId,
                 description: op.description,
-                parameters: op.parameters
+                parameters: op.parameters,
               };
               return ops;
             }, {} as any),
@@ -357,7 +391,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
               resources[res.id] = {
                 title: res.title,
                 functions: res.functions,
-                ui: res.ui
+                ui: res.ui,
               };
               return resources;
             }, {} as any),
@@ -365,13 +399,13 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
               rels[rel.name] = {
                 type: rel.type,
                 target: rel.targetEntity,
-                cardinality: rel.cardinality
+                cardinality: rel.cardinality,
               };
               return rels;
-            }, {} as any)
-          }
-        }
-      }
+            }, {} as any),
+          },
+        },
+      },
     };
   };
 
@@ -426,14 +460,18 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                 <TextArea
                   rows={8}
                   placeholder="输入JSON Schema定义"
-                  defaultValue={JSON.stringify({
-                    type: 'object',
-                    properties: {
-                      id: { type: 'string', title: 'ID' },
-                      name: { type: 'string', title: '名称' }
+                  defaultValue={JSON.stringify(
+                    {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string', title: 'ID' },
+                        name: { type: 'string', title: '名称' },
+                      },
+                      required: ['id'],
                     },
-                    required: ['id']
-                  }, null, 2)}
+                    null,
+                    2,
+                  )}
                 />
               </Form.Item>
             </Form>
@@ -455,7 +493,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
               targetKeys={transferTargetKeys}
               selectedKeys={selectedFunctions}
               onChange={handleFunctionChange}
-              render={item => `${item.title} - ${item.description}`}
+              render={(item) => `${item.title} - ${item.description}`}
               titles={['可用函数', '已选操作']}
               style={{ marginBottom: 16 }}
             />
@@ -482,15 +520,15 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                           value={order}
                           min={1}
                           onChange={(value) => {
-                            setComposition(prev => ({
+                            setComposition((prev) => ({
                               ...prev,
-                              operations: prev.operations.map(op =>
-                                op.id === record.id ? { ...op, order: value || 1 } : op
-                              )
+                              operations: prev.operations.map((op) =>
+                                op.id === record.id ? { ...op, order: value || 1 } : op,
+                              ),
                             }));
                           }}
                         />
-                      )
+                      ),
                     },
                     {
                       title: '操作',
@@ -504,16 +542,18 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                             danger
                             icon={<DeleteOutlined />}
                             onClick={() => {
-                              setComposition(prev => ({
+                              setComposition((prev) => ({
                                 ...prev,
-                                operations: prev.operations.filter(op => op.id !== record.id)
+                                operations: prev.operations.filter((op) => op.id !== record.id),
                               }));
-                              setTransferTargetKeys(prev => prev.filter(key => key !== record.functionId));
+                              setTransferTargetKeys((prev) =>
+                                prev.filter((key) => key !== record.functionId),
+                              );
                             }}
                           />
                         </Space>
-                      )
-                    }
+                      ),
+                    },
                   ]}
                 />
               </Card>
@@ -540,7 +580,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
               添加资源组
             </Button>
 
-            <Collapse defaultActiveKey={composition.resources.map(res => res.id)}>
+            <Collapse defaultActiveKey={composition.resources.map((res) => res.id)}>
               {composition.resources.map((resource, index) => (
                 <Panel
                   header={
@@ -600,7 +640,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                       onChange={(values) => updateResource(resource.id, { functions: values })}
                       placeholder="选择要包含在此资源组中的函数"
                     >
-                      {composition.operations.map(op => (
+                      {composition.operations.map((op) => (
                         <Option key={op.functionId} value={op.functionId}>
                           {op.name}
                         </Option>
@@ -652,7 +692,9 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                     <Form.Item label="关系名称">
                       <Input
                         value={relationship.name}
-                        onChange={(e) => updateRelationship(relationship.id, { name: e.target.value })}
+                        onChange={(e) =>
+                          updateRelationship(relationship.id, { name: e.target.value })
+                        }
                       />
                     </Form.Item>
                   </Col>
@@ -676,10 +718,12 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                     <Form.Item label="目标实体">
                       <Select
                         value={relationship.targetEntity}
-                        onChange={(value) => updateRelationship(relationship.id, { targetEntity: value })}
+                        onChange={(value) =>
+                          updateRelationship(relationship.id, { targetEntity: value })
+                        }
                         placeholder="选择目标实体"
                       >
-                        {availableEntities.map(entityId => (
+                        {availableEntities.map((entityId) => (
                           <Option key={entityId} value={entityId}>
                             {entityId}
                           </Option>
@@ -691,7 +735,9 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                     <Form.Item label="基数">
                       <Input
                         value={relationship.cardinality}
-                        onChange={(e) => updateRelationship(relationship.id, { cardinality: e.target.value })}
+                        onChange={(e) =>
+                          updateRelationship(relationship.id, { cardinality: e.target.value })
+                        }
                         placeholder="例如: one, many, 0..1, 1..*"
                       />
                     </Form.Item>
@@ -702,7 +748,9 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                   <TextArea
                     value={relationship.description}
                     rows={2}
-                    onChange={(e) => updateRelationship(relationship.id, { description: e.target.value })}
+                    onChange={(e) =>
+                      updateRelationship(relationship.id, { description: e.target.value })
+                    }
                     placeholder="描述这个关系的含义和用途"
                   />
                 </Form.Item>
@@ -733,10 +781,18 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                         <Descriptions.Item label="实体ID">{composition.id}</Descriptions.Item>
                         <Descriptions.Item label="名称">{composition.name}</Descriptions.Item>
                         <Descriptions.Item label="版本">{composition.version}</Descriptions.Item>
-                        <Descriptions.Item label="操作数量">{composition.operations.length}</Descriptions.Item>
-                        <Descriptions.Item label="资源组数量">{composition.resources.length}</Descriptions.Item>
-                        <Descriptions.Item label="关系数量">{composition.relationships.length}</Descriptions.Item>
-                        <Descriptions.Item label="描述" span={2}>{composition.description}</Descriptions.Item>
+                        <Descriptions.Item label="操作数量">
+                          {composition.operations.length}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="资源组数量">
+                          {composition.resources.length}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="关系数量">
+                          {composition.relationships.length}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="描述" span={2}>
+                          {composition.description}
+                        </Descriptions.Item>
                       </Descriptions>
 
                       <Divider />
@@ -745,12 +801,15 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                         <Button icon={<EyeOutlined />} onClick={() => setPreviewModalVisible(true)}>
                           预览配置
                         </Button>
-                        <Button icon={<PlayCircleOutlined />} onClick={() => setTestModalVisible(true)}>
+                        <Button
+                          icon={<PlayCircleOutlined />}
+                          onClick={() => setTestModalVisible(true)}
+                        >
                           测试验证
                         </Button>
                       </Space>
                     </>
-                  )
+                  ),
                 },
                 {
                   key: 'operations',
@@ -765,17 +824,17 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                         { title: '顺序', dataIndex: 'order', key: 'order', width: 60 },
                         { title: '操作名', dataIndex: 'name', key: 'name' },
                         { title: '函数', dataIndex: 'functionId', key: 'functionId' },
-                        { title: '描述', dataIndex: 'description', key: 'description' }
+                        { title: '描述', dataIndex: 'description', key: 'description' },
                       ]}
                     />
-                  )
+                  ),
                 },
                 {
                   key: 'resources',
                   label: '资源组织',
                   children: (
                     <>
-                      {composition.resources.map(resource => (
+                      {composition.resources.map((resource) => (
                         <Card key={resource.id} size="small" style={{ marginBottom: 8 }}>
                           <Text strong>{resource.title}</Text>
                           <br />
@@ -786,17 +845,19 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                         </Card>
                       ))}
                     </>
-                  )
+                  ),
                 },
                 {
                   key: 'relationships',
                   label: '关系定义',
                   children: (
                     <>
-                      {composition.relationships.map(rel => (
+                      {composition.relationships.map((rel) => (
                         <Card key={rel.id} size="small" style={{ marginBottom: 8 }}>
                           <Text strong>{rel.name}</Text>
-                          <Tag color="blue" style={{ marginLeft: 8 }}>{rel.type}</Tag>
+                          <Tag color="blue" style={{ marginLeft: 8 }}>
+                            {rel.type}
+                          </Tag>
                           <ArrowRightOutlined style={{ margin: '0 8px' }} />
                           <Text code>{rel.targetEntity}</Text>
                           <br />
@@ -804,7 +865,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
                         </Card>
                       ))}
                     </>
-                  )
+                  ),
                 },
               ]}
             />
@@ -821,7 +882,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
     { title: '函数操作', description: '选择和配置操作函数' },
     { title: '资源组织', description: '组织UI资源组' },
     { title: '关系定义', description: '定义实体关系' },
-    { title: '预览确认', description: '预览并保存配置' }
+    { title: '预览确认', description: '预览并保存配置' },
   ];
 
   // 内容组件（可复用）
@@ -844,9 +905,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       <div style={{ textAlign: 'right', marginTop: 24 }}>
         <Space>
           {currentStep > 0 && (
-            <Button onClick={() => setCurrentStep(currentStep - 1)}>
-              上一步
-            </Button>
+            <Button onClick={() => setCurrentStep(currentStep - 1)}>上一步</Button>
           )}
           {currentStep < steps.length - 1 ? (
             <Button
@@ -867,9 +926,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
             </Button>
           )}
           {isRouteMode && (
-            <Button onClick={() => history.push('/game/component-management')}>
-              取消
-            </Button>
+            <Button onClick={() => history.push('/game/component-management')}>取消</Button>
           )}
         </Space>
       </div>
@@ -882,7 +939,15 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
         footer={null}
         width={800}
       >
-        <pre style={{ background: '#f5f5f5', padding: 16, borderRadius: 4, maxHeight: 500, overflow: 'auto' }}>
+        <pre
+          style={{
+            background: '#f5f5f5',
+            padding: 16,
+            borderRadius: 4,
+            maxHeight: 500,
+            overflow: 'auto',
+          }}
+        >
           {JSON.stringify(generatePreview(), null, 2)}
         </pre>
       </Modal>
@@ -897,9 +962,7 @@ export default function EntityComposer({ entity: entityProp, visible: visiblePro
       >
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
           <PlayCircleOutlined style={{ fontSize: 48, color: '#ccc' }} />
-          <div style={{ marginTop: 16, color: '#666' }}>
-            测试功能开发中...
-          </div>
+          <div style={{ marginTop: 16, color: '#666' }}>测试功能开发中...</div>
         </div>
       </Modal>
     </>

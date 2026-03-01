@@ -22,9 +22,19 @@ export type EntityPreviewResult = {
   preview_data?: any;
 };
 
+export type EntityFunction = {
+  id: string;
+  operation?: 'create' | 'read' | 'update' | 'delete' | 'custom' | string;
+  name?: string;
+  summary?: string;
+};
+
 // List all entity definitions
 export async function listEntities(params?: { game_id?: string; env?: string }) {
-  const res = await request<{ entities?: EntityDefinition[] } | EntityDefinition[]>('/api/v1/entities', { params });
+  const res = await request<{ entities?: EntityDefinition[] } | EntityDefinition[]>(
+    '/api/v1/entities',
+    { params },
+  );
   if (Array.isArray(res)) return res;
   if (res && Array.isArray((res as any).entities)) return (res as any).entities;
   return [];
@@ -36,7 +46,10 @@ export async function getEntity(id: string, params?: { game_id?: string; env?: s
 }
 
 // Create new entity definition
-export async function createEntity(entity: Partial<EntityDefinition>, params?: { game_id?: string; env?: string }) {
+export async function createEntity(
+  entity: Partial<EntityDefinition>,
+  params?: { game_id?: string; env?: string },
+) {
   return request<EntityDefinition>('/api/v1/entities', {
     method: 'POST',
     data: entity,
@@ -45,7 +58,11 @@ export async function createEntity(entity: Partial<EntityDefinition>, params?: {
 }
 
 // Update existing entity definition
-export async function updateEntity(id: string, entity: Partial<EntityDefinition>, params?: { game_id?: string; env?: string }) {
+export async function updateEntity(
+  id: string,
+  entity: Partial<EntityDefinition>,
+  params?: { game_id?: string; env?: string },
+) {
   return request<EntityDefinition>(`/api/v1/entities/${encodeURIComponent(id)}`, {
     method: 'PUT',
     data: entity,
@@ -74,7 +91,10 @@ export async function updateEntityStatus(
 }
 
 // Validate entity definition - 注意：后端可能是 POST /api/v1/entities/validate 或 /api/v1/schemas/validate
-export async function validateEntity(entity: Partial<EntityDefinition>, params?: { game_id?: string; env?: string }) {
+export async function validateEntity(
+  entity: Partial<EntityDefinition>,
+  params?: { game_id?: string; env?: string },
+) {
   return request<EntityValidationResult>('/api/v1/entities/validate', {
     method: 'POST',
     data: entity,
@@ -84,5 +104,17 @@ export async function validateEntity(entity: Partial<EntityDefinition>, params?:
 
 // Preview entity definition UI
 export async function previewEntity(id: string, params?: { game_id?: string; env?: string }) {
-  return request<EntityPreviewResult>(`/api/v1/entities/${encodeURIComponent(id)}/preview`, { params });
+  return request<EntityPreviewResult>(`/api/v1/entities/${encodeURIComponent(id)}/preview`, {
+    params,
+  });
+}
+
+// List functions associated with an entity (OpenAPI x-entity based)
+export async function listEntityFunctions(id: string, params?: { game_id?: string; env?: string }) {
+  const res = await request<{ items?: EntityFunction[] } | EntityFunction[]>(
+    `/api/v1/entities/${encodeURIComponent(id)}/functions`,
+    { params },
+  );
+  if (Array.isArray(res)) return res;
+  return Array.isArray(res?.items) ? res.items : [];
 }

@@ -417,12 +417,12 @@ export default [
   { path: '/system/permissions/roles', redirect: '/admin/permissions/roles' },
   { path: '/system/permissions/users', redirect: '/admin/permissions/users' },
   { path: '/system/permissions/config', redirect: '/admin/permissions/config' },
-  // Legacy redirects for admin/permissions
+  // Redirect aliases for admin/permissions
   { path: '/admin/permissions', redirect: '/admin/permissions/roles' },
   { path: '/admin/permissions/roles', redirect: '/admin/permissions/roles' },
   { path: '/admin/permissions/users', redirect: '/admin/permissions/users' },
   { path: '/admin/permissions/config', redirect: '/admin/permissions/config' },
-  // Game management legacy redirects
+  // Game management redirect aliases
   {
     path: '/game-mgmt/games-meta',
     redirect: '/game/environments',

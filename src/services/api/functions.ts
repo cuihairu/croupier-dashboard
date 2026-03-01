@@ -125,7 +125,7 @@ export async function fetchFunctionUiSchema(functionId: string) {
     components?: any;
     custom?: boolean;
     hasDefault?: boolean;
-    uiSource?: 'custom_metadata' | 'openapi_x_ui' | 'legacy_schema' | 'none' | string;
+    uiSource?: 'custom_metadata' | 'config_file_override' | 'openapi_x_ui' | 'none' | string;
     uiSourceDetail?: string;
     updated_at?: string;
   }>(`/api/v1/functions/${encodeURIComponent(functionId)}/ui`, { method: 'GET' });

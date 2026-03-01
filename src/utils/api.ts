@@ -1,4 +1,4 @@
-export const API_V1_PREFIX = "/api/v1";
+export const API_V1_PREFIX = '/api/v1';
 
 const LEGACY_PREFIX = /^\/api(?=\/|$)/;
 const ABSOLUTE_RE = /^(https?:\/\/[^/]+)(\/.*)$/;
@@ -24,7 +24,7 @@ export function normalizeApiUrl(url?: string | null): string | undefined {
   return url;
 }
 
-/** Convert a legacy relative path into a versioned API path. */
+/** Convert a relative path into a versioned API path. */
 export function apiUrl(path: string): string {
   return normalizeApiUrl(path) || path;
 }

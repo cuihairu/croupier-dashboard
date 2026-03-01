@@ -1,6 +1,6 @@
 import type { FormilySchemaDoc, FormilySchemaVersion } from '@/components/formily/schema/types';
 import { fetchFunctionUiSchema, saveFunctionUiSchema } from '@/services/api/functions';
-import { convertXRenderToFormily } from './convertXRenderToFormily';
+import { convertLegacySchemaToFormily } from './convertLegacySchemaToFormily';
 
 const VERSION: FormilySchemaVersion = 'formily:1';
 
@@ -15,7 +15,7 @@ function nowISO() {
 export async function fetchFormilySchema(functionId: string): Promise<FormilySchemaDoc | null> {
   const res = await fetchFunctionUiSchema(functionId);
   if (!res?.schema) return null;
-  const normalized = convertXRenderToFormily(res.schema);
+  const normalized = convertLegacySchemaToFormily(res.schema);
   return {
     functionId,
     version: VERSION,

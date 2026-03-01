@@ -45,6 +45,7 @@ import { history as routerHistory } from '@umijs/max';
 import {
   listDescriptors,
   fetchAssignments,
+  fetchAssignmentsHistory,
   setAssignments,
   FunctionDescriptor,
 } from '@/services/api';
@@ -90,8 +91,6 @@ type AssignmentGroup = {
   canaryCount: number;
 };
 
-const ASSIGNMENT_HISTORY_KEY = 'assignment_history_v1';
-
 export default function AssignmentsPage() {
   const { message } = App.useApp();
   const intl = useIntl();
@@ -106,19 +105,15 @@ export default function AssignmentsPage() {
   const [editingAssignment, setEditingAssignment] = useState<AssignmentItem | null>(null);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [history, setHistory] = useState<AssignmentHistory[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPageSize, setHistoryPageSize] = useState(10);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyActionFilter, setHistoryActionFilter] = useState<
+    'all' | 'assign' | 'remove' | 'clone'
+  >('all');
   const [canaryModalVisible, setCanaryModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
-
-  const appendHistory = (entry: AssignmentHistory) => {
-    try {
-      const raw = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      const next = [entry, ...(Array.isArray(arr) ? arr : [])].slice(0, 100);
-      localStorage.setItem(ASSIGNMENT_HISTORY_KEY, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
-  };
 
   const options = useMemo(
     () =>
@@ -145,6 +140,25 @@ export default function AssignmentsPage() {
     return (acc ? acc.split(',') : []).filter(Boolean);
   }, [initialState]);
   const canWrite = roles.includes('*') || roles.includes('assignments:write');
+  const renderHistoryDetail = (key: string, value: any) => {
+    if (Array.isArray(value)) {
+      if (value.length === 0) return <Tag>0</Tag>;
+      if (value.length <= 8) {
+        return (
+          <Space wrap>
+            {value.map((x, idx) => (
+              <Tag key={`${key}-${idx}`}>{String(x)}</Tag>
+            ))}
+          </Space>
+        );
+      }
+      return <Tag>{value.length} 项</Tag>;
+    }
+    if (value && typeof value === 'object') {
+      return <pre style={{ margin: 0 }}>{JSON.stringify(value, null, 2)}</pre>;
+    }
+    return String(value);
+  };
 
   // Group assignments by category
   const groupedAssignments = useMemo(() => {
@@ -242,7 +256,8 @@ export default function AssignmentsPage() {
     }
     setLoading(true);
     try {
-      const res = await setAssignments({ game_id: gameId, env, functions: selected });
+      const action = selected.length === 0 ? 'remove' : 'assign';
+      const res = await setAssignments({ game_id: gameId, env, action, functions: selected });
       const unknown = res?.unknown || [];
       if (unknown.length > 0) {
         message.warning(
@@ -254,17 +269,6 @@ export default function AssignmentsPage() {
       } else {
         message.success(intl.formatMessage({ id: 'pages.assignments.save.success' }));
       }
-      appendHistory({
-        id: `${Date.now()}`,
-        game_id: gameId,
-        env: env || 'prod',
-        function_id: 'all',
-        action: 'assign',
-        count: selected.length,
-        operated_by: 'current_user',
-        operated_at: new Date().toISOString(),
-        details: { functions: selected.slice(0, 20), unknown },
-      });
       await load();
     } finally {
       setLoading(false);
@@ -286,19 +290,13 @@ export default function AssignmentsPage() {
     if (!gameId) return;
     setLoading(true);
     try {
-      await setAssignments({ game_id: gameId, env: targetEnv, functions: selected });
-      message.success(`已克隆分配到 ${targetEnv} 环境`);
-      appendHistory({
-        id: `${Date.now()}-${targetEnv}`,
+      await setAssignments({
         game_id: gameId,
         env: targetEnv,
-        function_id: 'all',
         action: 'clone',
-        count: selected.length,
-        operated_by: 'current_user',
-        operated_at: new Date().toISOString(),
-        details: { fromEnv: env || 'prod', functions: selected.slice(0, 20) },
+        functions: selected,
       });
+      message.success(`已克隆分配到 ${targetEnv} 环境`);
     } catch (e: any) {
       message.error(`克隆失败: ${e.message}`);
     } finally {
@@ -306,16 +304,31 @@ export default function AssignmentsPage() {
     }
   };
 
-  const loadHistory = async () => {
+  const loadHistory = async (
+    page = historyPage,
+    pageSize = historyPageSize,
+    action: 'all' | 'assign' | 'remove' | 'clone' = historyActionFilter,
+  ) => {
+    setHistoryLoading(true);
     try {
-      const raw = localStorage.getItem(ASSIGNMENT_HISTORY_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      const list = (Array.isArray(arr) ? arr : []).filter((x) =>
-        !gameId ? true : x?.game_id === gameId,
-      );
-      setHistory(list);
+      const res = await fetchAssignmentsHistory({
+        game_id: gameId,
+        env,
+        action: action === 'all' ? undefined : action,
+        page,
+        pageSize,
+      });
+      const dataObj: any = (res as any)?.data || res;
+      const items = Array.isArray(dataObj?.items) ? dataObj.items : [];
+      setHistory(items);
+      setHistoryTotal(typeof dataObj?.total === 'number' ? dataObj.total : items.length);
+      setHistoryPage(page);
+      setHistoryPageSize(pageSize);
     } catch {
       setHistory([]);
+      setHistoryTotal(0);
+    } finally {
+      setHistoryLoading(false);
     }
     setHistoryVisible(true);
   };
@@ -791,15 +804,59 @@ export default function AssignmentsPage() {
           </Button>,
         ]}
       >
+        <Space style={{ marginBottom: 12 }}>
+          <span>动作筛选:</span>
+          <Select
+            value={historyActionFilter}
+            style={{ width: 160 }}
+            onChange={(v) => {
+              const next = v as 'all' | 'assign' | 'remove' | 'clone';
+              setHistoryActionFilter(next);
+              loadHistory(1, historyPageSize, next);
+            }}
+            options={[
+              { label: '全部', value: 'all' },
+              { label: '分配', value: 'assign' },
+              { label: '移除', value: 'remove' },
+              { label: '克隆', value: 'clone' },
+            ]}
+          />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => loadHistory(historyPage, historyPageSize, historyActionFilter)}
+          >
+            刷新
+          </Button>
+        </Space>
         <List
+          loading={historyLoading}
           dataSource={history}
+          pagination={{
+            current: historyPage,
+            pageSize: historyPageSize,
+            total: historyTotal,
+            showSizeChanger: true,
+            onChange: (page, pageSize) => loadHistory(page, pageSize, historyActionFilter),
+          }}
           renderItem={(item) => (
             <List.Item>
               <List.Item.Meta
                 title={
                   <Space>
-                    <Tag color={item.action === 'assign' ? 'green' : 'red'}>
-                      {item.action === 'assign' ? '分配' : '移除'}
+                    <Tag
+                      color={
+                        item.action === 'assign'
+                          ? 'green'
+                          : item.action === 'clone'
+                          ? 'blue'
+                          : 'red'
+                      }
+                    >
+                      {item.action === 'assign'
+                        ? '分配'
+                        : item.action === 'clone'
+                        ? '克隆'
+                        : '移除'}
                     </Tag>
                     <span>{item.function_id}</span>
                     <span>({item.count} 个函数)</span>
@@ -815,7 +872,7 @@ export default function AssignmentsPage() {
                       <Descriptions size="small" column={1} bordered>
                         {Object.entries(item.details).map(([k, v]) => (
                           <Descriptions.Item key={k} label={k}>
-                            {JSON.stringify(v)}
+                            {renderHistoryDetail(k, v)}
                           </Descriptions.Item>
                         ))}
                       </Descriptions>

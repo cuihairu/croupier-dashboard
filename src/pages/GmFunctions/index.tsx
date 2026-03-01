@@ -1,10 +1,36 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Card, Select, Form, Input, InputNumber, Switch, Button, Space, Typography, Divider, Row, Col, Tabs, DatePicker, TimePicker } from 'antd';
+import {
+  Card,
+  Select,
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Button,
+  Space,
+  Typography,
+  Divider,
+  Row,
+  Col,
+  Tabs,
+  DatePicker,
+  TimePicker,
+} from 'antd';
 import FormRender from 'form-render';
 import { getMessage } from '@/utils/antdApp';
-import GameSelector from '@/components/GameSelector';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
-import { listDescriptors, listFunctionInstances, invokeFunction, startJob, cancelJob, FunctionDescriptor, fetchAssignments, fetchFunctionUiSchema, openJobEventSource } from '@/services/api';
+import {
+  listDescriptors,
+  listFunctionInstances,
+  invokeFunction,
+  startJob,
+  cancelJob,
+  FunctionDescriptor,
+  fetchAssignments,
+  fetchFunctionUiSchema,
+  getFunctionOpenAPI,
+  openJobEventSource,
+} from '@/services/api';
 import { getRenderer, registerBuiltins } from '@/plugin/registry';
 import { applyTransform } from '@/plugin/transform';
 import { useLocation } from '@umijs/max';
@@ -19,8 +45,26 @@ type UISchema = {
   'ui:groups'?: Array<{ title?: string; fields: string[] }>;
 };
 
+function extractOpenAPIRequestSchema(operation: any): any | null {
+  const schema = operation?.requestBody?.content?.['application/json']?.schema;
+  return schema && typeof schema === 'object' ? schema : null;
+}
+
+function extractOpenAPIUISchema(operation: any): UISchema | undefined {
+  const xui = operation?.['x-ui'] || operation?.extensions?.['x-ui'];
+  if (xui && typeof xui === 'object') {
+    return xui as UISchema;
+  }
+  return undefined;
+}
+
 // Enhanced render function using XUISchema
-function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any, formValues: any) {
+function renderXFormItems(
+  desc: FunctionDescriptor | undefined,
+  ui: UISchema | undefined,
+  form: any,
+  formValues: any,
+) {
   const items: any[] = [];
   const props = (desc?.params && desc.params.properties) || {};
   const required: string[] = (desc?.params && desc.params.required) || [];
@@ -29,31 +73,47 @@ function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | u
   const uiFields = ui?.fields || {};
 
   // Enhanced group rendering with XUISchema
-  const groups: Array<{ title?: string; fields: string[] }> = (ui && (ui as any)['ui:groups']) || [];
-  const layoutType: string = (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].type) || 'grid';
-  const cols = Math.max(1, Math.min(4, (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].cols) || 1));
+  const groups: Array<{ title?: string; fields: string[] }> =
+    (ui && (ui as any)['ui:groups']) || [];
+  const layoutType: string =
+    (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].type) || 'grid';
+  const cols = Math.max(
+    1,
+    Math.min(4, (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].cols) || 1),
+  );
   const span = Math.floor(24 / cols);
 
   if (groups.length > 0) {
     if (layoutType === 'tabs') {
       items.push(
-        <Tabs key="tabs" items={groups.map((g, gi) => ({
-          key: String(gi),
-          label: g.title || `Group ${gi+1}`,
-          children: (
-            <Row gutter={12}>
-              {g.fields.map((key) => {
-                const schema = props[key] || {};
-                const uiField = uiFields[key] as XUISchemaField || {};
-                return (
-                  <Col key={key} span={span}>
-                    {renderXUIField(key, schema, uiField, values, form, [key], required.includes(key))}
-                  </Col>
-                );
-              })}
-            </Row>
-          )
-        }))} />
+        <Tabs
+          key="tabs"
+          items={groups.map((g, gi) => ({
+            key: String(gi),
+            label: g.title || `Group ${gi + 1}`,
+            children: (
+              <Row gutter={12}>
+                {g.fields.map((key) => {
+                  const schema = props[key] || {};
+                  const uiField = (uiFields[key] as XUISchemaField) || {};
+                  return (
+                    <Col key={key} span={span}>
+                      {renderXUIField(
+                        key,
+                        schema,
+                        uiField,
+                        values,
+                        form,
+                        [key],
+                        required.includes(key),
+                      )}
+                    </Col>
+                  );
+                })}
+              </Row>
+            ),
+          }))}
+        />,
       );
     } else {
       groups.forEach((g, gi) => {
@@ -62,258 +122,44 @@ function renderXFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | u
           <Row key={`g-${gi}`} gutter={12}>
             {g.fields.map((key) => {
               const schema = props[key] || {};
-              const uiField = uiFields[key] as XUISchemaField || {};
+              const uiField = (uiFields[key] as XUISchemaField) || {};
               return (
                 <Col key={key} span={span}>
-                  {renderXUIField(key, schema, uiField, values, form, [key], required.includes(key))}
+                  {renderXUIField(
+                    key,
+                    schema,
+                    uiField,
+                    values,
+                    form,
+                    [key],
+                    required.includes(key),
+                  )}
                 </Col>
               );
             })}
-          </Row>
+          </Row>,
         );
       });
     }
   } else {
     for (const key of Object.keys(props)) {
       const schema = props[key] || {};
-      const uiField = uiFields[key] as XUISchemaField || {};
+      const uiField = (uiFields[key] as XUISchemaField) || {};
       items.push(renderXUIField(key, schema, uiField, values, form, [key], required.includes(key)));
     }
   }
   return items;
 }
-function renderFormItems(desc: FunctionDescriptor | undefined, ui: UISchema | undefined, form: any, formValues: any) {
-  const items: any[] = [];
-  const props = (desc?.params && desc.params.properties) || {};
-  const required: string[] = (desc?.params && desc.params.required) || [];
-  const values = formValues;
-
-  const getByPath = (obj: any, path: string) => {
-    if (!path) return undefined;
-    const p = path.replace(/^\$\.?/, '').split('.').filter(Boolean);
-    let cur = obj;
-    for (const k of p) { if (cur == null) return undefined; cur = cur[k]; }
-    return cur;
-  };
-  const parseLiteral = (s: string): any => {
-    const t = s.trim();
-    if (t === 'true') return true; if (t === 'false') return false;
-    if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) return t.slice(1, -1);
-    const n = Number(t); return isNaN(n) ? t : n;
-  };
-  const evalTerm = (expr: string): boolean => {
-    const e = expr.trim();
-    const ops = ['==', '!='];
-    for (const op of ops) {
-      const i = e.indexOf(op);
-      if (i > 0) {
-        const left = e.slice(0, i).trim();
-        const right = e.slice(i + op.length).trim();
-        const lv = getByPath(values, left.startsWith('$.') ? left : '$.' + left);
-        const rv = parseLiteral(right);
-        return op === '==' ? (lv === rv) : (lv !== rv);
-      }
-    }
-    // bare path truthiness
-    const v = getByPath(values, e.startsWith('$.') ? e : '$.' + e);
-    return !!v;
-  };
-  const evalExpr = (expr?: string): boolean => {
-    if (!expr) return true;
-    // OR split
-    const orParts = expr.split('||').map((s)=>s.trim()).filter(Boolean);
-    for (const p of orParts) {
-      const andParts = p.split('&&').map((s)=>s.trim()).filter(Boolean);
-      let ok = true;
-      for (const a of andParts) { if (!evalTerm(a)) { ok = false; break } }
-      if (ok) return true;
-    }
-    return false;
-  };
-
-  const renderField = (key: string, schema: any, uiField: any, requiredNow: boolean, namePath: (string|number)[]) => {
-    const labelText = uiField?.label || key;
-    const label = requiredNow ? (<span>{labelText}<Text type="danger">*</Text></span>) : labelText;
-    const hidden = uiField?.show_if ? !evalExpr(uiField.show_if) : false;
-    const rules: any[] = requiredNow ? [{ required: true, message: `${key} is required` }] : [];
-    // required_if
-    if (!requiredNow && uiField?.required_if && evalExpr(uiField.required_if)) {
-      rules.push({ required: true, message: `${key} is required` });
-    }
-    let node: any = <Input placeholder={uiField?.placeholder} />;
-    // arrays
-    if (schema.type === 'array') {
-      const itemSchema = schema.items || {};
-      return (
-        <Form.Item key={namePath.join('.')} label={label} hidden={hidden}>
-          <Form.List name={namePath}>
-            {(fields, { add, remove }) => (
-              <div>
-                {fields.map((f) => (
-                  <Space key={f.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
-                    {renderField(String(f.name), itemSchema, {}, false, [...namePath, f.name])}
-                    <Button onClick={() => remove(f.name)} danger>Remove</Button>
-                  </Space>
-                ))}
-                <Button type="dashed" onClick={() => add()} block>Add</Button>
-              </div>
-            )}
-          </Form.List>
-        </Form.Item>
-      );
-    }
-    // nested object with properties
-    if (schema.type === 'object' && schema.properties) {
-      const children: any[] = [];
-      const props2 = schema.properties || {};
-      const req2: string[] = schema.required || [];
-      Object.keys(props2).forEach((k) => {
-        const ui2 = ui?.fields?.[k] || {};
-        children.push(renderField(k, props2[k], ui2, req2.includes(k), [...namePath, k]))
-      });
-      return (
-        <div key={namePath.join('.')}
-             style={{ border: '1px solid #eee', padding: 8, borderRadius: 4, marginBottom: 8 }}>
-          <Text strong>{labelText}</Text>
-          <div style={{ marginTop: 8 }}>{children}</div>
-        </div>
-      );
-    }
-    // map type via additionalProperties (render as entries array of {key,value})
-    if (schema.type === 'object' && schema.additionalProperties) {
-      const entryKey = [...namePath, '__entries'];
-      return (
-        <Form.Item key={namePath.join('.')} label={label} hidden={hidden}>
-          <Form.List name={entryKey}>
-            {(fields, { add, remove }) => (
-              <div>
-                {fields.map((f) => (
-                  <Space key={f.key} align="baseline" style={{ display: 'flex', marginBottom: 8 }}>
-                    <Form.Item name={[f.name, 'key']} rules={[{ required: true }]}>
-                      <Input placeholder="key" />
-                    </Form.Item>
-                    <Form.Item name={[f.name, 'value']}>
-                      <Input placeholder="value" />
-                    </Form.Item>
-                    <Button onClick={() => remove(f.name)} danger>Remove</Button>
-                  </Space>
-                ))}
-                <Button type="dashed" onClick={() => add()} block>Add</Button>
-              </div>
-            )}
-          </Form.List>
-        </Form.Item>
-      );
-    }
-
-    // primitives
-    // JSON Schema validations
-    if (schema && typeof schema === 'object') {
-      if (typeof schema.minLength === 'number') { rules.push({ min: schema.minLength }); }
-      if (typeof schema.maxLength === 'number') { rules.push({ max: schema.maxLength }); }
-      if (typeof schema.pattern === 'string') {
-        try { rules.push({ pattern: new RegExp(schema.pattern) }); } catch {}
-      }
-    }
-    switch (schema.type) {
-      case 'integer':
-      case 'number':
-        const numProps: any = { style: { width: '100%' } };
-        if (typeof schema.minimum === 'number') numProps.min = schema.minimum;
-        if (typeof schema.maximum === 'number') numProps.max = schema.maximum;
-        node = <InputNumber {...numProps} />; break;
-      case 'boolean':
-        node = <Switch />; break;
-      case 'string':
-        const enums: string[] = (schema.enum as any) || (uiField?.enum as any);
-        if (Array.isArray(enums) && enums.length) {
-          const labels = (uiField?.['x-enum-labels'] || {}) as Record<string,string>;
-          node = <Select options={enums.map((e: string)=>({ label: labels[e] || e, value: e }))} />;
-          break;
-        }
-        // date/time widgets
-        {
-          const fmt = ((schema && (schema.format as string)) || uiField?.widget || '').toLowerCase();
-          if (fmt === 'date-time') { node = <DatePicker showTime />; break; }
-          if (fmt === 'date') { node = <DatePicker />; break; }
-          if (fmt === 'time') { node = <TimePicker />; break; }
-        }
-      default:
-        if (uiField?.widget === 'textarea') {
-          const { TextArea } = Input as any;
-          node = <TextArea rows={3} placeholder={uiField?.placeholder} />;
-        } else {
-          node = <Input placeholder={uiField?.placeholder} />;
-        }
-    }
-    return (
-      <Form.Item key={namePath.join('.')} name={namePath} label={label} hidden={hidden} rules={rules}>
-        {node}
-      </Form.Item>
-    );
-  };
-
-  const groups: Array<{ title?: string; fields: string[] }> = (ui && (ui as any)['ui:groups']) || [];
-  const layoutType: string = (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].type) || 'grid';
-  const cols = Math.max(1, Math.min(4, (ui && (ui as any)['ui:layout'] && (ui as any)['ui:layout'].cols) || 1));
-  const span = Math.floor(24 / cols);
-  if (groups.length > 0) {
-    if (layoutType === 'tabs') {
-      items.push(
-        <Tabs key="tabs" items={groups.map((g, gi) => ({
-          key: String(gi),
-          label: g.title || `Group ${gi+1}`,
-          children: (
-            <Row gutter={12}>
-              {g.fields.map((key) => {
-                const schema = props[key] || {};
-                const uiField = ui?.fields?.[key] || {};
-                return (
-                  <Col key={key} span={span}>
-                    {renderField(key, schema, uiField, required.includes(key), [key])}
-                  </Col>
-                );
-              })}
-            </Row>
-          )
-        }))} />
-      );
-    } else {
-      groups.forEach((g, gi) => {
-        items.push(<Divider key={`g-div-${gi}`}>{g.title || ''}</Divider>);
-        items.push(
-          <Row key={`g-${gi}`} gutter={12}>
-            {g.fields.map((key) => {
-              const schema = props[key] || {};
-              const uiField = ui?.fields?.[key] || {};
-              return (
-                <Col key={key} span={span}>
-                  {renderField(key, schema, uiField, required.includes(key), [key])}
-                </Col>
-              );
-            })}
-          </Row>
-        );
-      });
-    }
-  } else {
-    for (const key of Object.keys(props)) {
-      const schema = props[key] || {};
-      const uiField = ui?.fields?.[key] || {};
-      items.push(renderField(key, schema, uiField, required.includes(key), [key]));
-    }
-  }
-  return items;
-}
-
 export default function GmFunctionsPage() {
   const location = useLocation();
   const [descs, setDescs] = useState<FunctionDescriptor[]>([]);
   const [filteredDescs, setFilteredDescs] = useState<FunctionDescriptor[]>([]);
   const [currentId, setCurrentId] = useState<string>();
   const [invoking, setInvoking] = useState(false);
-  const [route, setRoute] = useState<'lb'|'broadcast'|'targeted'|'hash'>('lb');
-  const [instances, setInstances] = useState<{agent_id:string;service_id:string;addr:string;version:string}[]>([]);
+  const [route, setRoute] = useState<'lb' | 'broadcast' | 'targeted' | 'hash'>('lb');
+  const [instances, setInstances] = useState<
+    { agent_id: string; service_id: string; addr: string; version: string }[]
+  >([]);
   const [targetService, setTargetService] = useState<string | undefined>();
   const [hashKey, setHashKey] = useState<string | undefined>();
   const [jobId, setJobId] = useState<string | undefined>();
@@ -322,24 +168,29 @@ export default function GmFunctionsPage() {
   const [form] = Form.useForm();
   const formValues = Form.useWatch([], form);
   const [uiSchema, setUiSchema] = useState<UISchema | undefined>();
+  const [openapiOperation, setOpenapiOperation] = useState<any>(undefined);
   const [lastOutput, setLastOutput] = useState<any>(undefined);
 
   // Form-render state
   const [formData, setFormData] = useState<any>({});
-  const [renderMode, setRenderMode] = useState<'form-render' | 'enhanced' | 'legacy'>('enhanced');
+  const [renderMode, setRenderMode] = useState<'form-render' | 'enhanced'>('enhanced');
   const getFunctionIdFromQuery = () => {
     const query = new URLSearchParams(location.search);
     return query.get('fid') || query.get('id') || undefined;
   };
 
-  const currentDesc = useMemo(() => (Array.isArray(descs) ? descs : []).find((d) => d.id === currentId), [descs, currentId]);
+  const currentDesc = useMemo(
+    () => (Array.isArray(descs) ? descs : []).find((d) => d.id === currentId),
+    [descs, currentId],
+  );
 
-  // Parse input_schema from proto, fallback to params for legacy compatibility
+  // Parse input_schema first; fallback to OpenAPI requestBody schema.
   const effectiveSchema = useMemo(() => {
     if (!currentDesc) return null;
-    // 优先使用 input_schema（来自 proto/OpenAPI），回退到 params（旧版）
-    return parseInputSchema(currentDesc.input_schema, currentDesc.params);
-  }, [currentDesc]);
+    const parsed = parseInputSchema(currentDesc.input_schema);
+    if (parsed) return parsed;
+    return extractOpenAPIRequestSchema(openapiOperation);
+  }, [currentDesc, openapiOperation]);
 
   // Auto-generate UI Schema when not provided by API
   const effectiveUISchema = useMemo(() => {
@@ -347,38 +198,51 @@ export default function GmFunctionsPage() {
     if (uiSchema && Object.keys(uiSchema).length > 0) {
       return uiSchema;
     }
+    const openapiUi = extractOpenAPIUISchema(openapiOperation);
+    if (openapiUi && Object.keys(openapiUi).length > 0) {
+      return openapiUi;
+    }
     // 否则从 JSON Schema 自动生成
     if (effectiveSchema) {
       return buildUISchemaFromJSONSchema(effectiveSchema);
     }
     return { fields: {} };
-  }, [uiSchema, effectiveSchema]);
+  }, [uiSchema, openapiOperation, effectiveSchema]);
 
   useEffect(() => {
     registerBuiltins();
     listDescriptors().then((d) => {
-      const raw = Array.isArray(d) ? d : Array.isArray((d as any)?.descriptors) ? (d as any).descriptors : [];
+      const raw = Array.isArray(d)
+        ? d
+        : Array.isArray((d as any)?.descriptors)
+        ? (d as any).descriptors
+        : [];
       const arr = Array.isArray(raw) ? raw : [];
       setDescs(arr);
       // initial filter by assignments (if any)
       const gid = localStorage.getItem('game_id') || undefined;
       const env = localStorage.getItem('env') || undefined;
       if (gid) {
-        fetchAssignments({ game_id: gid, env }).then((res)=>{
-          const m = res?.assignments || {};
-          const fns = Object.values(m).flat();
-          const dd = Array.isArray(arr) ? arr : [];
-          const filt = (fns && fns.length>0) ? dd.filter(x => fns.includes(x.id)) : dd;
-          const fid = getFunctionIdFromQuery();
-          let final = filt;
-          if (fid && dd.some((x) => x.id === fid) && !final.some((x) => x.id === fid)) {
-            const picked = dd.find((x) => x.id === fid);
-            if (picked) final = [picked, ...final];
-          }
-          setFilteredDescs(final);
-          if (fid && dd.some((x) => x.id === fid)) setCurrentId(fid);
-          else if (final?.length) setCurrentId(final[0].id);
-        }).catch(()=>{ setFilteredDescs(arr); if (arr?.length) setCurrentId(arr[0].id); });
+        fetchAssignments({ game_id: gid, env })
+          .then((res) => {
+            const m = res?.assignments || {};
+            const fns = Object.values(m).flat();
+            const dd = Array.isArray(arr) ? arr : [];
+            const filt = fns && fns.length > 0 ? dd.filter((x) => fns.includes(x.id)) : dd;
+            const fid = getFunctionIdFromQuery();
+            let final = filt;
+            if (fid && dd.some((x) => x.id === fid) && !final.some((x) => x.id === fid)) {
+              const picked = dd.find((x) => x.id === fid);
+              if (picked) final = [picked, ...final];
+            }
+            setFilteredDescs(final);
+            if (fid && dd.some((x) => x.id === fid)) setCurrentId(fid);
+            else if (final?.length) setCurrentId(final[0].id);
+          })
+          .catch(() => {
+            setFilteredDescs(arr);
+            if (arr?.length) setCurrentId(arr[0].id);
+          });
       } else {
         const fid = getFunctionIdFromQuery();
         setFilteredDescs(arr);
@@ -412,32 +276,46 @@ export default function GmFunctionsPage() {
     }
     setFormData({}); // Reset form-render data
     setUiSchema(undefined);
+    setOpenapiOperation(undefined);
     setLastOutput(undefined);
     if (currentId) {
       const gid = localStorage.getItem('game_id') || undefined;
       const env = localStorage.getItem('env') || undefined;
-      listFunctionInstances({ function_id: currentId, game_id: gid }).then((res)=>{
-        setInstances(res.instances||[]);
+      listFunctionInstances({ function_id: currentId, game_id: gid }).then((res) => {
+        setInstances(res.instances || []);
       });
-      // fetch UI schema (optional)
-      // 运行时注册的函数不在数据库中，跳过 API 调用
-      // 直接从 descriptor 中获取 UI Schema（如果有）
-      const currentDesc = descs.find(d => d.id === currentId);
-      if (currentDesc?.ui) {
-        setUiSchema(currentDesc.ui);
-      } else {
-        // 使用默认空 UI Schema
-        setUiSchema({ fields: {} });
-      }
+      fetchFunctionUiSchema(currentId)
+        .then((resp) => {
+          if (resp?.schema && typeof resp.schema === 'object') {
+            setUiSchema(resp.schema as UISchema);
+            return;
+          }
+          setUiSchema({ fields: {} });
+        })
+        .catch(() => {
+          setUiSchema({ fields: {} });
+        });
+      getFunctionOpenAPI(currentId)
+        .then((resp) => {
+          setOpenapiOperation(resp || undefined);
+        })
+        .catch(() => {
+          setOpenapiOperation(undefined);
+        });
       // refresh assignments filter when scope changes
       const safeDescs = Array.isArray(descs) ? descs : [];
       if (gid) {
-        fetchAssignments({ game_id: gid, env }).then((res)=>{
-          const m = res?.assignments || {};
-          const fns = Object.values(m).flat();
-          const filt = (fns && fns.length>0) ? safeDescs.filter(x => fns.includes(x.id)) : safeDescs;
-          setFilteredDescs(filt);
-        }).catch(()=>{ setFilteredDescs(safeDescs); });
+        fetchAssignments({ game_id: gid, env })
+          .then((res) => {
+            const m = res?.assignments || {};
+            const fns = Object.values(m).flat();
+            const filt =
+              fns && fns.length > 0 ? safeDescs.filter((x) => fns.includes(x.id)) : safeDescs;
+            setFilteredDescs(filt);
+          })
+          .catch(() => {
+            setFilteredDescs(safeDescs);
+          });
       } else {
         setFilteredDescs(safeDescs);
       }
@@ -453,11 +331,8 @@ export default function GmFunctionsPage() {
         // Use form-render data directly - it's already in the correct format
         values = formData;
       } else {
-        // Use traditional form validation and normalization for enhanced/legacy modes
+        // Use antd form validation for enhanced mode.
         values = await form.validateFields();
-        if (renderMode === 'legacy') {
-          values = normalizeBySchema(values, effectiveSchema || {});
-        }
       }
 
       setInvoking(true);
@@ -485,11 +360,8 @@ export default function GmFunctionsPage() {
         // Use form-render data directly
         values = formData;
       } else {
-        // Use traditional form validation and normalization for enhanced/legacy modes
+        // Use antd form validation for enhanced mode.
         values = await form.validateFields();
-        if (renderMode === 'legacy') {
-          values = normalizeBySchema(values, effectiveSchema || {});
-        }
       }
 
       const res = await startJob(currentId!, values, {
@@ -519,46 +391,20 @@ export default function GmFunctionsPage() {
     getMessage()?.info('Cancel sent');
   };
 
-  // Normalize form values to match JSON Schema (convert __entries arrays into map objects recursively)
-  function normalizeBySchema(values: any, schema: any): any {
-    const walk = (val: any, sch: any): any => {
-      if (!sch) return val;
-      const t = sch.type;
-      if (t === 'object') {
-        // map
-        if (sch.additionalProperties) {
-          const entries = (val && val.__entries) || [];
-          const obj: any = {};
-          if (Array.isArray(entries)) {
-            entries.forEach((e: any) => { if (e && e.key) obj[e.key] = e.value; });
-          }
-          return obj;
-        }
-        // nested object
-        const out: any = {};
-        const props = sch.properties || {};
-        Object.keys(val || {}).forEach((k) => {
-          if (props[k]) out[k] = walk(val[k], props[k]); else out[k] = val[k];
-        });
-        return out;
-      }
-      if (t === 'array') {
-        const itemSch = sch.items || {};
-        if (Array.isArray(val)) return val.map((it) => walk(it, itemSch));
-        return val;
-      }
-      return val;
-    };
-    return walk(values, schema);
-  }
-
   return (
     <Card title="GM Functions" extra={<Text type="secondary">dev</Text>}>
       <Space direction="vertical" style={{ width: '100%' }} size="large">
-        <GameSelector />
         <Space>
           <span>Select Function:</span>
-          <Select style={{ minWidth: 320 }} value={currentId} onChange={setCurrentId} options={filteredDescs.map((d) => ({ label: `${d.id} v${d.version || ''}`, value: d.id }))} />
+          <Select
+            style={{ minWidth: 320 }}
+            value={currentId}
+            onChange={setCurrentId}
+            options={filteredDescs.map((d) => ({
+              label: `${d.id} v${d.version || ''}`,
+              value: d.id,
+            }))}
+          />
           <span>Form Renderer:</span>
           <Select
             style={{ width: 140 }}
@@ -567,59 +413,87 @@ export default function GmFunctionsPage() {
             options={[
               { label: 'Enhanced UI', value: 'enhanced' },
               { label: 'Form-Render', value: 'form-render' },
-              { label: 'Legacy', value: 'legacy' },
             ]}
           />
           <span>Route:</span>
           <Select
             style={{ width: 180 }}
             value={route}
-            onChange={(v)=>setRoute(v)}
+            onChange={(v) => setRoute(v)}
             options={[
-              {label:'lb', value:'lb'},
-              {label:'broadcast', value:'broadcast'},
-              {label:'targeted', value:'targeted'},
-              {label:'hash', value:'hash'},
+              { label: 'lb', value: 'lb' },
+              { label: 'broadcast', value: 'broadcast' },
+              { label: 'targeted', value: 'targeted' },
+              { label: 'hash', value: 'hash' },
             ]}
           />
           {route === 'targeted' && (
             <>
               <span>Target:</span>
-              <Select style={{ minWidth: 260 }} value={targetService} onChange={setTargetService}
+              <Select
+                style={{ minWidth: 260 }}
+                value={targetService}
+                onChange={setTargetService}
                 placeholder="Select service instance"
-                options={instances.map(i=>({ label: `${i.service_id} @ ${i.agent_id} (${i.version})`, value: i.service_id }))} />
+                options={instances.map((i) => ({
+                  label: `${i.service_id} @ ${i.agent_id} (${i.version})`,
+                  value: i.service_id,
+                }))}
+              />
             </>
           )}
           {route === 'hash' && (
             <>
               <span>Hash Key:</span>
-              <Input style={{ width: 260 }} value={hashKey} placeholder="e.g. player_id"
-                onChange={(e)=>setHashKey(e.target.value)} />
+              <Input
+                style={{ width: 260 }}
+                value={hashKey}
+                placeholder="e.g. player_id"
+                onChange={(e) => setHashKey(e.target.value)}
+              />
             </>
           )}
-      </Space>
+        </Space>
 
-      {/* 配置可视化，便于后台查看参数与 UI 定制 */}
-      <Row gutter={16}>
-        <Col span={12}>
-          <Card size="small" title={`参数 Schema${currentDesc?.input_schema ? ' (from proto)' : currentDesc?.params ? ' (legacy params)' : ''}`}>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
-              {effectiveSchema ? JSON.stringify(effectiveSchema, null, 2) : '无参数定义'}
-            </pre>
-          </Card>
-        </Col>
-        <Col span={12}>
-          <Card size="small" title={`UI Schema${uiSchema && Object.keys(uiSchema).length > 0 ? ' (from API)' : ' (auto-generated)'}`}>
-            <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
-              {effectiveUISchema ? JSON.stringify(effectiveUISchema, null, 2) : '无 UI Schema'}
-            </pre>
-          </Card>
-        </Col>
-      </Row>
+        {/* 配置可视化，便于后台查看参数与 UI 定制 */}
+        <Row gutter={16}>
+          <Col span={12}>
+            <Card
+              size="small"
+              title={`参数 Schema${
+                currentDesc?.input_schema
+                  ? ' (from proto)'
+                  : openapiOperation
+                  ? ' (from OpenAPI requestBody)'
+                  : ''
+              }`}
+            >
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
+                {effectiveSchema ? JSON.stringify(effectiveSchema, null, 2) : '无参数定义'}
+              </pre>
+            </Card>
+          </Col>
+          <Col span={12}>
+            <Card
+              size="small"
+              title={`UI Schema${
+                uiSchema && Object.keys(uiSchema).length > 0
+                  ? ' (from API)'
+                  : extractOpenAPIUISchema(openapiOperation)
+                  ? ' (from OpenAPI x-ui)'
+                  : ' (auto-generated)'
+              }`}
+            >
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 240, overflow: 'auto' }}>
+                {effectiveUISchema ? JSON.stringify(effectiveUISchema, null, 2) : '无 UI Schema'}
+              </pre>
+            </Card>
+          </Col>
+        </Row>
 
-      {/* Form Rendering Section */}
-      {(() => {
-        if (renderMode === 'form-render' && effectiveSchema) {
+        {/* Form Rendering Section */}
+        {(() => {
+          if (renderMode === 'form-render' && effectiveSchema) {
             return (
               <FormRender
                 schema={effectiveSchema as any}
@@ -630,20 +504,13 @@ export default function GmFunctionsPage() {
                 labelWidth={120}
               />
             );
-          } else if (renderMode === 'enhanced') {
-            // Create a descriptor-like object with effectiveSchema for renderXFormItems
-            const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
+          } else {
+            const descWithSchema = currentDesc
+              ? { ...currentDesc, params: effectiveSchema }
+              : undefined;
             return (
               <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
                 {renderXFormItems(descWithSchema, effectiveUISchema, form, formValues)}
-              </Form>
-            );
-          } else {
-            // Legacy mode - same approach
-            const descWithSchema = currentDesc ? { ...currentDesc, params: effectiveSchema } : undefined;
-            return (
-              <Form form={form} labelCol={{ span: 6 }} wrapperCol={{ span: 12 }}>
-                {renderFormItems(descWithSchema, effectiveUISchema, form, formValues)}
               </Form>
             );
           }
@@ -667,44 +534,54 @@ export default function GmFunctionsPage() {
           </Paragraph>
         </Typography>
         {/* Views rendering (outputs.views) */}
-        {currentDesc?.outputs && (currentDesc as any).outputs.views && ((currentDesc as any).outputs.views as any[]).length > 0 && (
-          <div>
-            <Divider />
-            <Text strong>Views</Text>
-            {(() => {
-              const outputs: any = (currentDesc as any).outputs || {};
-              const views: any[] = (outputs.views as any[]) || [];
-              const layout: any = outputs.layout || {};
-              const gridCols = layout?.type === 'grid' ? (layout?.cols || 2) : 0;
-              const items = views.map((v: any) => {
-                const Renderer = getRenderer(v.renderer || v.type || 'json.view');
-                if (!Renderer) return <div key={v.id || v.renderer}>No renderer: {v.renderer}</div>;
-                // optional view-level show_if: treat as expr path; falsy or empty array -> hide
-                if (typeof v.show_if === 'string') {
-                  try {
-                    const cond = applyTransform(lastOutput, { expr: v.show_if });
-                    if (!cond || (Array.isArray(cond) && cond.length === 0)) return null;
-                  } catch {}
+        {currentDesc?.outputs &&
+          (currentDesc as any).outputs.views &&
+          ((currentDesc as any).outputs.views as any[]).length > 0 && (
+            <div>
+              <Divider />
+              <Text strong>Views</Text>
+              {(() => {
+                const outputs: any = (currentDesc as any).outputs || {};
+                const views: any[] = (outputs.views as any[]) || [];
+                const layout: any = outputs.layout || {};
+                const gridCols = layout?.type === 'grid' ? layout?.cols || 2 : 0;
+                const items = views.map((v: any) => {
+                  const Renderer = getRenderer(v.renderer || v.type || 'json.view');
+                  if (!Renderer)
+                    return <div key={v.id || v.renderer}>No renderer: {v.renderer}</div>;
+                  // optional view-level show_if: treat as expr path; falsy or empty array -> hide
+                  if (typeof v.show_if === 'string') {
+                    try {
+                      const cond = applyTransform(lastOutput, { expr: v.show_if });
+                      if (!cond || (Array.isArray(cond) && cond.length === 0)) return null;
+                    } catch {}
+                  }
+                  const data = applyTransform(lastOutput, v.transform);
+                  return (
+                    <div key={v.id || v.renderer} style={{ marginBottom: gridCols ? 0 : 16 }}>
+                      <Renderer data={data} options={v.options} />
+                    </div>
+                  );
+                });
+                const filtered = items.filter(Boolean) as any[];
+                if (gridCols > 0) {
+                  return (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        display: 'grid',
+                        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
+                        gap: 12,
+                      }}
+                    >
+                      {filtered}
+                    </div>
+                  );
                 }
-                const data = applyTransform(lastOutput, v.transform);
-                return (
-                  <div key={v.id || v.renderer} style={{ marginBottom: gridCols ? 0 : 16 }}>
-                    <Renderer data={data} options={v.options} />
-                  </div>
-                );
-              });
-              const filtered = items.filter(Boolean) as any[];
-              if (gridCols > 0) {
-                return (
-                  <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: `repeat(${gridCols}, 1fr)`, gap: 12 }}>
-                    {filtered}
-                  </div>
-                );
-              }
-              return <div style={{ marginTop: 12 }}>{filtered}</div>;
-            })()}
-          </div>
-        )}
+                return <div style={{ marginTop: 12 }}>{filtered}</div>;
+              })()}
+            </div>
+          )}
       </Space>
     </Card>
   );

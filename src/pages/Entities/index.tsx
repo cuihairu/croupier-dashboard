@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Modal } from 'antd';
+import { Button, Card, Drawer, Modal, Space, Tag, Typography } from 'antd';
 import { ProColumns, PageContainer } from '@ant-design/pro-components';
 import GameSelector from '@/components/GameSelector';
 import XResourceTable from '@/components/XResourceTable';
@@ -12,6 +12,8 @@ import {
   validateEntity,
   previewEntity,
   EntityDefinition,
+  listEntityFunctions,
+  EntityFunction,
 } from '@/services/api';
 
 export default function EntitiesPage() {
@@ -22,6 +24,10 @@ export default function EntitiesPage() {
   const [editingEntity, setEditingEntity] = useState<EntityDefinition | null>(null);
   const [previewEntity, setPreviewEntity] = useState<EntityDefinition | null>(null);
   const [previewContent, setPreviewContent] = useState<string>('');
+  const [functionsVisible, setFunctionsVisible] = useState(false);
+  const [functionsLoading, setFunctionsLoading] = useState(false);
+  const [functionsEntity, setFunctionsEntity] = useState<EntityDefinition | null>(null);
+  const [entityFunctions, setEntityFunctions] = useState<EntityFunction[]>([]);
 
   const loadEntities = async () => {
     setLoading(true);
@@ -69,6 +75,20 @@ export default function EntitiesPage() {
     }
   };
 
+  const handleShowFunctions = async (entity: EntityDefinition) => {
+    setFunctionsEntity(entity);
+    setFunctionsVisible(true);
+    setFunctionsLoading(true);
+    try {
+      const gameId = localStorage.getItem('game_id') || undefined;
+      const env = localStorage.getItem('env') || undefined;
+      const result = await listEntityFunctions(entity.id, { game_id: gameId, env });
+      setEntityFunctions(result || []);
+    } finally {
+      setFunctionsLoading(false);
+    }
+  };
+
   const handleSubmit = async (data: any) => {
     const gameId = localStorage.getItem('game_id') || undefined;
     const env = localStorage.getItem('env') || undefined;
@@ -78,7 +98,11 @@ export default function EntitiesPage() {
       description: data.description,
       schema: data.schema,
       uiSchema: data.uiSchema,
-      operations: data.operations?.split(',').map((op: string) => op.trim()).filter(Boolean) || [],
+      operations:
+        data.operations
+          ?.split(',')
+          .map((op: string) => op.trim())
+          .filter(Boolean) || [],
     };
 
     if (editingEntity) {
@@ -100,7 +124,11 @@ export default function EntitiesPage() {
       description: data.description,
       schema: data.schema,
       uiSchema: data.uiSchema,
-      operations: data.operations?.split(',').map((op: string) => op.trim()).filter(Boolean) || [],
+      operations:
+        data.operations
+          ?.split(',')
+          .map((op: string) => op.trim())
+          .filter(Boolean) || [],
     };
 
     return await validateEntity(entityData, { game_id: gameId, env });
@@ -147,7 +175,17 @@ export default function EntitiesPage() {
       dataIndex: 'updated_at',
       key: 'updated_at',
       width: 120,
-      render: (date: string) => date ? new Date(date).toLocaleDateString() : '-',
+      render: (date: string) => (date ? new Date(date).toLocaleDateString() : '-'),
+    },
+    {
+      title: 'Functions',
+      key: 'functions',
+      width: 140,
+      render: (_, entity) => (
+        <Button type="link" onClick={() => handleShowFunctions(entity)}>
+          View Functions
+        </Button>
+      ),
     },
   ];
 
@@ -161,83 +199,119 @@ export default function EntitiesPage() {
         additionalProperties: {
           type: 'object',
           properties: {
-            type: { type: 'string', enum: ['string', 'number', 'integer', 'boolean', 'array', 'object'] },
+            type: {
+              type: 'string',
+              enum: ['string', 'number', 'integer', 'boolean', 'array', 'object'],
+            },
             description: { type: 'string' },
-          }
-        }
+          },
+        },
       },
       required: { type: 'array', items: { type: 'string' } },
-    }
+    },
   };
 
   return (
     <PageContainer>
       <Card title="Entity Management" extra={<GameSelector />}>
-      <XResourceTable<EntityDefinition>
-        dataSource={entities}
-        loading={loading}
-        rowKey="id"
-        columns={columns}
-        onAdd={handleCreate}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onPreview={handlePreview}
-        addButtonText="New Entity"
-        deleteConfirmTitle="Delete Entity"
-        getDeleteConfirmContent={(entity) => `Are you sure you want to delete entity "${entity.name || entity.id}"?`}
-        pagination={{
-          showSizeChanger: true,
-          showQuickJumper: true,
-        }}
-      />
+        <XResourceTable<EntityDefinition>
+          dataSource={entities}
+          loading={loading}
+          rowKey="id"
+          columns={columns}
+          onAdd={handleCreate}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onPreview={handlePreview}
+          addButtonText="New Entity"
+          deleteConfirmTitle="Delete Entity"
+          getDeleteConfirmContent={(entity) =>
+            `Are you sure you want to delete entity "${entity.name || entity.id}"?`
+          }
+          pagination={{
+            showSizeChanger: true,
+            showQuickJumper: true,
+          }}
+        />
 
-      <XEntityForm<EntityDefinition>
-        visible={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        entity={editingEntity}
-        onSubmit={handleSubmit}
-        onValidate={handleValidate}
-        enableSchemaEditing={true}
-        schemaFormSchema={schemaFormSchema}
-        basicFields={[
-          {
-            name: 'name',
-            label: 'Name',
-            required: true,
-            placeholder: 'Entity display name',
-          },
-          {
-            name: 'description',
-            label: 'Description',
-            type: 'textarea',
-            placeholder: 'Entity description',
-          },
-          {
-            name: 'operations',
-            label: 'Operations',
-            type: 'array',
-            placeholder: 'create, read, update, delete',
-          },
-        ]}
-        getInitialValues={(entity) => ({
-          name: entity.name,
-          description: entity.description,
-          operations: entity.operations?.join(', ') || '',
-        })}
-        getSchemaData={(entity) => entity.schema || {}}
-        getUiSchemaData={(entity) => entity.uiSchema || {}}
-      />
+        <XEntityForm<EntityDefinition>
+          visible={modalVisible}
+          onCancel={() => setModalVisible(false)}
+          entity={editingEntity}
+          onSubmit={handleSubmit}
+          onValidate={handleValidate}
+          enableSchemaEditing={true}
+          schemaFormSchema={schemaFormSchema}
+          basicFields={[
+            {
+              name: 'name',
+              label: 'Name',
+              required: true,
+              placeholder: 'Entity display name',
+            },
+            {
+              name: 'description',
+              label: 'Description',
+              type: 'textarea',
+              placeholder: 'Entity description',
+            },
+            {
+              name: 'operations',
+              label: 'Operations',
+              type: 'array',
+              placeholder: 'create, read, update, delete',
+            },
+          ]}
+          getInitialValues={(entity) => ({
+            name: entity.name,
+            description: entity.description,
+            operations: entity.operations?.join(', ') || '',
+          })}
+          getSchemaData={(entity) => entity.schema || {}}
+          getUiSchemaData={(entity) => entity.uiSchema || {}}
+        />
 
-      {/* Preview Modal */}
-      <Modal
-        title={`Preview: ${previewEntity?.name || previewEntity?.id}`}
-        open={previewVisible}
-        onCancel={() => setPreviewVisible(false)}
-        width={800}
-        footer={null}
-      >
-        <div dangerouslySetInnerHTML={{ __html: previewContent }} />
-      </Modal>
+        {/* Preview Modal */}
+        <Modal
+          title={`Preview: ${previewEntity?.name || previewEntity?.id}`}
+          open={previewVisible}
+          onCancel={() => setPreviewVisible(false)}
+          width={800}
+          footer={null}
+        >
+          <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+        </Modal>
+
+        <Drawer
+          title={`Entity Functions: ${functionsEntity?.name || functionsEntity?.id || ''}`}
+          open={functionsVisible}
+          onClose={() => setFunctionsVisible(false)}
+          width={640}
+        >
+          {functionsLoading ? (
+            <Typography.Text type="secondary">Loading...</Typography.Text>
+          ) : entityFunctions.length === 0 ? (
+            <Typography.Text type="secondary">No associated functions.</Typography.Text>
+          ) : (
+            <Space direction="vertical" style={{ width: '100%' }} size="middle">
+              {entityFunctions.map((item) => (
+                <Card
+                  key={item.id}
+                  size="small"
+                  title={item.name || item.id}
+                  extra={<Tag color="blue">{item.operation || 'custom'}</Tag>}
+                >
+                  <Typography.Text type="secondary">{item.id}</Typography.Text>
+                  {item.summary ? (
+                    <Typography.Paragraph style={{ marginTop: 8, marginBottom: 0 }}>
+                      {item.summary}
+                    </Typography.Paragraph>
+                  ) : null}
+                </Card>
+              ))}
+            </Space>
+          )}
+        </Drawer>
       </Card>
     </PageContainer>
   );

@@ -49,7 +49,6 @@ export default function FunctionUIManager({
     custom_metadata: { label: '自定义元数据', color: 'blue' },
     config_file_override: { label: '配置文件覆盖', color: 'purple' },
     openapi_x_ui: { label: 'OpenAPI x-ui', color: 'green' },
-    legacy_schema: { label: 'Legacy Schema', color: 'orange' },
     none: { label: '未配置', color: 'default' },
   };
   const sourceDisplay = sourceMeta[uiSource] || { label: uiSource || '未知', color: 'default' };

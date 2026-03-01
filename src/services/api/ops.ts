@@ -58,10 +58,16 @@ export type OpsServicesResponse = {
 };
 
 export async function fetchOpsServices() {
-  return request<OpsServicesResponse>("/api/v1/ops/services");
+  return request<OpsServicesResponse>('/api/v1/ops/services');
 }
 
-export type RateLimitRule = { scope: 'function'|'service'; key: string; limit_qps: number; match?: Record<string,string>; percent?: number };
+export type RateLimitRule = {
+  scope: 'function' | 'service';
+  key: string;
+  limit_qps: number;
+  match?: Record<string, string>;
+  percent?: number;
+};
 const RATE_LIMIT_BASE = '/api/v1/rate-limits';
 export async function listRateLimits() {
   return request<{ rules: RateLimitRule[] }>(RATE_LIMIT_BASE);
@@ -70,17 +76,37 @@ export async function putRateLimits(rules: RateLimitRule[]) {
   return request<void>(RATE_LIMIT_BASE, { method: 'PUT', data: { rules } });
 }
 export async function deleteRateLimit(scope: string, key: string) {
-  return request<void>(`${RATE_LIMIT_BASE}?scope=${encodeURIComponent(scope)}&key=${encodeURIComponent(key)}`, { method: 'DELETE' });
-}
-export async function previewRateLimit(params: { scope: 'service'; key?: string; limit_qps: number; percent?: number; match_game_id?: string; match_env?: string; match_region?: string; match_zone?: string }) {
-  return request<{ matched: number; agents: { agent_id: string; game_id?: string; env?: string; region?: string; zone?: string; rpc_addr?: string; qps: number }[] }>(
-    `${RATE_LIMIT_BASE}/preview`,
-    { params },
+  return request<void>(
+    `${RATE_LIMIT_BASE}?scope=${encodeURIComponent(scope)}&key=${encodeURIComponent(key)}`,
+    { method: 'DELETE' },
   );
+}
+export async function previewRateLimit(params: {
+  scope: 'service';
+  key?: string;
+  limit_qps: number;
+  percent?: number;
+  match_game_id?: string;
+  match_env?: string;
+  match_region?: string;
+  match_zone?: string;
+}) {
+  return request<{
+    matched: number;
+    agents: {
+      agent_id: string;
+      game_id?: string;
+      env?: string;
+      region?: string;
+      zone?: string;
+      rpc_addr?: string;
+      qps: number;
+    }[];
+  }>(`${RATE_LIMIT_BASE}/preview`, { params });
 }
 
 export async function listOpsFunctions() {
-  return request<{ functions: { id: string; category?: string }[] }>("/api/ops/functions");
+  return request<{ functions: { id: string; category?: string }[] }>('/api/ops/functions');
 }
 
 export type OpsJob = {
@@ -89,7 +115,7 @@ export type OpsJob = {
   actor?: string;
   game_id?: string;
   env?: string;
-  state: 'running'|'succeeded'|'failed'|'canceled'|string;
+  state: 'running' | 'succeeded' | 'failed' | 'canceled' | string;
   started_at?: string;
   ended_at?: string;
   duration_ms?: number;
@@ -97,37 +123,66 @@ export type OpsJob = {
   rpc_addr?: string;
   trace_id?: string;
 };
-export async function listOpsJobs(params?: { status?: string; function_id?: string; actor?: string; game_id?: string; env?: string; page?: number; size?: number }) {
-  return request<{ jobs: OpsJob[]; total: number }>("/api/v1/jobs", { params });
+export async function listOpsJobs(params?: {
+  status?: string;
+  function_id?: string;
+  actor?: string;
+  game_id?: string;
+  env?: string;
+  page?: number;
+  size?: number;
+}) {
+  return request<{ jobs: OpsJob[]; total: number }>('/api/v1/jobs', { params });
 }
 
 export async function fetchOpsMetrics(params: { instance: string; range?: string; step?: string }) {
-  return request<{ qps: [number, string][]; err_rate: [number, string][]; p95_ms: [number, string][] }>("/api/ops/metrics", { params });
+  return request<{
+    qps: [number, string][];
+    err_rate: [number, string][];
+    p95_ms: [number, string][];
+  }>('/api/ops/metrics', { params });
 }
 
 export async function listSilences() {
-  return request<{ silences: any[] }>("/api/v1/ops/silences");
+  return request<{ silences: any[] }>('/api/v1/ops/silences');
 }
 export async function deleteSilence(id: string) {
   return request<void>(`/api/v1/ops/silences/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
 export async function fetchOpsConfig() {
-  return request<{ alertmanager_url?: string; grafana_explore_url?: string; jaeger_url?: string }>("/api/ops/config");
+  return request<{ alertmanager_url?: string; grafana_explore_url?: string; jaeger_url?: string }>(
+    '/api/ops/config',
+  );
 }
 
 export async function updateAgentMeta(agent_id: string, data: { region?: string; zone?: string }) {
-  return request<void>(`/api/ops/agents/${encodeURIComponent(agent_id)}/meta`, { method: 'PUT', data });
+  return request<void>(`/api/ops/agents/${encodeURIComponent(agent_id)}/meta`, {
+    method: 'PUT',
+    data,
+  });
 }
 
 // Registry API 已在 services/api/registry.ts 提供，避免重复导出导致冲突
 
 // --- Certificates (HTTPS) ---
 export type Certificate = {
-  id: number; domain: string; port: number; issuer?: string; subject?: string; algorithm?: string; key_usage?: string;
-  valid_from?: string; valid_to?: string; days_left?: number; status?: 'valid'|'expiring'|'expired'|'error'|'pending'; last_checked?: string; error_msg?: string; alert_days?: number;
+  id: number;
+  domain: string;
+  port: number;
+  issuer?: string;
+  subject?: string;
+  algorithm?: string;
+  key_usage?: string;
+  valid_from?: string;
+  valid_to?: string;
+  days_left?: number;
+  status?: 'valid' | 'expiring' | 'expired' | 'error' | 'pending';
+  last_checked?: string;
+  error_msg?: string;
+  alert_days?: number;
 };
 export async function listCertificates(params?: { page?: number; size?: number; status?: string }) {
-  const r = await request<any>("/api/certificates", { params });
+  const r = await request<any>('/api/certificates', { params });
   const raw = (r?.certificates || []) as any[];
   const norm = raw.map((c: any) => ({
     id: c.id ?? c.ID,
@@ -145,10 +200,15 @@ export async function listCertificates(params?: { page?: number; size?: number; 
     error_msg: c.error_msg ?? c.ErrorMsg,
     alert_days: c.alert_days ?? c.AlertDays,
   })) as Certificate[];
-  return { certificates: norm, total: r?.total || 0, page: r?.page || 1, size: r?.size || (params?.size || 10) };
+  return {
+    certificates: norm,
+    total: r?.total || 0,
+    page: r?.page || 1,
+    size: r?.size || params?.size || 10,
+  };
 }
 export async function addCertificate(data: { domain: string; port?: number; alert_days?: number }) {
-  return request("/api/certificates", { method: 'POST', data });
+  return request('/api/certificates', { method: 'POST', data });
 }
 export async function checkCertificate(id: number) {
   return request(`/api/certificates/${id}/check`, { method: 'POST' });
@@ -160,7 +220,7 @@ export async function deleteCertificate(id: number) {
   return request(`/api/certificates/${id}`, { method: 'DELETE' });
 }
 
-// --- Ops (legacy pages) ---
+// --- Ops pages ---
 export type OpsBackup = {
   id: string;
   kind?: string;
@@ -217,7 +277,11 @@ export async function fetchOpsAlerts() {
   return request<{ alerts?: any[] }>('/api/ops/alerts');
 }
 
-export async function silenceOpsAlert(data: { matchers: Record<string, string>; duration: string; comment?: string }) {
+export async function silenceOpsAlert(data: {
+  matchers: Record<string, string>;
+  duration: string;
+  comment?: string;
+}) {
   return request<void>('/api/ops/alerts/silence', {
     method: 'POST',
     data: {

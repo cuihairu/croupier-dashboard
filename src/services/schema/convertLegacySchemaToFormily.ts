@@ -67,6 +67,6 @@ function normalizeNode(node: any): any {
   return next;
 }
 
-export function convertXRenderToFormily(schema: any): any {
+export function convertLegacySchemaToFormily(schema: any): any {
   return normalizeNode(schema);
 }

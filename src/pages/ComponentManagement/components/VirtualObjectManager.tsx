@@ -18,7 +18,7 @@ import {
   Tabs,
   Badge,
   Tooltip,
-  Alert
+  Alert,
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,10 +29,15 @@ import {
   FunctionOutlined,
   SettingOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined
+  PauseCircleOutlined,
 } from '@ant-design/icons';
-import { getLegacyDescriptorsMap } from '@/services/api';
-import { createEntity, deleteEntity, listEntities, updateEntityStatus } from '@/services/api/entities';
+import { listDescriptors } from '@/services/api';
+import {
+  createEntity,
+  deleteEntity,
+  listEntities,
+  updateEntityStatus,
+} from '@/services/api/entities';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -107,20 +112,13 @@ export default function VirtualObjectManager() {
 
   const loadFunctions = async () => {
     try {
-      const data = await getLegacyDescriptorsMap();
-      if (!data || typeof data !== 'object') {
-        console.warn('无法获取函数列表，使用空数组');
-        setFunctions([]);
-        return;
-      }
-
-      // 转换函数数据
-      const functionList = Object.entries(data).map(([id, desc]: [string, any]) => ({
-        id,
-        name: desc?.name || id,
+      const descriptors = await listDescriptors();
+      const functionList = (descriptors || []).map((desc: any) => ({
+        id: desc.id,
+        name: desc?.name || desc.id,
         description: desc?.description || '无描述',
-        parameters: desc?.parameters || {},
-        category: desc?.category || 'general'
+        parameters: desc?.params || {},
+        category: desc?.category || 'general',
       }));
 
       setFunctions(functionList);
@@ -138,7 +136,7 @@ export default function VirtualObjectManager() {
         version: '1.0.0',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        usageCount: 0
+        usageCount: 0,
       };
       await createEntity(entityData as any);
       message.success('虚拟对象创建成功');
@@ -180,13 +178,13 @@ export default function VirtualObjectManager() {
           <strong>{name}</strong>
           <span style={{ color: '#666', fontSize: '12px' }}>v{record.version}</span>
         </Space>
-      )
+      ),
     },
     {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      ellipsis: true,
     },
     {
       title: '操作数量',
@@ -194,7 +192,7 @@ export default function VirtualObjectManager() {
       key: 'operations',
       render: (operations: any) => (
         <Tag color="blue">{Object.keys(operations || {}).length} 个操作</Tag>
-      )
+      ),
     },
     {
       title: '资源组',
@@ -202,7 +200,7 @@ export default function VirtualObjectManager() {
       key: 'resources',
       render: (resources: any) => (
         <Tag color="green">{Object.keys(resources || {}).length} 个资源组</Tag>
-      )
+      ),
     },
     {
       title: '状态',
@@ -212,11 +210,11 @@ export default function VirtualObjectManager() {
         const statusConfig = {
           active: { color: 'success', text: '活跃' },
           inactive: { color: 'default', text: '停用' },
-          draft: { color: 'warning', text: '草稿' }
+          draft: { color: 'warning', text: '草稿' },
         };
         const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
         return <Tag color={config.color}>{config.text}</Tag>;
-      }
+      },
     },
     {
       title: '使用次数',
@@ -224,7 +222,7 @@ export default function VirtualObjectManager() {
       key: 'usageCount',
       render: (count: number) => (
         <Badge count={count} showZero style={{ backgroundColor: '#52c41a' }} />
-      )
+      ),
     },
     {
       title: '启用/停用',
@@ -236,7 +234,7 @@ export default function VirtualObjectManager() {
           checkedChildren="启用"
           unCheckedChildren="停用"
         />
-      )
+      ),
     },
     {
       title: '操作',
@@ -270,16 +268,12 @@ export default function VirtualObjectManager() {
             cancelText="取消"
           >
             <Tooltip title="删除">
-              <Button
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-              />
+              <Button size="small" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -302,9 +296,7 @@ export default function VirtualObjectManager() {
             >
               创建虚拟对象
             </Button>
-            <Button onClick={loadEntities}>
-              刷新
-            </Button>
+            <Button onClick={loadEntities}>刷新</Button>
           </Space>
         }
       >
@@ -325,7 +317,7 @@ export default function VirtualObjectManager() {
             pageSize: 10,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 个虚拟对象`
+            showTotal: (total) => `共 ${total} 个虚拟对象`,
           }}
         />
       </Card>
@@ -368,40 +360,44 @@ export default function VirtualObjectManager() {
                       {new Date(selectedEntity.updatedAt).toLocaleString()}
                     </Descriptions.Item>
                   </Descriptions>
-                )
+                ),
               },
               {
                 key: 'operations',
                 label: '操作列表',
                 children: (
                   <Table
-                    dataSource={Object.entries(selectedEntity.operations || {}).map(([key, op]) => ({
-                      key,
-                      operation: key,
-                      function: op.function,
-                      description: op.description
-                    }))}
+                    dataSource={Object.entries(selectedEntity.operations || {}).map(
+                      ([key, op]) => ({
+                        key,
+                        operation: key,
+                        function: op.function,
+                        description: op.description,
+                      }),
+                    )}
                     columns={[
                       { title: '操作名', dataIndex: 'operation', key: 'operation' },
                       { title: '函数', dataIndex: 'function', key: 'function' },
-                      { title: '描述', dataIndex: 'description', key: 'description' }
+                      { title: '描述', dataIndex: 'description', key: 'description' },
                     ]}
                     pagination={false}
                     size="small"
                   />
-                )
+                ),
               },
               {
                 key: 'resources',
                 label: '资源组',
                 children: (
                   <Table
-                    dataSource={Object.entries(selectedEntity.resources || {}).map(([key, res]) => ({
-                      key,
-                      name: key,
-                      title: res.title,
-                      functions: res.functions
-                    }))}
+                    dataSource={Object.entries(selectedEntity.resources || {}).map(
+                      ([key, res]) => ({
+                        key,
+                        name: key,
+                        title: res.title,
+                        functions: res.functions,
+                      }),
+                    )}
                     columns={[
                       { title: '资源组名', dataIndex: 'name', key: 'name' },
                       { title: '标题', dataIndex: 'title', key: 'title' },
@@ -411,38 +407,42 @@ export default function VirtualObjectManager() {
                         key: 'functions',
                         render: (funcs: string[]) => (
                           <Space wrap>
-                            {funcs.map(f => <Tag key={f}>{f}</Tag>)}
+                            {funcs.map((f) => (
+                              <Tag key={f}>{f}</Tag>
+                            ))}
                           </Space>
-                        )
-                      }
+                        ),
+                      },
                     ]}
                     pagination={false}
                     size="small"
                   />
-                )
+                ),
               },
               {
                 key: 'relationships',
                 label: '关系',
                 children: (
                   <Table
-                    dataSource={Object.entries(selectedEntity.relationships || {}).map(([key, rel]) => ({
-                      key,
-                      name: key,
-                      type: rel.type,
-                      target: rel.target,
-                      cardinality: rel.cardinality
-                    }))}
+                    dataSource={Object.entries(selectedEntity.relationships || {}).map(
+                      ([key, rel]) => ({
+                        key,
+                        name: key,
+                        type: rel.type,
+                        target: rel.target,
+                        cardinality: rel.cardinality,
+                      }),
+                    )}
                     columns={[
                       { title: '关系名称', dataIndex: 'name', key: 'name' },
                       { title: '类型', dataIndex: 'type', key: 'type' },
                       { title: '目标', dataIndex: 'target', key: 'target' },
-                      { title: '基数', dataIndex: 'cardinality', key: 'cardinality' }
+                      { title: '基数', dataIndex: 'cardinality', key: 'cardinality' },
                     ]}
                     pagination={false}
                     size="small"
                   />
-                )
+                ),
               },
             ]}
           />

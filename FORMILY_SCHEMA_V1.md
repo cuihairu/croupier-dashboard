@@ -49,8 +49,8 @@
 
 ## 迁移说明
 
-- 旧 XRender UI Schema 需转换为 Formily Schema
-- 保留转换器入口：`src/services/schema/convertXRenderToFormily.ts`
+- 历史 UI Schema 需转换为 Formily Schema
+- 保留转换器入口：`src/services/schema/convertLegacySchemaToFormily.ts`
 
 ## 异步联动（示例思路）
 
