@@ -24,18 +24,57 @@ const loginPath = '/user/login';
 let cachedConsoleSignature = '';
 let cachedConsoleItems: { key: string; name: string; path: string; locale: false }[] = [];
 
+const TOKEN_ZH_MAP: Record<string, string> = {
+  examples: '示例',
+  analytics: '分析',
+  game: '游戏',
+  player: '玩家',
+  players: '玩家',
+  user: '用户',
+  users: '用户',
+  create: '创建',
+  update: '更新',
+  delete: '删除',
+  remove: '删除',
+  list: '列表',
+  get: '详情',
+  detail: '详情',
+  query: '查询',
+  search: '搜索',
+  invoke: '调用',
+  retention: '留存',
+  ban: '封禁',
+  batch: '批量',
+  ban_batch: '批量封禁',
+  unban: '解封',
+  report: '报表',
+  export: '导出',
+};
+
 const humanizeToken = (token: string) =>
   token
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .trim();
 
+const toReadableZh = (token: string) => {
+  const normalized = String(token || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return '';
+  if (TOKEN_ZH_MAP[normalized]) return TOKEN_ZH_MAP[normalized];
+  const words = humanizeToken(normalized)
+    .split(/\s+/)
+    .map((w) => TOKEN_ZH_MAP[w] || w);
+  return words.join('');
+};
+
 const fallbackNameFromId = (id?: string) => {
   const parts = String(id || '')
     .split('.')
     .filter(Boolean);
   if (parts.length === 0) return 'unknown';
-  const tail = parts.slice(-2).map(humanizeToken);
+  const tail = parts.slice(-2).map(toReadableZh);
   return tail.join(' · ');
 };
 
@@ -173,12 +212,13 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         | undefined;
       if (!Array.isArray(descriptors) || descriptors.length === 0) return menuData;
 
-      const safeName = (d: FunctionDescriptor) =>
-        d?.display_name?.zh ||
-        d?.display_name?.en ||
-        d?.summary?.zh ||
-        d?.summary?.en ||
-        fallbackNameFromId(d?.id);
+      const safeName = (d: FunctionDescriptor) => {
+        if (d?.display_name?.zh) return d.display_name.zh;
+        if (d?.summary?.zh) return d.summary.zh;
+        if (d?.display_name?.en) return toReadableZh(d.display_name.en);
+        if (d?.summary?.en) return toReadableZh(d.summary.en);
+        return fallbackNameFromId(d?.id);
+      };
 
       const isEntity = (d: FunctionDescriptor) => d?.type === 'entity';
 
