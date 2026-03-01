@@ -59,7 +59,6 @@ import {
   type FunctionPermission,
 } from '@/services/api/functions';
 
-const { TabPane } = Tabs;
 const { TextArea } = Input;
 
 interface FunctionDetail {
@@ -474,6 +473,426 @@ export default function FunctionDetailPage() {
     );
   }
 
+  // Define tab items using useMemo to avoid deprecation warning
+  const configTabItems = [
+    {
+      key: 'json',
+      label: 'JSON 视图',
+      children: (
+        <>
+          <Alert
+            message="配置信息"
+            description="函数的完整 JSON 配置（只读）"
+            type="info"
+            showIcon
+          />
+          <pre
+            style={{
+              marginTop: 16,
+              padding: 16,
+              background: '#f5f5f5',
+              borderRadius: 4,
+              maxHeight: 500,
+              overflow: 'auto',
+            }}
+          >
+            {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
+          </pre>
+        </>
+      ),
+    },
+    {
+      key: 'ui',
+      label: '🎨 UI 配置',
+      children: (
+        <FunctionUIManager
+          functionId={params.id || ''}
+          jsonSchema={parsedInputSchema}
+          onSave={async (uiConfig) => {
+            if (!params.id) return;
+            await saveFunctionUiSchema(params.id, uiConfig);
+          }}
+        />
+      ),
+    },
+    {
+      key: 'route',
+      label: '🛣️ 路由配置',
+      children: (
+        <>
+          <Alert
+            message="路由配置"
+            description="配置函数在前端菜单中的显示和跳转路径（需要重新打包 Pack 生效）"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          <Card size="small" style={{ marginBottom: 16 }}>
+            <Space wrap>
+              <Tag color="blue">{routePreview?.section || '未设置一级菜单'}</Tag>
+              <Tag color="purple">{routePreview?.group || '未设置二级分组'}</Tag>
+              <Tag color="geekblue">{routePreview?.path || '/game/functions/invoke（默认）'}</Tag>
+              <Button size="small" onClick={() => history.push('/game/functions/assignments')}>
+                去分配页查看展示
+              </Button>
+            </Space>
+          </Card>
+          <Card title="菜单配置" size="small">
+            <Form form={routeConfigForm} layout="vertical">
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label="一级菜单" name="section" tooltip="例如：玩家管理">
+                    <Input placeholder="留空则不分组" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="二级分组" name="group" tooltip="例如：基础功能">
+                    <Input placeholder="留空则不分组" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="路由路径"
+                    name="path"
+                    tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get"
+                  >
+                    <Input placeholder="/game/functions/invoke（默认）" />
+                  </Form.Item>
+                </Col>
+                <Col span={6}>
+                  <Form.Item label="显示顺序" name="order" tooltip="数字越小越靠前">
+                    <InputNumber min={1} max={100} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+                <Col span={6}>
+                  <Form.Item label="隐藏菜单" name="hidden" valuePropName="checked">
+                    <Switch />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Alert
+                message="提示"
+                description="路由配置会保存到服务端，并用于函数菜单分组与跳转展示。"
+                type="info"
+                showIcon
+              />
+              <Space style={{ marginTop: 16 }}>
+                <Button
+                  type="primary"
+                  loading={routeConfigSaving}
+                  onClick={async () => {
+                    if (!params.id) return;
+                    try {
+                      setRouteConfigSaving(true);
+                      const v = await routeConfigForm.validateFields();
+                      await saveFunctionRoute(params.id, {
+                        section: v.section || '',
+                        group: v.group || '',
+                        path: v.path || '',
+                        order: v.order ?? 10,
+                        hidden: !!v.hidden,
+                      });
+                      window.dispatchEvent(new CustomEvent('function-route:changed'));
+                      message.success('路由配置已保存');
+                    } catch {
+                      // validation error
+                    } finally {
+                      setRouteConfigSaving(false);
+                    }
+                  }}
+                >
+                  保存路由配置
+                </Button>
+                <Button
+                  onClick={async () => {
+                    const descriptor = functionDetail?.descriptor || {};
+                    const menuConfig = descriptor?.menu || {};
+                    const resetRoute = {
+                      section: menuConfig.section || '',
+                      group: menuConfig.group || '',
+                      path: menuConfig.path || '',
+                      order: menuConfig.order || 10,
+                      hidden: menuConfig.hidden || false,
+                    };
+                    routeConfigForm.setFieldsValue(resetRoute);
+                    if (params.id) {
+                      await saveFunctionRoute(params.id, resetRoute);
+                    }
+                    window.dispatchEvent(new CustomEvent('function-route:changed'));
+                    message.success('已恢复为默认路由');
+                  }}
+                >
+                  恢复默认
+                </Button>
+              </Space>
+            </Form>
+          </Card>
+        </>
+      ),
+    },
+  ];
+
+  const mainTabItems = [
+    {
+      key: 'basic',
+      label: '基本信息',
+      children: (
+        <>
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="函数ID">
+              <code>{functionDetail?.id}</code>
+            </Descriptions.Item>
+            <Descriptions.Item label="版本">
+              <Tag>{functionDetail?.version || '1.0.0'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="分类">
+              <Tag color="blue">{functionDetail?.category || '默认'}</Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="状态">
+              <Space>
+                <Switch checked={functionDetail?.enabled || false} onChange={handleStatusToggle} />
+                <span>{functionDetail?.enabled ? '已启用' : '已禁用'}</span>
+              </Space>
+            </Descriptions.Item>
+            <Descriptions.Item label="Provider">
+              {functionDetail?.provider || '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="健康状态">
+              <Tag
+                color={
+                  functionDetail?.health === 'healthy'
+                    ? 'green'
+                    : functionDetail?.health === 'unhealthy'
+                    ? 'red'
+                    : 'gray'
+                }
+              >
+                {functionDetail?.health === 'healthy'
+                  ? '健康'
+                  : functionDetail?.health === 'unhealthy'
+                  ? '异常'
+                  : '未知'}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="Agent 数量">
+              {functionDetail?.agentCount || 0}
+            </Descriptions.Item>
+            <Descriptions.Item label="创建时间">
+              {functionDetail?.createdAt
+                ? new Date(functionDetail.createdAt).toLocaleString()
+                : '-'}
+            </Descriptions.Item>
+            <Descriptions.Item label="更新时间">
+              {functionDetail?.updatedAt
+                ? new Date(functionDetail.updatedAt).toLocaleString()
+                : '-'}
+            </Descriptions.Item>
+          </Descriptions>
+
+          {editing && (
+            <>
+              <Divider>编辑信息</Divider>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="函数名称"
+                    name="name"
+                    rules={[{ required: true, message: '请输入函数名称' }]}
+                  >
+                    <Input placeholder="请输入函数名称" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="分类" name="category">
+                    <Input placeholder="请输入分类" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item label="描述" name="description">
+                <TextArea rows={3} placeholder="请输入函数描述" />
+              </Form.Item>
+              <Form.Item label="标签" name="tags">
+                <Input placeholder="请输入标签，多个标签用逗号分隔" />
+              </Form.Item>
+            </>
+          )}
+
+          {!editing && (
+            <>
+              <Divider>描述</Divider>
+              <p>{functionDetail?.description || '暂无描述'}</p>
+            </>
+          )}
+
+          {!editing && functionDetail?.tags && functionDetail.tags.length > 0 && (
+            <>
+              <Divider>标签</Divider>
+              <Space wrap>
+                {functionDetail.tags.map((tag) => (
+                  <Tag key={tag} color="geekblue">
+                    {tag}
+                  </Tag>
+                ))}
+              </Space>
+            </>
+          )}
+        </>
+      ),
+    },
+    {
+      key: 'config',
+      label: '配置',
+      children: (
+        <Tabs
+          activeKey={activeSubTab}
+          onChange={(key) => {
+            setActiveSubTab(key);
+            history.replace(`${location.pathname}${buildSearch('config', key)}`);
+          }}
+          type="card"
+          size="small"
+          items={configTabItems}
+        />
+      ),
+    },
+    {
+      key: 'permissions',
+      label: '权限',
+      children: (
+        <>
+          <Alert
+            message="权限配置"
+            description="用于控制哪些角色可以调用该函数（actions 建议使用 invoke/execute；roles 填角色名）。"
+            type="info"
+            showIcon
+          />
+
+          {permError && (
+            <Alert
+              style={{ marginTop: 16 }}
+              type="error"
+              showIcon
+              message="无法读取权限"
+              description={permError}
+            />
+          )}
+
+          <Card style={{ marginTop: 16 }} loading={permLoading} size="small" title="函数权限规则">
+            <Form form={permForm} layout="vertical">
+              <Form.List name="items">
+                {(fields, { add, remove }) => (
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {fields.map((field) => (
+                      <Card
+                        key={field.key}
+                        size="small"
+                        type="inner"
+                        title={`规则 #${field.name + 1}`}
+                        extra={
+                          <Button danger size="small" onClick={() => remove(field.name)}>
+                            删除
+                          </Button>
+                        }
+                      >
+                        <Row gutter={16}>
+                          <Col span={6}>
+                            <Form.Item
+                              {...field}
+                              label="resource"
+                              name={[field.name, 'resource']}
+                              rules={[{ required: true, message: 'resource 必填' }]}
+                            >
+                              <Input placeholder="function" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Form.Item
+                              {...field}
+                              label="actions"
+                              name={[field.name, 'actions']}
+                              rules={[{ required: true, message: 'actions 必填' }]}
+                            >
+                              <Select mode="tags" placeholder="invoke / execute" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={6}>
+                            <Form.Item
+                              {...field}
+                              label="roles"
+                              name={[field.name, 'roles']}
+                              rules={[{ required: true, message: 'roles 必填（至少 1 个）' }]}
+                            >
+                              <Select
+                                mode="tags"
+                                placeholder="例如：ops / admin / functions:manage"
+                              />
+                            </Form.Item>
+                          </Col>
+                          <Col span={3}>
+                            <Form.Item {...field} label="gameId" name={[field.name, 'gameId']}>
+                              <Input placeholder="(all)" />
+                            </Form.Item>
+                          </Col>
+                          <Col span={3}>
+                            <Form.Item {...field} label="env" name={[field.name, 'env']}>
+                              <Input placeholder="(all)" />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      </Card>
+                    ))}
+
+                    <Space>
+                      <Button
+                        onClick={() =>
+                          add({ resource: 'function', actions: ['invoke'], roles: [] })
+                        }
+                      >
+                        添加规则
+                      </Button>
+                      <Button
+                        type="primary"
+                        loading={permSaving}
+                        onClick={async () => {
+                          if (!params.id) return;
+                          try {
+                            setPermSaving(true);
+                            const values = await permForm.validateFields();
+                            const items = (values?.items || []) as FunctionPermission[];
+                            await updateFunctionPermissions(params.id, items);
+                            message.success('权限已更新');
+                          } catch (e: any) {
+                            message.error(e?.message || '更新失败');
+                          } finally {
+                            setPermSaving(false);
+                          }
+                        }}
+                      >
+                        保存权限
+                      </Button>
+                    </Space>
+                  </Space>
+                )}
+              </Form.List>
+            </Form>
+          </Card>
+        </>
+      ),
+    },
+    {
+      key: 'history',
+      label: '调用历史',
+      children: <HistoryTab />,
+    },
+    {
+      key: 'analytics',
+      label: '统计分析',
+      children: <AnalyticsTab />,
+    },
+  ];
+
   return (
     <PageContainer
       title={
@@ -529,404 +948,8 @@ export default function FunctionDetailPage() {
                 )}`,
               );
             }}
-          >
-            <TabPane tab="基本信息" key="basic">
-              <Descriptions bordered column={2}>
-                <Descriptions.Item label="函数ID">
-                  <code>{functionDetail?.id}</code>
-                </Descriptions.Item>
-                <Descriptions.Item label="版本">
-                  <Tag>{functionDetail?.version || '1.0.0'}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="分类">
-                  <Tag color="blue">{functionDetail?.category || '默认'}</Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="状态">
-                  <Space>
-                    <Switch
-                      checked={functionDetail?.enabled || false}
-                      onChange={handleStatusToggle}
-                    />
-                    <span>{functionDetail?.enabled ? '已启用' : '已禁用'}</span>
-                  </Space>
-                </Descriptions.Item>
-                <Descriptions.Item label="Provider">
-                  {functionDetail?.provider || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="健康状态">
-                  <Tag
-                    color={
-                      functionDetail?.health === 'healthy'
-                        ? 'green'
-                        : functionDetail?.health === 'unhealthy'
-                        ? 'red'
-                        : 'gray'
-                    }
-                  >
-                    {functionDetail?.health === 'healthy'
-                      ? '健康'
-                      : functionDetail?.health === 'unhealthy'
-                      ? '异常'
-                      : '未知'}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Agent 数量">
-                  {functionDetail?.agentCount || 0}
-                </Descriptions.Item>
-                <Descriptions.Item label="创建时间">
-                  {functionDetail?.createdAt
-                    ? new Date(functionDetail.createdAt).toLocaleString()
-                    : '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="更新时间">
-                  {functionDetail?.updatedAt
-                    ? new Date(functionDetail.updatedAt).toLocaleString()
-                    : '-'}
-                </Descriptions.Item>
-              </Descriptions>
-
-              {editing && (
-                <>
-                  <Divider>编辑信息</Divider>
-                  <Row gutter={16}>
-                    <Col span={12}>
-                      <Form.Item
-                        label="函数名称"
-                        name="name"
-                        rules={[{ required: true, message: '请输入函数名称' }]}
-                      >
-                        <Input placeholder="请输入函数名称" />
-                      </Form.Item>
-                    </Col>
-                    <Col span={12}>
-                      <Form.Item label="分类" name="category">
-                        <Input placeholder="请输入分类" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Form.Item label="描述" name="description">
-                    <TextArea rows={3} placeholder="请输入函数描述" />
-                  </Form.Item>
-                  <Form.Item label="标签" name="tags">
-                    <Input placeholder="请输入标签，多个标签用逗号分隔" />
-                  </Form.Item>
-                </>
-              )}
-
-              {!editing && (
-                <>
-                  <Divider>描述</Divider>
-                  <p>{functionDetail?.description || '暂无描述'}</p>
-                </>
-              )}
-
-              {!editing && functionDetail?.tags && functionDetail.tags.length > 0 && (
-                <>
-                  <Divider>标签</Divider>
-                  <Space wrap>
-                    {functionDetail.tags.map((tag) => (
-                      <Tag key={tag} color="geekblue">
-                        {tag}
-                      </Tag>
-                    ))}
-                  </Space>
-                </>
-              )}
-            </TabPane>
-
-            <TabPane tab="配置" key="config">
-              <Tabs
-                activeKey={activeSubTab}
-                onChange={(key) => {
-                  setActiveSubTab(key);
-                  history.replace(`${location.pathname}${buildSearch('config', key)}`);
-                }}
-                type="card"
-                size="small"
-              >
-                <TabPane tab="JSON 视图" key="json">
-                  <Alert
-                    message="配置信息"
-                    description="函数的完整 JSON 配置（只读）"
-                    type="info"
-                    showIcon
-                  />
-                  <pre
-                    style={{
-                      marginTop: 16,
-                      padding: 16,
-                      background: '#f5f5f5',
-                      borderRadius: 4,
-                      maxHeight: 500,
-                      overflow: 'auto',
-                    }}
-                  >
-                    {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
-                  </pre>
-                </TabPane>
-
-                <TabPane tab="🎨 UI 配置" key="ui">
-                  <FunctionUIManager
-                    functionId={params.id || ''}
-                    jsonSchema={parsedInputSchema}
-                    onSave={async (uiConfig) => {
-                      if (!params.id) return;
-                      await saveFunctionUiSchema(params.id, uiConfig);
-                    }}
-                  />
-                </TabPane>
-
-                <TabPane tab="🛣️ 路由配置" key="route">
-                  <Alert
-                    message="路由配置"
-                    description="配置函数在前端菜单中的显示和跳转路径（需要重新打包 Pack 生效）"
-                    type="info"
-                    showIcon
-                    style={{ marginBottom: 16 }}
-                  />
-                  <Card size="small" style={{ marginBottom: 16 }}>
-                    <Space wrap>
-                      <Tag color="blue">{routePreview?.section || '未设置一级菜单'}</Tag>
-                      <Tag color="purple">{routePreview?.group || '未设置二级分组'}</Tag>
-                      <Tag color="geekblue">
-                        {routePreview?.path || '/game/functions/invoke（默认）'}
-                      </Tag>
-                      <Button
-                        size="small"
-                        onClick={() => history.push('/game/functions/assignments')}
-                      >
-                        去分配页查看展示
-                      </Button>
-                    </Space>
-                  </Card>
-                  <Card title="菜单配置" size="small">
-                    <Form form={routeConfigForm} layout="vertical">
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Form.Item label="一级菜单" name="section" tooltip="例如：玩家管理">
-                            <Input placeholder="留空则不分组" />
-                          </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                          <Form.Item label="二级分组" name="group" tooltip="例如：基础功能">
-                            <Input placeholder="留空则不分组" />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Form.Item
-                            label="路由路径"
-                            name="path"
-                            tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get"
-                          >
-                            <Input placeholder="/game/functions/invoke（默认）" />
-                          </Form.Item>
-                        </Col>
-                        <Col span={6}>
-                          <Form.Item label="显示顺序" name="order" tooltip="数字越小越靠前">
-                            <InputNumber min={1} max={100} style={{ width: '100%' }} />
-                          </Form.Item>
-                        </Col>
-                        <Col span={6}>
-                          <Form.Item label="隐藏菜单" name="hidden" valuePropName="checked">
-                            <Switch />
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                      <Alert
-                        message="提示"
-                        description="路由配置会保存到服务端，并用于函数菜单分组与跳转展示。"
-                        type="info"
-                        showIcon
-                      />
-                      <Space style={{ marginTop: 16 }}>
-                        <Button
-                          type="primary"
-                          loading={routeConfigSaving}
-                          onClick={async () => {
-                            if (!params.id) return;
-                            try {
-                              setRouteConfigSaving(true);
-                              const v = await routeConfigForm.validateFields();
-                              await saveFunctionRoute(params.id, {
-                                section: v.section || '',
-                                group: v.group || '',
-                                path: v.path || '',
-                                order: v.order ?? 10,
-                                hidden: !!v.hidden,
-                              });
-                              window.dispatchEvent(new CustomEvent('function-route:changed'));
-                              message.success('路由配置已保存');
-                            } catch {
-                              // validation error
-                            } finally {
-                              setRouteConfigSaving(false);
-                            }
-                          }}
-                        >
-                          保存路由配置
-                        </Button>
-                        <Button
-                          onClick={async () => {
-                            const descriptor = functionDetail?.descriptor || {};
-                            const menuConfig = descriptor?.menu || {};
-                            const resetRoute = {
-                              section: menuConfig.section || '',
-                              group: menuConfig.group || '',
-                              path: menuConfig.path || '',
-                              order: menuConfig.order || 10,
-                              hidden: menuConfig.hidden || false,
-                            };
-                            routeConfigForm.setFieldsValue(resetRoute);
-                            if (params.id) {
-                              await saveFunctionRoute(params.id, resetRoute);
-                            }
-                            window.dispatchEvent(new CustomEvent('function-route:changed'));
-                            message.success('已恢复为默认路由');
-                          }}
-                        >
-                          恢复默认
-                        </Button>
-                      </Space>
-                    </Form>
-                  </Card>
-                </TabPane>
-              </Tabs>
-            </TabPane>
-
-            <TabPane tab="权限" key="permissions">
-              <Alert
-                message="权限配置"
-                description="用于控制哪些角色可以调用该函数（actions 建议使用 invoke/execute；roles 填角色名）。"
-                type="info"
-                showIcon
-              />
-
-              {permError && (
-                <Alert
-                  style={{ marginTop: 16 }}
-                  type="error"
-                  showIcon
-                  message="无法读取权限"
-                  description={permError}
-                />
-              )}
-
-              <Card
-                style={{ marginTop: 16 }}
-                loading={permLoading}
-                size="small"
-                title="函数权限规则"
-              >
-                <Form form={permForm} layout="vertical">
-                  <Form.List name="items">
-                    {(fields, { add, remove }) => (
-                      <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                        {fields.map((field) => (
-                          <Card
-                            key={field.key}
-                            size="small"
-                            type="inner"
-                            title={`规则 #${field.name + 1}`}
-                            extra={
-                              <Button danger size="small" onClick={() => remove(field.name)}>
-                                删除
-                              </Button>
-                            }
-                          >
-                            <Row gutter={16}>
-                              <Col span={6}>
-                                <Form.Item
-                                  {...field}
-                                  label="resource"
-                                  name={[field.name, 'resource']}
-                                  rules={[{ required: true, message: 'resource 必填' }]}
-                                >
-                                  <Input placeholder="function" />
-                                </Form.Item>
-                              </Col>
-                              <Col span={6}>
-                                <Form.Item
-                                  {...field}
-                                  label="actions"
-                                  name={[field.name, 'actions']}
-                                  rules={[{ required: true, message: 'actions 必填' }]}
-                                >
-                                  <Select mode="tags" placeholder="invoke / execute" />
-                                </Form.Item>
-                              </Col>
-                              <Col span={6}>
-                                <Form.Item
-                                  {...field}
-                                  label="roles"
-                                  name={[field.name, 'roles']}
-                                  rules={[{ required: true, message: 'roles 必填（至少 1 个）' }]}
-                                >
-                                  <Select
-                                    mode="tags"
-                                    placeholder="例如：ops / admin / functions:manage"
-                                  />
-                                </Form.Item>
-                              </Col>
-                              <Col span={3}>
-                                <Form.Item {...field} label="gameId" name={[field.name, 'gameId']}>
-                                  <Input placeholder="(all)" />
-                                </Form.Item>
-                              </Col>
-                              <Col span={3}>
-                                <Form.Item {...field} label="env" name={[field.name, 'env']}>
-                                  <Input placeholder="(all)" />
-                                </Form.Item>
-                              </Col>
-                            </Row>
-                          </Card>
-                        ))}
-
-                        <Space>
-                          <Button
-                            onClick={() =>
-                              add({ resource: 'function', actions: ['invoke'], roles: [] })
-                            }
-                          >
-                            添加规则
-                          </Button>
-                          <Button
-                            type="primary"
-                            loading={permSaving}
-                            onClick={async () => {
-                              if (!params.id) return;
-                              try {
-                                setPermSaving(true);
-                                const values = await permForm.validateFields();
-                                const items = (values?.items || []) as FunctionPermission[];
-                                await updateFunctionPermissions(params.id, items);
-                                message.success('权限已更新');
-                              } catch (e: any) {
-                                message.error(e?.message || '更新失败');
-                              } finally {
-                                setPermSaving(false);
-                              }
-                            }}
-                          >
-                            保存权限
-                          </Button>
-                        </Space>
-                      </Space>
-                    )}
-                  </Form.List>
-                </Form>
-              </Card>
-            </TabPane>
-
-            <TabPane tab="调用历史" key="history">
-              <HistoryTab />
-            </TabPane>
-
-            <TabPane tab="统计分析" key="analytics">
-              <AnalyticsTab />
-            </TabPane>
-          </Tabs>
+            items={mainTabItems}
+          />
         </Form>
       </Card>
     </PageContainer>
