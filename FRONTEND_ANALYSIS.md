@@ -19,7 +19,7 @@ pnpm test                          # 单元测试
 ```
 
 ### 后端服务期望
-- 默认后端: http://localhost:8080
+- 默认后端: http://localhost:18780
 - 开发代理配置: `/api/*` 转发到后端
 - 凭证: admin / admin123 (开发环境)
 
@@ -587,8 +587,8 @@ cd web && pnpm install
 # 2. 启动开发服务器
 pnpm dev
 
-# 3. 确保后端运行在 localhost:8080
-# go run ./cmd/server -c configs/server.example.yaml
+# 3. 确保后端运行在 localhost:18780
+# go run ./cmd/server -c services/server/etc/server.yaml
 
 # 4. 访问 http://localhost:8000
 # 登录: admin / admin123

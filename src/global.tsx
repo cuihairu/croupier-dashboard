@@ -6,7 +6,7 @@ import defaultSettings from '../config/defaultSettings';
 if (typeof window !== 'undefined' && !(window as any).CROUPIER_SERVER_ORIGIN) {
   const envOrigin = (process as any)?.env?.CROUPIER_SERVER_ORIGIN as string | undefined;
   if (envOrigin) (window as any).CROUPIER_SERVER_ORIGIN = envOrigin;
-  else if (process.env.NODE_ENV === 'development') (window as any).CROUPIER_SERVER_ORIGIN = 'http://localhost:8080';
+  else if (process.env.NODE_ENV === 'development') (window as any).CROUPIER_SERVER_ORIGIN = 'http://localhost:18780';
   else (window as any).CROUPIER_SERVER_ORIGIN = window.location.origin;
 }
 

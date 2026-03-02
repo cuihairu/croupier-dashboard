@@ -194,8 +194,8 @@ pnpm dev
 # http://localhost:8000
 
 # 3. 在另一个终端启动后端
-cd .. && go run ./cmd/server -c configs/server.example.yaml
-# http://localhost:8080
+cd .. && go run ./cmd/server -c services/server/etc/server.yaml
+# http://localhost:18780
 
 # 4. 登录凭证
 # 用户名: admin
@@ -223,7 +223,7 @@ cd .. && go run ./cmd/server -c configs/server.example.yaml
 | 菜单不显示 | 未添加到 routes.ts | 检查 path、name、component 是否正确 |
 | 菜单不可点击 | access 权限检查失败 | 确保用户有该权限,或移除 access 属性 |
 | 菜单文本是代码 | i18n 未配置 | 在 locales/*/menu.ts 中添加相应的 key |
-| API 404 | 后端端口错误 | 检查 config/proxy.ts 是否指向 http://localhost:8080 |
+| API 404 | 后端端口错误 | 检查 config/proxy.ts 是否指向 http://localhost:18780 |
 | 权限总是失败 | access.ts 中缺少对应的 has() 调用 | 在 access.ts 中定义所有新权限 |
 
 ---

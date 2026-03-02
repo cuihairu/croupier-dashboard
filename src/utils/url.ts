@@ -1,5 +1,5 @@
 // Utility helpers for building absolute URLs for assets (icons etc.)
-// Priority: window.CROUPIER_SERVER_ORIGIN > process.env.CROUPIER_SERVER_ORIGIN > http://localhost:8080
+// Priority: window.CROUPIER_SERVER_ORIGIN > process.env.CROUPIER_SERVER_ORIGIN > http://localhost:18780
 
 export function getServerOrigin(): string {
   if (typeof window !== 'undefined' && (window as any).CROUPIER_SERVER_ORIGIN) {
@@ -13,7 +13,7 @@ export function getServerOrigin(): string {
     return window.location.origin;
   }
   // Dev fallback
-  return 'http://localhost:8080';
+  return 'http://localhost:18780';
 }
 
 export function isAbsoluteUrl(u?: string): boolean {

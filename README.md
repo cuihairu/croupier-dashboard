@@ -74,7 +74,7 @@ pnpm dev
 开发模式特性：
 
 - 🔥 热更新支持
-- 🌐 API 代理：`/api` → `http://localhost:8080`
+- 🌐 API 代理：`/api` → `http://localhost:18780`
 - 🐛 调试工具集成
 - 📊 Mock 数据支持
 
@@ -186,8 +186,8 @@ Authorization: Bearer jwt_token_here
 ```bash
 # .env.local
 # API 配置
-CROUPIER_API_URL=http://localhost:8080
-CROUPIER_WS_URL=ws://localhost:8080
+CROUPIER_API_URL=http://localhost:18780
+CROUPIER_WS_URL=ws://localhost:18780
 
 # 功能开关
 ENABLE_MOCK=false
@@ -207,12 +207,12 @@ GA_MEASUREMENT_ID=G-XXXXXXXXXX
 export default {
   dev: {
     '/api': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:18780',
       changeOrigin: true,
       pathRewrite: { '^': '' },
     },
     '/ws': {
-      target: 'ws://localhost:8080',
+      target: 'ws://localhost:18780',
       ws: true,
     },
   },
@@ -310,7 +310,7 @@ spec:
             - containerPort: 80
           env:
             - name: CROUPIER_API_URL
-              value: 'http://croupier-server:8080'
+              value: 'http://croupier-server:18780'
 ```
 
 ### Production Checklist
