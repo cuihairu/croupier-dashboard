@@ -27,7 +27,7 @@ export default {
   'menu.Security.Config': '权限配置',
 
   // 新的游戏管理结构
-  'menu.GameManagement': '游戏管理',
+  'menu.GameManagement': '系统配置',
   'menu.GameManagement.GameCatalog': '游戏列表',
   'menu.GameManagement.GameEnvironments': '游戏环境',
   'menu.GameManagement.GameEntities': '实体管理',
@@ -37,17 +37,15 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionDetail': '函数详情',
   'menu.GameManagement.FunctionManagement.FunctionUIDesigner': 'UI 设计器',
   'menu.GameManagement.FunctionManagement.FunctionInstances': '实例管理',
+  'menu.GameManagement.FunctionManagement.FunctionWarnings': '注册告警',
   'menu.GameManagement.FunctionManagement.FunctionAssignments': '权限分配',
   'menu.GameManagement.FunctionManagement.FunctionPacks': '函数包管理',
   'menu.GameManagement.RegisteredFunctions': '注册函数',
   'menu.RegisteredFunctions': '注册函数',
-  'menu.ControlConsole': '控制后台',
-  'menu.GameManagement.GameFunctionsLegacy': '旧版函数中心',
+  'menu.ControlConsole': '游戏管理',
   'menu.GameManagement.ComponentManagement': '组件管理',
   'menu.GameManagement.CreateVirtualObject': '创建虚拟对象',
   'menu.GameManagement.EditVirtualObject': '编辑虚拟对象',
-  'menu.GameManagement.GameAssignments': '功能分配',
-  'menu.GameManagement.GamePacks': '功能包管理',
 
   // 运营管理
   'menu.Operations': '运营与运维',
@@ -61,6 +59,7 @@ export default {
   'menu.Operations.Storage': '对象存储',
   'menu.Operations.Services': '服务列表',
   'menu.Operations.Health': '服务探活',
+  'menu.Operations.Terms': '术语字典',
   'menu.Operations.Nodes': '节点维护',
   'menu.Operations.Jobs': '任务监控',
   'menu.Operations.Alerts': '告警中心',
@@ -82,9 +81,6 @@ export default {
   'menu.Analytics.Levels': '关卡分析',
   'menu.Analytics.Attribution': '渠道投放',
   'menu.Analytics.Segments': '人群分层',
-  'menu.ComponentManagement': '组件管理',
-  'menu.Assignments': '功能分配',
-  'menu.GameAssignments': '功能分配',
 
   // 函数管理 - 新增独立页面
   'menu.Functions': '函数管理',
@@ -112,29 +108,6 @@ export default {
   'menu.Registered.examples.game': '游戏函数',
   'menu.Registered.examples.game.player': '玩家管理',
 
-  // Legacy menu items (保持向后兼容)
-  'menu.GM': '运营',
-  'menu.GM.Approvals': '审批',
-  'menu.GM.Functions': '函数列表',
-  'menu.GM.Games': '游戏管理',
-  'menu.GM.Assignments': '分配',
-  'menu.GM.Audit': '审计',
-  'menu.GM.Packs': '包管理',
-  'menu.GM.Registry': '注册表',
-  'menu.GameMgmt': '游戏管理',
-  'menu.GameMgmt.Games Meta': '游戏列表',
-  'menu.GameMgmt.Entities': '实体管理',
-  // Backward-compat for older route keys that may still reference GM.Games Meta
-  'menu.GM.Games Meta': '游戏列表',
-  // Legacy menu items for backward compatibility
-  'menu.Account': '账号',
-  'menu.Account.Center': '个人中心',
-  'menu.Account.Settings': '个人设置',
-  'menu.Account.Messages': '消息通知',
-  'menu.Permissions': '权限管理',
-  'menu.Permissions.Roles': '角色管理',
-  'menu.Permissions.Users': '用户管理',
-  'menu.Permissions.Config': '权限配置',
   'menu.welcome': '欢迎',
   'menu.login': '登录',
 };

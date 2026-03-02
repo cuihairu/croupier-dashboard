@@ -27,7 +27,7 @@ export default {
   'menu.Security.Config': 'Permission Config',
 
   // New game management structure
-  'menu.GameManagement': 'Game Management',
+  'menu.GameManagement': 'System Configuration',
   'menu.GameManagement.GameCatalog': 'Games',
   'menu.GameManagement.GameEnvironments': 'Game Environments',
   'menu.GameManagement.GameEntities': 'Entity Management',
@@ -36,16 +36,15 @@ export default {
   'menu.GameManagement.FunctionManagement.FunctionInvoke': 'Function Invoke',
   'menu.GameManagement.FunctionManagement.FunctionUIDesigner': 'UI Designer',
   'menu.GameManagement.FunctionManagement.FunctionInstances': 'Instance Management',
+  'menu.GameManagement.FunctionManagement.FunctionWarnings': 'Registration Warnings',
   'menu.GameManagement.FunctionManagement.FunctionAssignments': 'Permission Assignments',
   'menu.GameManagement.FunctionManagement.FunctionPacks': 'Pack Management',
   'menu.GameManagement.RegisteredFunctions': 'Registered Functions',
   'menu.RegisteredFunctions': 'Registered Functions',
-  'menu.GameManagement.GameFunctionsLegacy': 'Legacy Function Center',
+  'menu.ControlConsole': 'Game Management',
   'menu.GameManagement.ComponentManagement': 'Component Management',
   'menu.GameManagement.CreateVirtualObject': 'Create Virtual Object',
   'menu.GameManagement.EditVirtualObject': 'Edit Virtual Object',
-  'menu.GameManagement.GameAssignments': 'Function Assignments',
-  'menu.GameManagement.GamePacks': 'Pack Management',
 
   // Operations management
   'menu.Operations': 'Operations',
@@ -59,6 +58,7 @@ export default {
   'menu.Operations.Storage': 'Object Storage',
   'menu.Operations.Services': 'Services',
   'menu.Operations.Health': 'Health',
+  'menu.Operations.Terms': 'Terminology',
   'menu.Operations.Nodes': 'Node Maintenance',
   'menu.Operations.Jobs': 'Jobs',
   'menu.Operations.Alerts': 'Alerts',
@@ -89,25 +89,6 @@ export default {
   'menu.Functions.FunctionDetail': 'Function Detail',
   'menu.Registered': 'Registered Functions',
 
-  // Legacy menu items (for backward compatibility)
-  'menu.GameAssignments': 'Assignments',
-  'menu.GM': 'Game Management',
-  'menu.GM.Approvals': 'Approvals',
-  'menu.GM.Functions': 'Functions',
-  'menu.GM.Games': 'Games',
-  'menu.GM.Assignments': 'Assignments',
-  'menu.GM.Audit': 'Audit',
-  'menu.GM.Packs': 'Packs',
-  'menu.GM.Registry': 'Registry',
-  'menu.GameMgmt': 'Game Management',
-  'menu.GameMgmt.Games Meta': 'Games Meta',
-  'menu.GameMgmt.Entities': 'Entity Management',
-  // Backward-compat for older route keys that may still reference GM.Games Meta
-  'menu.GM.Games Meta': 'Games Meta',
-  'menu.Permissions': 'Permission Management',
-  'menu.Permissions.Roles': 'Role Management',
-  'menu.Permissions.Users': 'User Management',
-  'menu.Permissions.Config': 'Permission Config',
   'menu.welcome': 'Welcome',
   'menu.login': 'Login',
 };

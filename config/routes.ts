@@ -69,7 +69,7 @@ export default [
             path: '/game/functions/invoke',
             name: 'FunctionInvoke',
             access: 'canFunctionsRead',
-            component: './GmFunctions',
+            component: './Functions/Invoke',
             hideInMenu: true,
           },
           {
@@ -78,6 +78,13 @@ export default [
             access: 'canFunctionsRead',
             component: './Functions/Instances',
             icon: 'cluster',
+          },
+          {
+            path: '/game/functions/warnings',
+            name: 'FunctionWarnings',
+            access: 'canFunctionsRead',
+            component: './Functions/Warnings',
+            icon: 'warning',
           },
           {
             path: '/game/functions/assignments',
@@ -117,9 +124,6 @@ export default [
         component: './ComponentManagement/components/EntityComposer',
         hideInMenu: true,
       },
-      // 游戏运营管理
-      { path: '/game/assignments', redirect: '/game/functions/assignments' },
-      { path: '/game/packs', redirect: '/game/functions/packs' },
     ],
   },
   {
@@ -231,6 +235,12 @@ export default [
         name: 'Configs',
         access: 'canOpsRead',
         component: './Operations/Configs',
+      },
+      {
+        path: '/ops/terms',
+        name: 'Terms',
+        access: 'canOpsManage',
+        component: './Ops/Terms',
       },
       { path: '/ops/platforms', name: 'Platforms', access: 'canOpsRead', component: './Platforms' },
       { path: '/ops/storage', name: 'Storage', access: 'canOpsRead', component: './Storage' },
@@ -402,85 +412,6 @@ export default [
     path: '/',
     redirect: '/analytics/realtime',
   },
-  // Legacy redirects for backward compatibility
-  {
-    path: '/account',
-    redirect: '/admin/account/center',
-  },
-  { path: '/account/messages', redirect: '/admin/account/messages' },
-  { path: '/account/center', redirect: '/admin/account/center' },
-  { path: '/account/settings', redirect: '/admin/account/settings' },
-  { path: '/permissions', redirect: '/admin/permissions/roles' },
-  // Legacy redirects for system->admin renaming
-  { path: '/system', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions/roles', redirect: '/admin/permissions/roles' },
-  { path: '/system/permissions/users', redirect: '/admin/permissions/users' },
-  { path: '/system/permissions/config', redirect: '/admin/permissions/config' },
-  // Redirect aliases for admin/permissions
-  { path: '/admin/permissions', redirect: '/admin/permissions/roles' },
-  { path: '/admin/permissions/roles', redirect: '/admin/permissions/roles' },
-  { path: '/admin/permissions/users', redirect: '/admin/permissions/users' },
-  { path: '/admin/permissions/config', redirect: '/admin/permissions/config' },
-  // Game management redirect aliases
-  {
-    path: '/game-mgmt/games-meta',
-    redirect: '/game/environments',
-  },
-  {
-    path: '/game-mgmt',
-    redirect: '/game/environments',
-  },
-  // Legacy redirects for removed function management pages
-  { path: '/functions/invoke', redirect: '/game/functions/invoke' },
-  { path: '/game/functions/old', redirect: '/game/functions/catalog' },
-  { path: '/functions/list', redirect: '/game/functions/catalog' },
-  { path: '/functions', redirect: '/game/functions/catalog' },
-  {
-    path: '/gm/games',
-    redirect: '/game/environments',
-  },
-  {
-    path: '/gm/functions',
-    redirect: '/game/functions',
-  },
-  {
-    path: '/gm/assignments',
-    redirect: '/game/functions/assignments',
-  },
-  {
-    path: '/gm/packs',
-    redirect: '/game/functions/packs',
-  },
-  {
-    path: '/gm/approvals',
-    redirect: '/ops/approvals',
-  },
-  {
-    path: '/gm/audit',
-    redirect: '/ops/audit',
-  },
-  {
-    path: '/gm/registry',
-    redirect: '/ops/registry',
-  },
-  {
-    path: '/gm',
-    redirect: '/game/environments',
-  },
-  // Legacy redirects for ops -> unified /ops
-  { path: '/operations', redirect: '/ops/approvals' },
-  { path: '/operations/approvals', redirect: '/ops/approvals' },
-  { path: '/operations/audit', redirect: '/ops/audit' },
-  { path: '/operations/operation-logs', redirect: '/ops/operation-logs' },
-  { path: '/operations/registry', redirect: '/ops/registry' },
-  { path: '/operations/servers', redirect: '/ops/servers' },
-  { path: '/operations/configs', redirect: '/ops/configs' },
-  { path: '/operations/platforms', redirect: '/ops/platforms' },
-  { path: '/operations/storage', redirect: '/ops/storage' },
-  // Legacy redirects for moved menus
-  { path: '/components', redirect: '/game/component-management' },
-  { path: '/assignments', redirect: '/game/functions/assignments' },
   {
     path: '/403',
     layout: false,

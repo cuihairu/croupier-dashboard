@@ -5,28 +5,44 @@ type EditorProps = {
   language?: string;
   height?: number | string;
   onChange?: (v: string) => void;
+  readOnly?: boolean;
+  theme?: string;
+  options?: Record<string, any>;
+  beforeMount?: (monaco: any) => void;
 };
 
-export const CodeEditor: React.FC<EditorProps> = ({ value, language = 'plaintext', height = 360, onChange }) => {
+export const CodeEditor: React.FC<EditorProps> = ({
+  value,
+  language = 'plaintext',
+  height = 360,
+  onChange,
+  readOnly,
+  theme,
+  options,
+  beforeMount,
+}) => {
   const [Monaco, setMonaco] = useState<any>(null);
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         // Try dynamic import; if not installed, fallback silently
-        const mod: any = await import(/* @vite-ignore */ '@monaco-editor/react');
+        const mod: any = await import('@monaco-editor/react');
         if (mounted) setMonaco(mod);
       } catch (_) {
         // ignore
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
   if (!Monaco) {
     return (
       <textarea
         value={value}
         onChange={(e) => onChange && onChange(e.target.value)}
+        readOnly={!!readOnly}
         style={{ width: '100%', height, fontFamily: 'Menlo,Consolas,monospace', fontSize: 12 }}
       />
     );
@@ -37,24 +53,39 @@ export const CodeEditor: React.FC<EditorProps> = ({ value, language = 'plaintext
       height={height}
       language={language}
       value={value}
+      theme={theme}
+      beforeMount={beforeMount}
       onChange={(v: string | undefined) => onChange && onChange(v || '')}
-      options={{ minimap: { enabled: false }, wordWrap: 'on' }}
+      options={{
+        minimap: { enabled: false },
+        wordWrap: 'on',
+        readOnly: !!readOnly,
+        ...(options || {}),
+      }}
     />
   );
 };
 
-export const DiffEditor: React.FC<{ left: string; right: string; language?: string; height?: number | string }>
-  = ({ left, right, language = 'plaintext', height = 420 }) => {
+export const DiffEditor: React.FC<{
+  left: string;
+  right: string;
+  language?: string;
+  height?: number | string;
+}> = ({ left, right, language = 'plaintext', height = 420 }) => {
   const [Monaco, setMonaco] = useState<any>(null);
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const mod: any = await import(/* @vite-ignore */ '@monaco-editor/react');
+        const mod: any = await import('@monaco-editor/react');
         if (mounted) setMonaco(mod);
-      } catch (_) { /* ignore */ }
+      } catch (_) {
+        /* ignore */
+      }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
   if (!Monaco) {
     // fallback simple render; caller可以降级
@@ -68,8 +99,12 @@ export const DiffEditor: React.FC<{ left: string; right: string; language?: stri
       language={language}
       original={left}
       modified={right}
-      options={{ renderSideBySide: true, readOnly: true, minimap: { enabled: false }, wordWrap: 'on' }}
+      options={{
+        renderSideBySide: true,
+        readOnly: true,
+        minimap: { enabled: false },
+        wordWrap: 'on',
+      }}
     />
   );
 };
-

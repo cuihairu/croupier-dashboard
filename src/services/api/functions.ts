@@ -9,10 +9,13 @@ export type FunctionDescriptor = {
   description?: string;
   display_name?: { zh?: string; en?: string };
   summary?: { zh?: string; en?: string };
+  entity?: string;
+  operation?: string;
+  entity_display?: { zh?: string; en?: string };
+  operation_display?: { zh?: string; en?: string };
   tags?: string[];
   menu?: {
-    section?: string;
-    group?: string;
+    nodes?: string[];
     path?: string;
     order?: number;
     icon?: string;
@@ -40,8 +43,32 @@ export type FunctionPermission = {
   env?: string;
 };
 
+export type FunctionRegistrationWarning = {
+  key: string;
+  agent_id: string;
+  function_id: string;
+  version?: string;
+  code: string;
+  message: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+};
+
 export async function listDescriptors() {
   return request<FunctionDescriptor[]>('/api/v1/functions/descriptors');
+}
+
+export async function listFunctionWarnings(params?: {
+  function_id?: string;
+  agent_id?: string;
+  code?: string;
+  limit?: number;
+}) {
+  return request<{ items?: FunctionRegistrationWarning[] }>('/api/v1/functions/warnings', {
+    method: 'GET',
+    params,
+  });
 }
 
 export async function invokeFunction(
@@ -181,8 +208,7 @@ export async function rollbackFunctionUiSchema(functionId: string, version: numb
 }
 
 export type FunctionRouteConfig = {
-  section?: string;
-  group?: string;
+  nodes?: string[];
   path?: string;
   order?: number;
   hidden?: boolean;

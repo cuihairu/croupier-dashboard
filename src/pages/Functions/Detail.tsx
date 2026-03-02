@@ -21,6 +21,7 @@ import {
   Statistic,
   Modal,
   Select,
+  Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -39,13 +40,14 @@ import FunctionUIManager from '@/components/FunctionUIManager';
 import { useParams, history, useLocation } from '@umijs/max';
 import { useIntl } from '@umijs/max';
 import { App } from 'antd';
-// Force rebuild - cache bust 2025-02-10 v3 - DEBUG: NEW CODE
-console.log('[DETAIL] Loading updated Detail.tsx with runtime function support');
+import { CodeEditor } from '@/components/MonacoDynamic';
 import {
   getFunctionDetail,
+  getFunctionOpenAPI,
   updateFunction,
   getFunctionHistory,
   getFunctionAnalytics,
+  listFunctionWarnings,
   deleteFunction,
   copyFunction,
   enableFunction,
@@ -122,6 +124,8 @@ export default function FunctionDetailPage() {
   const [routeConfigSaving, setRouteConfigSaving] = useState(false);
   const [routeConfigForm] = Form.useForm();
   const routePreview = Form.useWatch([], routeConfigForm);
+  const [descriptorIndexItem, setDescriptorIndexItem] = useState<any>(null);
+  const [openapiOperation, setOpenapiOperation] = useState<any>(null);
 
   const buildSearch = (tab: string, subTab?: string) => {
     const search = new URLSearchParams(location.search);
@@ -136,17 +140,185 @@ export default function FunctionDetailPage() {
   };
 
   const parsedInputSchema = useMemo(() => {
-    const descriptor = functionDetail?.descriptor;
-    if (!descriptor) return undefined;
-    if (typeof descriptor.input_schema === 'string') {
-      try {
-        return JSON.parse(descriptor.input_schema);
-      } catch {
-        return descriptor.schema;
+    const detailDesc = functionDetail?.descriptor || {};
+    const indexDesc = descriptorIndexItem || {};
+
+    const parseMaybeJSON = (v: any) => {
+      if (!v) return undefined;
+      if (typeof v === 'string') {
+        try {
+          return JSON.parse(v);
+        } catch {
+          return undefined;
+        }
       }
+      if (typeof v === 'object') return v;
+      return undefined;
+    };
+
+    const fromDetailInput = parseMaybeJSON(detailDesc.input_schema);
+    if (fromDetailInput) return fromDetailInput;
+    const fromIndexInput = parseMaybeJSON(indexDesc.input_schema);
+    if (fromIndexInput) return fromIndexInput;
+
+    const fromDetailSchema = parseMaybeJSON(detailDesc.schema);
+    if (fromDetailSchema) return fromDetailSchema;
+    const fromIndexSchema = parseMaybeJSON(indexDesc.schema);
+    if (fromIndexSchema) return fromIndexSchema;
+
+    const fromDetailParams = parseMaybeJSON(detailDesc.params);
+    if (fromDetailParams) return fromDetailParams;
+    const fromIndexParams = parseMaybeJSON(indexDesc.params);
+    if (fromIndexParams) return fromIndexParams;
+
+    const openapiSchema = openapiOperation?.requestBody?.content?.['application/json']?.schema;
+    if (openapiSchema && typeof openapiSchema === 'object') return openapiSchema;
+
+    return undefined;
+  }, [functionDetail?.descriptor, descriptorIndexItem, openapiOperation]);
+
+  const effectiveCategory = useMemo(() => {
+    const direct = String(functionDetail?.category || '').trim();
+    if (direct) return direct;
+    const fromIndex = String((descriptorIndexItem as any)?.category || '').trim();
+    if (fromIndex) return fromIndex;
+    const fromDetailDesc = String((functionDetail?.descriptor as any)?.category || '').trim();
+    if (fromDetailDesc) return fromDetailDesc;
+    const fromOpenapi = String((openapiOperation as any)?.extensions?.['x-category'] || '').trim();
+    if (fromOpenapi) return fromOpenapi;
+    return '';
+  }, [functionDetail?.category, functionDetail?.descriptor, descriptorIndexItem, openapiOperation]);
+
+  const jsonViewData = useMemo(
+    () => ({
+      function: functionDetail
+        ? {
+            id: functionDetail.id,
+            name: functionDetail.name,
+            description: functionDetail.description,
+            category: effectiveCategory,
+            version: functionDetail.version,
+            enabled: functionDetail.enabled,
+            tags: functionDetail.tags || [],
+            provider: functionDetail.provider,
+          }
+        : null,
+      descriptor_from_detail_api: functionDetail?.descriptor || null,
+      descriptor_from_index_api: descriptorIndexItem || null,
+      openapi_operation: openapiOperation || null,
+      route: routePreview || null,
+    }),
+    [functionDetail, descriptorIndexItem, openapiOperation, routePreview, effectiveCategory],
+  );
+
+  const uiDescriptor = useMemo(() => {
+    const detailDesc = functionDetail?.descriptor || {};
+    const indexDesc = descriptorIndexItem || {};
+    return {
+      ...detailDesc,
+      ...indexDesc,
+      entity: indexDesc?.entity || detailDesc?.entity,
+      operation: indexDesc?.operation || detailDesc?.operation,
+      entity_display: indexDesc?.entity_display || detailDesc?.entity_display,
+      operation_display: indexDesc?.operation_display || detailDesc?.operation_display,
+    };
+  }, [functionDetail?.descriptor, descriptorIndexItem]);
+
+  const JsonViewer = ({ data }: { data: any }) => {
+    const pretty = JSON.stringify(data || {}, null, 2);
+    const beforeMount = (monaco: any) => {
+      if (!monaco?.editor || monaco.editor.getTheme?.() === 'sublime-monokai') return;
+      monaco.editor.defineTheme('sublime-monokai', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: 'string.key.json', foreground: '66D9EF' }, // key: cyan
+          { token: 'string.value.json', foreground: 'A6E22E' }, // string: olive green
+          { token: 'number', foreground: 'E6DB74' }, // number: yellow
+          { token: 'keyword', foreground: 'F92672' }, // true/false/null
+        ],
+        colors: {
+          'editor.background': '#272822',
+          'editorLineNumber.foreground': '#75715E',
+          'editorLineNumber.activeForeground': '#F8F8F2',
+        },
+      });
+    };
+    const copyJson = async () => {
+      try {
+        await navigator.clipboard.writeText(pretty);
+        message.success('JSON 已复制');
+      } catch {
+        message.error('复制失败');
+      }
+    };
+    return (
+      <div
+        style={{
+          border: '1px solid #f0f0f0',
+          borderRadius: 6,
+          overflow: 'hidden',
+          background: '#fafafa',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: '8px 12px',
+            borderBottom: '1px solid #f0f0f0',
+            background: '#fff',
+          }}
+        >
+          <Tooltip title="复制 JSON">
+            <Button size="small" icon={<CopyOutlined />} onClick={copyJson}>
+              复制
+            </Button>
+          </Tooltip>
+        </div>
+        <CodeEditor
+          value={pretty}
+          language="json"
+          height={500}
+          readOnly
+          theme="sublime-monokai"
+          beforeMount={beforeMount}
+          options={{
+            lineNumbers: 'on',
+            renderLineHighlight: 'line',
+            scrollBeyondLastLine: false,
+            automaticLayout: true,
+            minimap: { enabled: false },
+          }}
+        />
+      </div>
+    );
+  };
+
+  const loadSourceOfTruth = async (functionId: string) => {
+    try {
+      const [descsRes, openapiRes] = await Promise.allSettled([
+        listDescriptors(),
+        getFunctionOpenAPI(functionId),
+      ]);
+      if (descsRes.status === 'fulfilled') {
+        const descs = descsRes.value;
+        const descArray = Array.isArray(descs) ? descs : (descs as any)?.descriptors || [];
+        setDescriptorIndexItem(descArray.find((d: any) => d.id === functionId) || null);
+      } else {
+        setDescriptorIndexItem(null);
+      }
+      if (openapiRes.status === 'fulfilled') {
+        setOpenapiOperation(openapiRes.value || null);
+      } else {
+        setOpenapiOperation(null);
+      }
+    } catch {
+      setDescriptorIndexItem(null);
+      setOpenapiOperation(null);
     }
-    return descriptor.schema;
-  }, [functionDetail?.descriptor]);
+  };
 
   // Load function detail
   const loadDetail = async () => {
@@ -155,11 +327,17 @@ export default function FunctionDetailPage() {
     setLoading(true);
     try {
       const detail = await getFunctionDetail(params.id);
+      await loadSourceOfTruth(params.id);
       setFunctionDetail(detail);
+      const categoryFromDetail =
+        detail.category ||
+        detail?.descriptor?.category ||
+        (descriptorIndexItem as any)?.category ||
+        '';
       form.setFieldsValue({
         name: detail.name,
         description: detail.description,
-        category: detail.category,
+        category: categoryFromDetail,
         tags: detail.tags?.join(', '),
       });
 
@@ -184,8 +362,7 @@ export default function FunctionDetailPage() {
       const descriptor = detail?.descriptor || {};
       const menuConfig = descriptor?.menu || {};
       const mergedRoute = {
-        section: menuConfig.section ?? '',
-        group: menuConfig.group ?? '',
+        nodes: Array.isArray(menuConfig.nodes) ? menuConfig.nodes : [],
         path: menuConfig.path ?? '',
         order: menuConfig.order ?? 10,
         hidden: menuConfig.hidden ?? false,
@@ -194,8 +371,7 @@ export default function FunctionDetailPage() {
         try {
           const routeRes = await fetchFunctionRoute(params.id);
           const rm = routeRes?.menu || {};
-          mergedRoute.section = rm.section ?? mergedRoute.section;
-          mergedRoute.group = rm.group ?? mergedRoute.group;
+          mergedRoute.nodes = Array.isArray(rm.nodes) ? rm.nodes : mergedRoute.nodes;
           mergedRoute.path = rm.path ?? mergedRoute.path;
           mergedRoute.order = rm.order ?? mergedRoute.order;
           mergedRoute.hidden = rm.hidden ?? mergedRoute.hidden;
@@ -204,8 +380,7 @@ export default function FunctionDetailPage() {
         }
       }
       routeConfigForm.setFieldsValue({
-        section: mergedRoute.section,
-        group: mergedRoute.group,
+        nodes: mergedRoute.nodes,
         path: mergedRoute.path,
         order: mergedRoute.order,
         hidden: mergedRoute.hidden,
@@ -216,7 +391,7 @@ export default function FunctionDetailPage() {
         try {
           const descs = await listDescriptors();
           const descArray = Array.isArray(descs) ? descs : (descs as any)?.descriptors || [];
-          const desc = descArray.find((d: FunctionDescriptor) => d.id === params.id);
+          const desc = descArray.find((d: any) => d.id === params.id);
 
           if (desc) {
             // 从 descriptor 构造函数详情
@@ -228,12 +403,13 @@ export default function FunctionDetailPage() {
               version: desc.version || '1.0.0',
               enabled: true,
               tags: desc.tags || [],
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
+              createdAt: '',
+              updatedAt: '',
               provider: 'runtime',
               health: 'healthy' as const,
               descriptor: desc,
             };
+            await loadSourceOfTruth(params.id);
             setFunctionDetail(detailFromDesc);
             form.setFieldsValue({
               name: detailFromDesc.name,
@@ -447,6 +623,95 @@ export default function FunctionDetailPage() {
     );
   };
 
+  const WarningsTab = () => {
+    const [warningsData, setWarningsData] = useState<any[]>([]);
+    const [warningsLoading, setWarningsLoading] = useState(false);
+
+    const loadWarnings = async () => {
+      if (!params.id) return;
+      setWarningsLoading(true);
+      try {
+        const res = await listFunctionWarnings({ function_id: params.id, limit: 200 });
+        setWarningsData(Array.isArray(res?.items) ? res.items : []);
+      } catch (error) {
+        console.error('Failed to load registration warnings:', error);
+        setWarningsData([]);
+      } finally {
+        setWarningsLoading(false);
+      }
+    };
+
+    useEffect(() => {
+      loadWarnings();
+    }, [params.id]);
+
+    return (
+      <>
+        <Alert
+          message="注册告警"
+          description="这里显示函数注册校验告警（例如 function_id 格式错误、版本号不合法、重复注册去重）。"
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          action={
+            <Button
+              size="small"
+              onClick={() =>
+                history.push(
+                  `/game/functions/warnings?function_id=${encodeURIComponent(params.id || '')}`,
+                )
+              }
+            >
+              查看全部
+            </Button>
+          }
+        />
+        <Table
+          loading={warningsLoading}
+          dataSource={warningsData}
+          rowKey="key"
+          columns={[
+            {
+              title: '代码',
+              dataIndex: 'code',
+              width: 180,
+              render: (code: string) => <Tag color="orange">{code || '-'}</Tag>,
+            },
+            {
+              title: '版本',
+              dataIndex: 'version',
+              width: 120,
+              render: (v: string) => v || '-',
+            },
+            {
+              title: '次数',
+              dataIndex: 'count',
+              width: 90,
+            },
+            {
+              title: '最近时间',
+              dataIndex: 'last_seen',
+              width: 180,
+              render: (text: string) => (text ? new Date(text).toLocaleString() : '-'),
+            },
+            {
+              title: 'Agent',
+              dataIndex: 'agent_id',
+              width: 220,
+              ellipsis: true,
+            },
+            {
+              title: '详情',
+              dataIndex: 'message',
+              ellipsis: true,
+            },
+          ]}
+          pagination={{ pageSize: 10 }}
+        />
+      </>
+    );
+  };
+
   if (!functionDetail && !loading) {
     return (
       <PageContainer>
@@ -474,22 +739,37 @@ export default function FunctionDetailPage() {
         <>
           <Alert
             message="配置信息"
-            description="函数的完整 JSON 配置（只读）"
+            description="按来源拆分查看：详情接口、描述符索引、OpenAPI、路由（只读）"
             type="info"
             showIcon
           />
-          <pre
-            style={{
-              marginTop: 16,
-              padding: 16,
-              background: '#f5f5f5',
-              borderRadius: 4,
-              maxHeight: 500,
-              overflow: 'auto',
-            }}
-          >
-            {JSON.stringify(functionDetail?.descriptor || {}, null, 2)}
-          </pre>
+          <Tabs
+            style={{ marginTop: 16 }}
+            type="card"
+            size="small"
+            items={[
+              {
+                key: 'json-detail',
+                label: 'Detail API',
+                children: <JsonViewer data={jsonViewData.descriptor_from_detail_api || {}} />,
+              },
+              {
+                key: 'json-index',
+                label: 'Descriptor Index',
+                children: <JsonViewer data={jsonViewData.descriptor_from_index_api || {}} />,
+              },
+              {
+                key: 'json-openapi',
+                label: 'OpenAPI',
+                children: <JsonViewer data={jsonViewData.openapi_operation || {}} />,
+              },
+              {
+                key: 'json-route',
+                label: 'Route',
+                children: <JsonViewer data={jsonViewData.route || {}} />,
+              },
+            ]}
+          />
         </>
       ),
     },
@@ -499,6 +779,7 @@ export default function FunctionDetailPage() {
       children: (
         <FunctionUIManager
           functionId={params.id || ''}
+          descriptor={uiDescriptor}
           jsonSchema={parsedInputSchema}
           onSave={async (uiConfig) => {
             if (!params.id) return;
@@ -521,9 +802,16 @@ export default function FunctionDetailPage() {
           />
           <Card size="small" style={{ marginBottom: 16 }}>
             <Space wrap>
-              <Tag color="blue">{routePreview?.section || '未设置一级菜单'}</Tag>
-              <Tag color="purple">{routePreview?.group || '未设置二级分组'}</Tag>
-              <Tag color="geekblue">{routePreview?.path || '/game/functions/invoke（默认）'}</Tag>
+              {Array.isArray(routePreview?.nodes) && routePreview.nodes.length > 0 ? (
+                routePreview.nodes.map((node: string) => (
+                  <Tag key={node} color="blue">
+                    {node}
+                  </Tag>
+                ))
+              ) : (
+                <Tag color="default">未设置菜单节点（将自动推导）</Tag>
+              )}
+              <Tag color="geekblue">{routePreview?.path || '自动生成默认路径'}</Tag>
               <Button size="small" onClick={() => history.push('/game/functions/assignments')}>
                 去分配页查看展示
               </Button>
@@ -531,26 +819,25 @@ export default function FunctionDetailPage() {
           </Card>
           <Card title="菜单配置" size="small">
             <Form form={routeConfigForm} layout="vertical">
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item label="一级菜单" name="section" tooltip="例如：玩家管理">
-                    <Input placeholder="留空则不分组" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item label="二级分组" name="group" tooltip="例如：基础功能">
-                    <Input placeholder="留空则不分组" />
-                  </Form.Item>
-                </Col>
-              </Row>
+              <Form.Item
+                label="菜单节点（nodes）"
+                name="nodes"
+                tooltip="英文 key 数组（任意层级），例如：game / player；为空时自动推导"
+              >
+                <Select
+                  mode="tags"
+                  tokenSeparators={[',', '/', ' ']}
+                  placeholder="输入英文节点，回车添加"
+                />
+              </Form.Item>
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     label="路由路径"
                     name="path"
-                    tooltip="点击'调用函数'后跳转的路径，例如：/game/player/get"
+                    tooltip="可留空，由系统根据 entity/function 自动生成"
                   >
-                    <Input placeholder="/game/functions/invoke（默认）" />
+                    <Input placeholder="留空自动生成默认路径" />
                   </Form.Item>
                 </Col>
                 <Col span={6}>
@@ -580,8 +867,7 @@ export default function FunctionDetailPage() {
                       setRouteConfigSaving(true);
                       const v = await routeConfigForm.validateFields();
                       await saveFunctionRoute(params.id, {
-                        section: v.section || '',
-                        group: v.group || '',
+                        nodes: Array.isArray(v.nodes) ? v.nodes : [],
                         path: v.path || '',
                         order: v.order ?? 10,
                         hidden: !!v.hidden,
@@ -602,8 +888,7 @@ export default function FunctionDetailPage() {
                     const descriptor = functionDetail?.descriptor || {};
                     const menuConfig = descriptor?.menu || {};
                     const resetRoute = {
-                      section: menuConfig.section || '',
-                      group: menuConfig.group || '',
+                      nodes: Array.isArray(menuConfig.nodes) ? menuConfig.nodes : [],
                       path: menuConfig.path || '',
                       order: menuConfig.order || 10,
                       hidden: menuConfig.hidden || false,
@@ -640,7 +925,7 @@ export default function FunctionDetailPage() {
               <Tag>{functionDetail?.version || '1.0.0'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="分类">
-              <Tag color="blue">{functionDetail?.category || '默认'}</Tag>
+              <Tag color="blue">{effectiveCategory || '默认'}</Tag>
             </Descriptions.Item>
             <Descriptions.Item label="状态">
               <Space>
@@ -882,6 +1167,11 @@ export default function FunctionDetailPage() {
       key: 'analytics',
       label: '统计分析',
       children: <AnalyticsTab />,
+    },
+    {
+      key: 'warnings',
+      label: '注册告警',
+      children: <WarningsTab />,
     },
   ];
 

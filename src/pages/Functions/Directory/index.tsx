@@ -1,19 +1,43 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
-import { App, Button, Space, Tag, Card, Descriptions, Drawer, Badge, Tooltip, Typography } from 'antd';
-import { EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, ReloadOutlined, FilterOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  App,
+  Button,
+  Space,
+  Tag,
+  Card,
+  Descriptions,
+  Drawer,
+  Badge,
+  Tooltip,
+  Typography,
+} from 'antd';
+import {
+  EyeOutlined,
+  PlayCircleOutlined,
+  InfoCircleOutlined,
+  ReloadOutlined,
+  FilterOutlined,
+  SettingOutlined,
+} from '@ant-design/icons';
 import { history } from '@umijs/max';
 
-// DEBUG: NEW CODE WITH EDIT UI BUTTON - 2025-02-10 v4
-console.log('[DIRECTORY] Loading updated Directory/index.tsx with Edit UI button');
 import { listDescriptors, listFunctionInstances } from '@/services/api';
 import { getFunctionSummary } from '@/services/api/functions-enhanced';
 
 const { Text } = Typography;
 
 type I18N = { zh?: string; en?: string };
-type Menu = { section?: string; group?: string; path?: string; order?: number; hidden?: boolean };
-type SummaryRow = { id: string; enabled?: boolean; display_name?: I18N; summary?: I18N; tags?: string[]; menu?: Menu; version?: string };
+type Menu = { nodes?: string[]; path?: string; order?: number; hidden?: boolean };
+type SummaryRow = {
+  id: string;
+  enabled?: boolean;
+  display_name?: I18N;
+  summary?: I18N;
+  tags?: string[];
+  menu?: Menu;
+  version?: string;
+};
 type DetailRow = SummaryRow & {
   description?: I18N;
   category?: string;
@@ -24,16 +48,32 @@ type DetailRow = SummaryRow & {
 };
 
 async function fetchSummary(): Promise<SummaryRow[]> {
+  const descriptors = await listDescriptors();
+  const descMap = new Map<string, any>();
+  (Array.isArray(descriptors) ? descriptors : []).forEach((d: any) => {
+    if (d?.id) descMap.set(d.id, d);
+  });
+
   try {
     const res = await getFunctionSummary();
-    if (Array.isArray(res)) {
-      return res as SummaryRow[];
+    if (Array.isArray(res) && res.length > 0) {
+      return res.map((item: any) => {
+        const d = descMap.get(item.id) || {};
+        return {
+          ...item,
+          version: item.version || d.version,
+          category: item.category || d.category,
+          display_name: item.display_name || d.display_name,
+          summary: item.summary || d.summary,
+          tags: Array.isArray(item.tags) ? item.tags : d.tags || [],
+          menu: item.menu || d.menu,
+        };
+      });
     }
   } catch (error) {
     console.warn('Failed to fetch from summary API, falling back to descriptors');
   }
-  const descriptors = await listDescriptors();
-  return descriptors.map((desc: any) => ({
+  return (Array.isArray(descriptors) ? descriptors : []).map((desc: any) => ({
     id: desc.id,
     version: desc.version,
     enabled: true,
@@ -63,15 +103,17 @@ export default () => {
     }
   };
 
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    reload();
+  }, []);
 
   // Enhanced data processing
   const processedData = useMemo(() => {
-    return rows.map(row => ({
+    return rows.map((row) => ({
       ...row,
       status: row.enabled ? 'active' : 'inactive',
       displayName: row.display_name?.zh || row.display_name?.en || row.id,
-      categoryName: row.category || '未分类'
+      categoryName: row.category || '未分类',
     }));
   }, [rows]);
 
@@ -114,21 +156,21 @@ export default () => {
           <Text code>{record.id}</Text>
           {record.version && <Tag color="blue">v{record.version}</Tag>}
         </Space>
-      )
+      ),
     },
     {
       title: '函数名称',
       dataIndex: 'display_name',
       width: 200,
       ellipsis: true,
-      render: (_, record) => record.display_name?.zh || record.display_name?.en || record.id
+      render: (_, record) => record.display_name?.zh || record.display_name?.en || record.id,
     },
     {
       title: '函数摘要',
       dataIndex: 'summary',
       width: 300,
       ellipsis: true,
-      render: (_, record) => record.summary?.zh || record.summary?.en || '-'
+      render: (_, record) => record.summary?.zh || record.summary?.en || '-',
     },
     {
       title: '分类',
@@ -137,10 +179,8 @@ export default () => {
       filters: true,
       onFilter: (value, record) => record.category === value,
       render: (_, record) => (
-        <Tag color={record.category ? 'geekblue' : 'default'}>
-          {record.category || '未分类'}
-        </Tag>
-      )
+        <Tag color={record.category ? 'geekblue' : 'default'}>{record.category || '未分类'}</Tag>
+      ),
     },
     {
       title: '标签',
@@ -148,14 +188,16 @@ export default () => {
       width: 200,
       render: (_, record) => (
         <Space wrap>
-          {(record.tags || []).slice(0, 3).map(tag => (
-            <Tag key={tag} size="small">{tag}</Tag>
+          {(record.tags || []).slice(0, 3).map((tag) => (
+            <Tag key={tag} size="small">
+              {tag}
+            </Tag>
           ))}
           {(record.tags || []).length > 3 && (
             <Tag size="small">+{(record.tags || []).length - 3}</Tag>
           )}
         </Space>
-      )
+      ),
     },
     {
       title: '状态',
@@ -163,7 +205,7 @@ export default () => {
       width: 80,
       filters: [
         { text: '启用', value: true },
-        { text: '禁用', value: false }
+        { text: '禁用', value: false },
       ],
       onFilter: (value, record) => record.enabled === value,
       render: (_, record) => (
@@ -171,7 +213,7 @@ export default () => {
           status={record.enabled ? 'success' : 'default'}
           text={record.enabled ? '启用' : '禁用'}
         />
-      )
+      ),
     },
     {
       title: '操作',
@@ -208,9 +250,9 @@ export default () => {
               history.push(path);
             }}
           />
-        </Tooltip>
-      ]
-    }
+        </Tooltip>,
+      ],
+    },
   ];
 
   return (
@@ -220,7 +262,7 @@ export default () => {
       extra={[
         <Button key="refresh" icon={<ReloadOutlined />} onClick={reload}>
           刷新
-        </Button>
+        </Button>,
       ]}
     >
       <ProTable<SummaryRow>
@@ -232,18 +274,18 @@ export default () => {
           pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 个函数`
+          showTotal: (total) => `共 ${total} 个函数`,
         }}
         search={{
           filterType: 'light',
-          labelWidth: 'auto'
+          labelWidth: 'auto',
         }}
         dateFormatter="string"
         headerTitle="函数列表"
         toolBarRender={() => [
           <Button key="filter" icon={<FilterOutlined />}>
             高级筛选
-          </Button>
+          </Button>,
         ]}
       />
 
@@ -273,7 +315,9 @@ export default () => {
           <Card size="small" title="基本信息">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="函数ID">
-                <Text code copyable>{selectedFunction.id}</Text>
+                <Text code copyable>
+                  {selectedFunction.id}
+                </Text>
               </Descriptions.Item>
               <Descriptions.Item label="版本">
                 {selectedFunction.version || <Text type="secondary">未指定</Text>}
@@ -290,10 +334,11 @@ export default () => {
                 />
               </Descriptions.Item>
               <Descriptions.Item label="覆盖实例">
-                {selectedFunction.instances !== undefined
-                  ? `${selectedFunction.instances} 个实例`
-                  : <Text type="secondary">未知</Text>
-                }
+                {selectedFunction.instances !== undefined ? (
+                  `${selectedFunction.instances} 个实例`
+                ) : (
+                  <Text type="secondary">未知</Text>
+                )}
               </Descriptions.Item>
             </Descriptions>
 
@@ -314,7 +359,7 @@ export default () => {
             {selectedFunction.tags && selectedFunction.tags.length > 0 && (
               <Card size="small" title="标签" style={{ marginTop: 16 }}>
                 <Space wrap>
-                  {selectedFunction.tags.map(tag => (
+                  {selectedFunction.tags.map((tag) => (
                     <Tag key={tag}>{tag}</Tag>
                   ))}
                 </Space>
@@ -324,12 +369,16 @@ export default () => {
             {selectedFunction.menu && (
               <Card size="small" title="菜单信息" style={{ marginTop: 16 }}>
                 <Descriptions column={1} size="small">
-                  {selectedFunction.menu.section && (
-                    <Descriptions.Item label="分组">{selectedFunction.menu.section}</Descriptions.Item>
-                  )}
-                  {selectedFunction.menu.group && (
-                    <Descriptions.Item label="子分组">{selectedFunction.menu.group}</Descriptions.Item>
-                  )}
+                  {Array.isArray(selectedFunction.menu.nodes) &&
+                    selectedFunction.menu.nodes.length > 0 && (
+                      <Descriptions.Item label="菜单节点">
+                        <Space wrap>
+                          {selectedFunction.menu.nodes.map((n) => (
+                            <Tag key={n}>{n}</Tag>
+                          ))}
+                        </Space>
+                      </Descriptions.Item>
+                    )}
                 </Descriptions>
               </Card>
             )}

@@ -4,7 +4,7 @@ import { LinkOutlined, UserOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
-import { history, Link } from '@umijs/max';
+import { history, Link, getLocale } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
@@ -22,7 +22,15 @@ import { loadPackPlugins } from './plugin/registry';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 let cachedConsoleSignature = '';
-let cachedConsoleItems: { key: string; name: string; path: string; locale: false }[] = [];
+type DynamicMenuItem = {
+  key: string;
+  name: string;
+  path?: string;
+  locale: false;
+  children?: DynamicMenuItem[];
+  routes?: DynamicMenuItem[];
+};
+let cachedConsoleItems: DynamicMenuItem[] = [];
 
 const TOKEN_ZH_MAP: Record<string, string> = {
   examples: '示例',
@@ -50,12 +58,18 @@ const TOKEN_ZH_MAP: Record<string, string> = {
   report: '报表',
   export: '导出',
 };
-
 const humanizeToken = (token: string) =>
   token
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_-]+/g, ' ')
     .trim();
+
+const toReadableEn = (token: string) =>
+  humanizeToken(token)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 
 const toReadableZh = (token: string) => {
   const normalized = String(token || '')
@@ -69,12 +83,17 @@ const toReadableZh = (token: string) => {
   return words.join('');
 };
 
-const fallbackNameFromId = (id?: string) => {
+const isZhLocale = (locale?: string) =>
+  String(locale || '')
+    .toLowerCase()
+    .startsWith('zh');
+
+const fallbackNameFromId = (id?: string, locale?: string) => {
   const parts = String(id || '')
     .split('.')
     .filter(Boolean);
   if (parts.length === 0) return 'unknown';
-  const tail = parts.slice(-2).map(toReadableZh);
+  const tail = parts.slice(-2).map((t) => (isZhLocale(locale) ? toReadableZh(t) : toReadableEn(t)));
   return tail.join(' · ');
 };
 
@@ -211,20 +230,111 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         | FunctionDescriptor[]
         | undefined;
       if (!Array.isArray(descriptors) || descriptors.length === 0) return menuData;
+      const locale = getLocale();
+      const preferZh = isZhLocale(locale);
+
+      const resolveText = (text?: { zh?: string; en?: string }) => {
+        if (!text) return '';
+        if (preferZh) return text.zh || text.en || '';
+        return text.en || text.zh || '';
+      };
+
+      const localizeToken = (value?: string) => {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        return preferZh ? toReadableZh(raw) : toReadableEn(raw);
+      };
+      const localizeFreeText = (value?: string) => {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        const chunks = raw
+          .split(/[./\s]+/)
+          .map((c) => c.trim())
+          .filter(Boolean);
+        if (chunks.length === 0) return localizeToken(raw);
+        return chunks.map((c) => localizeToken(c)).join(preferZh ? '' : ' / ');
+      };
 
       const safeName = (d: FunctionDescriptor) => {
-        if (d?.display_name?.zh) return d.display_name.zh;
-        if (d?.summary?.zh) return d.summary.zh;
-        if (d?.display_name?.en) return toReadableZh(d.display_name.en);
-        if (d?.summary?.en) return toReadableZh(d.summary.en);
-        return fallbackNameFromId(d?.id);
+        const displayName = resolveText(d?.display_name);
+        if (displayName) return displayName;
+        const operationDisplay = resolveText((d as any)?.operation_display);
+        if (operationDisplay) return operationDisplay;
+        const operation = sanitizeNodeKey(String((d as any)?.operation || ''));
+        if (operation && operation !== 'custom') {
+          return localizeToken(operation) || operation;
+        }
+        const entity = sanitizeNodeKey(String((d as any)?.entity || ''));
+        const parts = String(d?.id || '')
+          .split('.')
+          .filter(Boolean);
+        const tail = sanitizeNodeKey(parts[parts.length - 1] || '');
+        if (tail && tail !== entity) {
+          return localizeToken(tail) || tail;
+        }
+        return fallbackNameFromId(d?.id, locale);
+      };
+      const sanitizeNodeKey = (raw?: string) => {
+        const text = String(raw || '')
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9._-]+/g, '_')
+          .replace(/[_\-.]{2,}/g, '_')
+          .replace(/^[_\-.]+|[_\-.]+$/g, '');
+        return text;
+      };
+      const normalizeNodes = (nodes: string[]) => {
+        const out: string[] = [];
+        nodes.forEach((raw) => {
+          String(raw || '')
+            .split(/[/>.]+/)
+            .forEach((part) => {
+              const node = sanitizeNodeKey(part);
+              if (!node) return;
+              if (out[out.length - 1] === node) return;
+              out.push(node);
+            });
+        });
+        return out;
+      };
+      const inferMenuNodes = (d: FunctionDescriptor) => {
+        const menuNodes = Array.isArray(d.menu?.nodes) ? d.menu!.nodes! : [];
+        const normalizedMenuNodes = normalizeNodes(menuNodes);
+        const operation = sanitizeNodeKey(String((d as any)?.operation || ''));
+        if (normalizedMenuNodes.length > 0) return normalizedMenuNodes;
+
+        const category = sanitizeNodeKey(d.category || '');
+        const entity = sanitizeNodeKey(String((d as any)?.entity || ''));
+        const inferred: string[] = [];
+        if (category) inferred.push(category);
+        if (entity) inferred.push(entity);
+        const normalizedInferred = normalizeNodes(inferred);
+        if (normalizedInferred.length > 0) return normalizedInferred;
+
+        const parts = String(d.id || '')
+          .split('.')
+          .map((p) => sanitizeNodeKey(p));
+        const normalizedParts = normalizeNodes(parts);
+        if (normalizedParts.length >= 3) {
+          const candidate = [normalizedParts[0], normalizedParts[normalizedParts.length - 2]];
+          return normalizeNodes(candidate.filter((node) => node && node !== operation));
+        }
+        if (normalizedParts.length === 1) return normalizedParts;
+        return ['general'];
       };
 
       const isEntity = (d: FunctionDescriptor) => d?.type === 'entity';
 
       const buildPath = (base: string, fid: string, entityType = false) => {
+        const inferredEntity = sanitizeNodeKey(
+          String((descriptors.find((x) => x.id === fid) as any)?.entity || ''),
+        );
         if (!base) {
-          base = entityType ? '/game/entities/view' : '/game/functions/invoke';
+          if (entityType || inferredEntity) {
+            base = `/game/entities/${inferredEntity || 'general'}`;
+          } else {
+            base = '/game/functions/invoke';
+          }
         }
         const sep = base.includes('?') ? '&' : '?';
         const paramKey = entityType ? 'id' : 'fid';
@@ -234,6 +344,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       const visible = descriptors
         .filter((d) => d && d.id && !(d.menu && d.menu.hidden))
         .map((d) => ({
+          nodes: inferMenuNodes(d),
           id: d.id,
           name: safeName(d),
           category: d.category || 'uncategorized',
@@ -245,21 +356,105 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       if (visible.length === 0) return menuData;
 
       const signature = visible
-        .map((it) => `${it.id}|${it.order}|${it.name}|${it.path}`)
+        .map(
+          (it) =>
+            `${locale}|${it.id}|${it.order}|${it.name}|${(it.nodes || []).join('/') || ''}|${
+              it.path
+            }`,
+        )
         .sort()
         .join('||');
       const consoleItems =
         signature === cachedConsoleSignature
           ? cachedConsoleItems
-          : visible
-              .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-              .map((it) => ({
-                key: `console-fn-${it.id}`,
-                name: it.name,
-                path: it.path,
-                // Runtime-registered functions do not have stable locale keys.
-                locale: false as const,
-              }));
+          : (() => {
+              const sorted = [...visible].sort(
+                (a, b) => a.order - b.order || a.name.localeCompare(b.name),
+              );
+              type MenuTreeNode = {
+                key: string;
+                name: string;
+                order: number;
+                leaves: DynamicMenuItem[];
+                children: Map<string, MenuTreeNode>;
+              };
+              const root = new Map<string, MenuTreeNode>();
+
+              const ensureNode = (
+                holder: Map<string, MenuTreeNode>,
+                fullKey: string,
+                displayName: string,
+                order: number,
+              ) => {
+                const hit = holder.get(fullKey);
+                if (hit) {
+                  hit.order = Math.min(hit.order, order);
+                  return hit;
+                }
+                const created: MenuTreeNode = {
+                  key: fullKey,
+                  name: displayName,
+                  order,
+                  leaves: [],
+                  children: new Map(),
+                };
+                holder.set(fullKey, created);
+                return created;
+              };
+
+              sorted.forEach((it) => {
+                const functionItem: DynamicMenuItem = {
+                  key: `console-fn-${it.id}`,
+                  name: it.name,
+                  path: it.path,
+                  locale: false,
+                };
+                const nodes = (it.nodes || []).filter(Boolean);
+                if (nodes.length === 0) {
+                  const fallbackKey = preferZh ? '未分组' : 'ungrouped';
+                  const fallback = ensureNode(
+                    root,
+                    `console-node-${fallbackKey}`,
+                    preferZh ? '未分组' : 'Ungrouped',
+                    it.order,
+                  );
+                  fallback.leaves.push(functionItem);
+                  return;
+                }
+                let cursor = root;
+                let parentKey = 'console-node';
+                let current: MenuTreeNode | null = null;
+                nodes.forEach((n) => {
+                  const nodeKey = sanitizeNodeKey(n) || 'general';
+                  const displayName =
+                    localizeFreeText(nodeKey) || localizeToken(nodeKey) || nodeKey;
+                  const fullKey = `${parentKey}-${nodeKey}`;
+                  current = ensureNode(cursor, fullKey, displayName, it.order);
+                  cursor = current.children;
+                  parentKey = fullKey;
+                });
+                if (current) current.leaves.push(functionItem);
+              });
+
+              const toMenuItems = (nodes: Map<string, MenuTreeNode>): DynamicMenuItem[] =>
+                Array.from(nodes.values())
+                  .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+                  .map((node) => {
+                    const childNodes = toMenuItems(node.children);
+                    const leaves = [...node.leaves].sort((a, b) => a.name.localeCompare(b.name));
+                    const children = [...childNodes, ...leaves];
+                    return {
+                      key: node.key,
+                      name: node.name,
+                      path: children[0]?.path,
+                      locale: false,
+                      children,
+                      routes: children,
+                    };
+                  });
+
+              return toMenuItems(root);
+            })();
       if (signature !== cachedConsoleSignature) {
         cachedConsoleSignature = signature;
         cachedConsoleItems = consoleItems;
