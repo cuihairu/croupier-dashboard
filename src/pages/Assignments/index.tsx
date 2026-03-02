@@ -74,8 +74,7 @@ type AssignmentItem = {
   name: string;
   version: string;
   category: string;
-  menuSection?: string;
-  menuGroup?: string;
+  menuNodes?: string[];
   menuPath?: string;
   menuSource?: string;
   status: 'active' | 'canary' | 'disabled';
@@ -126,8 +125,7 @@ export default function AssignmentsPage() {
           (typeof d.display_name === 'object'
             ? d.display_name?.zh || d.display_name?.en
             : d.display_name) || d.id,
-        menuSection: d.menu?.section || '',
-        menuGroup: d.menu?.group || '',
+        menuNodes: Array.isArray(d.menu?.nodes) ? d.menu.nodes : [],
         menuPath: d.menu?.path || '',
         menuSource: (d as any).menuSource || 'default',
       })),
@@ -176,8 +174,7 @@ export default function AssignmentsPage() {
         name: opt.displayName,
         version: opt.version,
         category: opt.category,
-        menuSection: opt.menuSection,
-        menuGroup: opt.menuGroup,
+        menuNodes: opt.menuNodes,
         menuPath: opt.menuPath,
         menuSource: opt.menuSource,
         status,
@@ -384,14 +381,20 @@ export default function AssignmentsPage() {
       title: '路由展示',
       width: 320,
       render: (_, record) => {
-        const hasRoute = !!(record.menuSection || record.menuGroup || record.menuPath);
+        const hasRoute = !!(
+          (Array.isArray(record.menuNodes) && record.menuNodes.length > 0) ||
+          record.menuPath
+        );
         if (!hasRoute) {
           return <Tag color="default">未配置</Tag>;
         }
         return (
           <Space wrap size={[4, 6]}>
-            {record.menuSection && <Tag color="blue">{record.menuSection}</Tag>}
-            {record.menuGroup && <Tag color="purple">{record.menuGroup}</Tag>}
+            {(record.menuNodes || []).map((node) => (
+              <Tag key={node} color="blue">
+                {node}
+              </Tag>
+            ))}
             {record.menuPath && <Tag color="geekblue">{record.menuPath}</Tag>}
             <Tag color={record.menuSource === 'metadata' ? 'green' : 'default'}>
               {record.menuSource === 'metadata' ? '已自定义' : '默认'}
@@ -734,12 +737,15 @@ export default function AssignmentsPage() {
                       width: 420,
                       render: (_, record) => (
                         <Space wrap size={[4, 6]}>
-                          {record.menuSection ? (
-                            <Tag color="blue">{record.menuSection}</Tag>
+                          {Array.isArray(record.menuNodes) && record.menuNodes.length > 0 ? (
+                            record.menuNodes.map((node) => (
+                              <Tag key={node} color="blue">
+                                {node}
+                              </Tag>
+                            ))
                           ) : (
                             <Tag>未分组</Tag>
                           )}
-                          {record.menuGroup ? <Tag color="purple">{record.menuGroup}</Tag> : null}
                           {record.menuPath ? (
                             <Tag color="geekblue">{record.menuPath}</Tag>
                           ) : (
@@ -780,7 +786,7 @@ export default function AssignmentsPage() {
                     <Alert
                       key="hint"
                       message="分配后路由展示说明"
-                      description="这里显示的是函数描述符中的 menu 路由信息（section/group/path）。如需调整请点击“编辑路由”。"
+                      description="这里显示的是函数描述符中的 menu 路由信息（nodes/path）。如需调整请点击“编辑路由”。"
                       type="info"
                       showIcon
                     />,

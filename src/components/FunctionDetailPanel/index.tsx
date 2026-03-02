@@ -10,14 +10,14 @@ import {
   Divider,
   Timeline,
   Empty,
-  Tooltip
+  Tooltip,
 } from 'antd';
 import {
   PlayCircleOutlined,
   EditOutlined,
   StopOutlined,
   CopyOutlined,
-  InfoCircleOutlined
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import { history } from '@umijs/max';
 
@@ -36,8 +36,7 @@ export type FunctionDetail = {
   created_at?: string;
   updated_at?: string;
   menu?: {
-    section?: string;
-    group?: string;
+    nodes?: string[];
     path?: string;
     order?: number;
     hidden?: boolean;
@@ -77,7 +76,7 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
   onInvoke,
   onEdit,
   onToggleStatus,
-  compact = false
+  compact = false,
 }) => {
   const formatDate = (dateString?: string) => {
     if (!dateString) return '未知';
@@ -100,7 +99,10 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
       {/* Header with basic info and actions */}
       <Card size={compact ? 'small' : 'default'}>
-        <Space split={<Divider type="vertical" />} style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Space
+          split={<Divider type="vertical" />}
+          style={{ width: '100%', justifyContent: 'space-between' }}
+        >
           <Space>
             <Badge status={getStatusColor(func.enabled)} />
             <Text strong>{func.display_name?.zh || func.display_name?.en || func.id}</Text>
@@ -130,7 +132,12 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
                 </Button>
               )}
               {onInvoke && (
-                <Button type="primary" size="small" icon={<PlayCircleOutlined />} onClick={onInvoke}>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<PlayCircleOutlined />}
+                  onClick={onInvoke}
+                >
                   调用函数
                 </Button>
               )}
@@ -144,34 +151,23 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
         <Descriptions column={compact ? 1 : 2} size={compact ? 'small' : 'default'}>
           <Descriptions.Item label="函数ID">
             <Space>
-              <Text code copyable>{func.id}</Text>
+              <Text code copyable>
+                {func.id}
+              </Text>
             </Space>
           </Descriptions.Item>
           <Descriptions.Item label="状态">
-            <Badge
-              status={getStatusColor(func.enabled)}
-              text={getStatusText(func.enabled)}
-            />
+            <Badge status={getStatusColor(func.enabled)} text={getStatusText(func.enabled)} />
           </Descriptions.Item>
           <Descriptions.Item label="版本">
             {func.version || <Text type="secondary">未指定</Text>}
           </Descriptions.Item>
           <Descriptions.Item label="分类">
-            <Tag color={func.category ? 'geekblue' : 'default'}>
-              {func.category || '未分类'}
-            </Tag>
+            <Tag color={func.category ? 'geekblue' : 'default'}>{func.category || '未分类'}</Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="创建时间">
-            {formatDate(func.created_at)}
-          </Descriptions.Item>
-          <Descriptions.Item label="更新时间">
-            {formatDate(func.updated_at)}
-          </Descriptions.Item>
-          {func.author && (
-            <Descriptions.Item label="作者">
-              {func.author}
-            </Descriptions.Item>
-          )}
+          <Descriptions.Item label="创建时间">{formatDate(func.created_at)}</Descriptions.Item>
+          <Descriptions.Item label="更新时间">{formatDate(func.updated_at)}</Descriptions.Item>
+          {func.author && <Descriptions.Item label="作者">{func.author}</Descriptions.Item>}
         </Descriptions>
       </Card>
 
@@ -182,17 +178,13 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
             {(func.summary?.zh || func.summary?.en) && (
               <div>
                 <Text strong>摘要：</Text>
-                <Paragraph>
-                  {func.summary?.zh || func.summary?.en}
-                </Paragraph>
+                <Paragraph>{func.summary?.zh || func.summary?.en}</Paragraph>
               </div>
             )}
             {(func.description?.zh || func.description?.en) && (
               <div>
                 <Text strong>详细描述：</Text>
-                <Paragraph>
-                  {func.description?.zh || func.description?.en}
-                </Paragraph>
+                <Paragraph>{func.description?.zh || func.description?.en}</Paragraph>
               </div>
             )}
           </Space>
@@ -203,8 +195,10 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
       {func.tags && func.tags.length > 0 && (
         <Card title="标签" size={compact ? 'small' : 'default'}>
           <Space wrap>
-            {func.tags.map(tag => (
-              <Tag key={tag} color="processing">{tag}</Tag>
+            {func.tags.map((tag) => (
+              <Tag key={tag} color="processing">
+                {tag}
+              </Tag>
             ))}
           </Space>
         </Card>
@@ -214,11 +208,14 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
       {func.menu && (
         <Card title="菜单信息" size={compact ? 'small' : 'default'}>
           <Descriptions column={compact ? 1 : 2} size={compact ? 'small' : 'default'}>
-            {func.menu.section && (
-              <Descriptions.Item label="分组">{func.menu.section}</Descriptions.Item>
-            )}
-            {func.menu.group && (
-              <Descriptions.Item label="子分组">{func.menu.group}</Descriptions.Item>
+            {Array.isArray(func.menu.nodes) && func.menu.nodes.length > 0 && (
+              <Descriptions.Item label="菜单节点">
+                <Space wrap>
+                  {func.menu.nodes.map((node) => (
+                    <Tag key={node}>{node}</Tag>
+                  ))}
+                </Space>
+              </Descriptions.Item>
             )}
             {func.menu.path && (
               <Descriptions.Item label="路径">
@@ -239,10 +236,7 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
 
       {/* Instances Coverage */}
       {func.instances && func.instances.length > 0 && (
-        <Card
-          title={`实例覆盖 (${func.instances.length} 个)`}
-          size={compact ? 'small' : 'default'}
-        >
+        <Card title={`实例覆盖 (${func.instances.length} 个)`} size={compact ? 'small' : 'default'}>
           <Space direction="vertical" style={{ width: '100%' }}>
             {func.instances.map((instance, index) => (
               <Card key={index} size="small" style={{ backgroundColor: '#fafafa' }}>
@@ -253,9 +247,7 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
                   <Descriptions.Item label="Service ID">
                     <Text code>{instance.service_id}</Text>
                   </Descriptions.Item>
-                  <Descriptions.Item label="地址">
-                    {instance.addr}
-                  </Descriptions.Item>
+                  <Descriptions.Item label="地址">{instance.addr}</Descriptions.Item>
                   <Descriptions.Item label="版本">
                     <Tag color="blue">{instance.version}</Tag>
                   </Descriptions.Item>
@@ -290,13 +282,27 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
             {func.recent_calls.map((call, index) => (
               <Timeline.Item
                 key={index}
-                color={call.status === 'success' ? 'green' : call.status === 'failed' ? 'red' : 'blue'}
+                color={
+                  call.status === 'success' ? 'green' : call.status === 'failed' ? 'red' : 'blue'
+                }
               >
                 <Space direction="vertical" size="small">
                   <Space>
                     <Badge
-                      status={call.status === 'success' ? 'success' : call.status === 'failed' ? 'error' : 'processing'}
-                      text={call.status === 'success' ? '成功' : call.status === 'failed' ? '失败' : '运行中'}
+                      status={
+                        call.status === 'success'
+                          ? 'success'
+                          : call.status === 'failed'
+                          ? 'error'
+                          : 'processing'
+                      }
+                      text={
+                        call.status === 'success'
+                          ? '成功'
+                          : call.status === 'failed'
+                          ? '失败'
+                          : '运行中'
+                      }
                     />
                     {call.user && <Text type="secondary">by {call.user}</Text>}
                     {call.duration && <Text type="secondary">{call.duration}ms</Text>}
@@ -318,7 +324,12 @@ export const FunctionDetailPanel: React.FC<FunctionDetailPanelProps> = ({
               <Space direction="vertical">
                 <Text type="secondary">暂无详细信息</Text>
                 {showActions && onInvoke && (
-                  <Button type="primary" size="small" icon={<PlayCircleOutlined />} onClick={onInvoke}>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<PlayCircleOutlined />}
+                    onClick={onInvoke}
+                  >
                     调用函数
                   </Button>
                 )}

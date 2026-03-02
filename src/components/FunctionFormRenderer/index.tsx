@@ -1,5 +1,27 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Form, Input, InputNumber, Switch, Select, DatePicker, TimePicker, Rate, Slider, Cascader, TreeSelect, Checkbox, Radio, Upload, Button, Space, Typography, Card, Alert, Divider, Tabs } from 'antd';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import {
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Select,
+  DatePicker,
+  TimePicker,
+  Rate,
+  Slider,
+  Cascader,
+  TreeSelect,
+  Checkbox,
+  Radio,
+  Upload,
+  Button,
+  Space,
+  Typography,
+  Card,
+  Alert,
+  Divider,
+  Tabs,
+} from 'antd';
 import { UploadOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { renderXUIField, XUISchemaField } from '@/components/XUISchema';
 import type { FormInstance } from 'antd';
@@ -8,6 +30,14 @@ const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 const { Text, Paragraph } = Typography;
+const EMPTY_INITIAL_VALUES: Record<string, any> = {};
+const toStableJSON = (v: any) => {
+  try {
+    return JSON.stringify(v ?? {});
+  } catch {
+    return '';
+  }
+};
 
 export type JSONSchemaProperty = {
   type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object';
@@ -65,7 +95,7 @@ export interface FunctionFormRendererProps {
 export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   schema,
   uiSchema,
-  initialValues = {},
+  initialValues = EMPTY_INITIAL_VALUES,
   onSubmit,
   onSecondarySubmit,
   onChange,
@@ -80,15 +110,19 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   resetText = '重置',
   showReset = true,
   extra,
-  enableRawJson = true
+  enableRawJson = true,
 }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] = useState(initialValues);
   const [inputMode, setInputMode] = useState<'form' | 'json'>('form');
   const [rawJson, setRawJson] = useState<string>('');
   const [rawJsonError, setRawJsonError] = useState<string>('');
+  const initialValuesRef = useRef<string>(toStableJSON(initialValues));
 
   useEffect(() => {
+    const nextKey = toStableJSON(initialValues);
+    if (nextKey === initialValuesRef.current) return;
+    initialValuesRef.current = nextKey;
     form.setFieldsValue(initialValues);
     setFormData(initialValues);
   }, [initialValues, form]);
@@ -96,36 +130,42 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
   useEffect(() => {
     const hasFields = schema?.properties && Object.keys(schema.properties || {}).length > 0;
     if (enableRawJson && !hasFields) {
-      setInputMode('json');
+      setInputMode((prev) => (prev === 'json' ? prev : 'json'));
     } else if (!enableRawJson) {
-      setInputMode('form');
+      setInputMode((prev) => (prev === 'form' ? prev : 'form'));
     }
   }, [schema, enableRawJson]);
 
-  const handleValuesChange = useCallback((changedFields: any, allValues: any) => {
-    setFormData(allValues);
-    onChange?.(changedFields, allValues);
-  }, [onChange]);
+  const handleValuesChange = useCallback(
+    (changedFields: any, allValues: any) => {
+      setFormData(allValues);
+      onChange?.(changedFields, allValues);
+    },
+    [onChange],
+  );
 
-  const handleFinish = useCallback((values: any) => {
-    if (enableRawJson && inputMode === 'json') {
-      const text = (rawJson || '').trim();
-      if (!text) {
-        setRawJsonError('请输入 JSON 参数（或切换回表单模式）');
+  const handleFinish = useCallback(
+    (values: any) => {
+      if (enableRawJson && inputMode === 'json') {
+        const text = (rawJson || '').trim();
+        if (!text) {
+          setRawJsonError('请输入 JSON 参数（或切换回表单模式）');
+          return;
+        }
+        try {
+          const parsed = JSON.parse(text);
+          setRawJsonError('');
+          onSubmit?.(parsed);
+        } catch (e: any) {
+          setRawJsonError(e?.message || 'JSON 解析失败');
+        }
         return;
       }
-      try {
-        const parsed = JSON.parse(text);
-        setRawJsonError('');
-        onSubmit?.(parsed);
-      } catch (e: any) {
-        setRawJsonError(e?.message || 'JSON 解析失败');
-      }
-      return;
-    }
-    setRawJsonError('');
-    onSubmit?.(values);
-  }, [enableRawJson, inputMode, rawJson, onSubmit]);
+      setRawJsonError('');
+      onSubmit?.(values);
+    },
+    [enableRawJson, inputMode, rawJson, onSubmit],
+  );
 
   const buildPayloadFromCurrent = useCallback(async (): Promise<any | undefined> => {
     if (enableRawJson && inputMode === 'json') {
@@ -217,9 +257,17 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
     const uiFields = uiSchema?.fields || {};
 
     // Apply order if specified
-    let fieldOrder = Object.keys(props);
-    if (uiSchema?.['ui:order']) {
-      fieldOrder = uiSchema['ui:order'];
+    const schemaKeys = Object.keys(props);
+    let fieldOrder = schemaKeys;
+    if (Array.isArray(uiSchema?.['ui:order']) && uiSchema['ui:order'].length > 0) {
+      const uiOrder = uiSchema['ui:order'].filter((k) =>
+        Object.prototype.hasOwnProperty.call(props, k),
+      );
+      const remaining = schemaKeys.filter((k) => !uiOrder.includes(k));
+      fieldOrder = [...uiOrder, ...remaining];
+    }
+    if (fieldOrder.length === 0) {
+      fieldOrder = schemaKeys;
     }
 
     // Handle grouped layout
@@ -245,8 +293,8 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
                   form,
                   [fieldName],
                   required.includes(fieldName),
-                  validateField
-                )
+                  validateField,
+                ),
               );
             }
           });
@@ -254,17 +302,13 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
           return {
             key: `tab-${groupIndex}`,
             label: group.title || `标签 ${groupIndex + 1}`,
-            children: (
-              <div style={{ paddingTop: 16 }}>
-                {tabFields}
-              </div>
-            ),
+            children: <div style={{ paddingTop: 16 }}>{tabFields}</div>,
           };
         });
 
         // Add remaining fields to a separate tab
-        const groupedFields = new Set(groups.flatMap(g => g.fields));
-        const remainingFields = fieldOrder.filter(field => !groupedFields.has(field));
+        const groupedFields = new Set(groups.flatMap((g) => g.fields));
+        const remainingFields = fieldOrder.filter((field) => !groupedFields.has(field));
 
         if (remainingFields.length > 0) {
           const remainingTabFields: React.ReactNode[] = [];
@@ -280,8 +324,8 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
                   form,
                   [fieldName],
                   required.includes(fieldName),
-                  validateField
-                )
+                  validateField,
+                ),
               );
             }
           });
@@ -289,11 +333,7 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
           tabItems.push({
             key: 'tab-remaining',
             label: '其他参数',
-            children: (
-              <div style={{ paddingTop: 16 }}>
-                {remainingTabFields}
-              </div>
-            ),
+            children: <div style={{ paddingTop: 16 }}>{remainingTabFields}</div>,
           });
         }
 
@@ -305,7 +345,7 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
             items={tabItems}
             size="small"
             style={{ marginBottom: 16 }}
-          />
+          />,
         );
       } else {
         // Section groups
@@ -314,7 +354,7 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
             items.push(
               <Divider key={`group-title-${groupIndex}`} orientation="left">
                 {group.title}
-              </Divider>
+              </Divider>,
             );
           }
 
@@ -329,19 +369,23 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
                   form,
                   [fieldName],
                   required.includes(fieldName),
-                  validateField
-                )
+                  validateField,
+                ),
               );
             }
           });
         });
 
         // Add remaining fields not in groups
-        const groupedFields = new Set(groups.flatMap(g => g.fields));
-        const remainingFields = fieldOrder.filter(field => !groupedFields.has(field));
+        const groupedFields = new Set(groups.flatMap((g) => g.fields));
+        const remainingFields = fieldOrder.filter((field) => !groupedFields.has(field));
 
         if (remainingFields.length > 0) {
-          items.push(<Divider key="remaining-title" orientation="left">其他参数</Divider>);
+          items.push(
+            <Divider key="remaining-title" orientation="left">
+              其他参数
+            </Divider>,
+          );
           remainingFields.forEach((fieldName) => {
             if (props[fieldName]) {
               items.push(
@@ -353,8 +397,8 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
                   form,
                   [fieldName],
                   required.includes(fieldName),
-                  validateField
-                )
+                  validateField,
+                ),
               );
             }
           });
@@ -373,8 +417,8 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
               form,
               [fieldName],
               required.includes(fieldName),
-              validateField
-            )
+              validateField,
+            ),
           );
         }
       });
@@ -387,7 +431,9 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
     <Card size={compact ? 'small' : 'default'}>
       {schema.title && (
         <div style={{ marginBottom: 16 }}>
-          <Text strong style={{ fontSize: 16 }}>{schema.title}</Text>
+          <Text strong style={{ fontSize: 16 }}>
+            {schema.title}
+          </Text>
           {schema.description && (
             <Paragraph type="secondary" style={{ marginTop: 4, marginBottom: 0 }}>
               {schema.description}
@@ -409,7 +455,10 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
         {enableRawJson ? (
           <Tabs
             activeKey={inputMode}
-            onChange={(k) => { setInputMode(k as any); setRawJsonError(''); }}
+            onChange={(k) => {
+              setInputMode(k as any);
+              setRawJsonError('');
+            }}
             size="small"
             items={[
               {
@@ -427,7 +476,10 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
                       rows={10}
                       placeholder='例如：{"player_id":"123","reason":"test"}'
                       value={rawJson}
-                      onChange={(e) => { setRawJson(e.target.value); setRawJsonError(''); }}
+                      onChange={(e) => {
+                        setRawJson(e.target.value);
+                        setRawJsonError('');
+                      }}
                       style={{ marginTop: 8, fontFamily: 'monospace' }}
                     />
                     {rawJsonError && (
@@ -448,20 +500,11 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
           renderFormItems()
         )}
 
-        {extra && (
-          <div style={{ marginTop: 16 }}>
-            {extra}
-          </div>
-        )}
+        {extra && <div style={{ marginTop: 16 }}>{extra}</div>}
 
         <div style={{ marginTop: 24 }}>
           <Space>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={loading}
-              disabled={disabled}
-            >
+            <Button type="primary" htmlType="submit" loading={loading} disabled={disabled}>
               {submitText}
             </Button>
             {onSecondarySubmit && (
@@ -474,10 +517,7 @@ export const FunctionFormRenderer: React.FC<FunctionFormRendererProps> = ({
               </Button>
             )}
             {showReset && (
-              <Button
-                onClick={handleReset}
-                disabled={disabled || loading}
-              >
+              <Button onClick={handleReset} disabled={disabled || loading}>
                 {resetText}
               </Button>
             )}
