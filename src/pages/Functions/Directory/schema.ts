@@ -3,12 +3,15 @@ export type DirectoryPageSchema = {
     key: 'refresh';
     label: string;
     icon: 'reload';
+    loadingWhen?: 'loading';
+    disabledWhen?: Array<'loading'>;
   }>;
   drawerActions: Array<{
-    key: 'invoke';
+    key: 'invoke' | 'detailPage';
     label: string;
-    icon: 'play';
-    disabledWhen?: Array<'noSelection'>;
+    icon: 'play' | 'info';
+    disabledWhen?: Array<'noSelection' | 'loading'>;
+    loadingWhen?: 'loading';
   }>;
   rowActions: Array<{
     key: 'detail' | 'ui' | 'invoke';
@@ -24,9 +27,30 @@ export type DirectoryPageSchema = {
 };
 
 export const DIRECTORY_PAGE_SCHEMA: DirectoryPageSchema = {
-  headerActions: [{ key: 'refresh', label: '刷新', icon: 'reload' }],
+  headerActions: [
+    {
+      key: 'refresh',
+      label: '刷新',
+      icon: 'reload',
+      loadingWhen: 'loading',
+      disabledWhen: ['loading'],
+    },
+  ],
   drawerActions: [
-    { key: 'invoke', label: '调用函数', icon: 'play', disabledWhen: ['noSelection'] },
+    {
+      key: 'detailPage',
+      label: '详情页',
+      icon: 'info',
+      disabledWhen: ['noSelection', 'loading'],
+      loadingWhen: 'loading',
+    },
+    {
+      key: 'invoke',
+      label: '调用函数',
+      icon: 'play',
+      disabledWhen: ['noSelection', 'loading'],
+      loadingWhen: 'loading',
+    },
   ],
   rowActions: [
     { key: 'detail', tooltip: '查看详情', icon: 'info' },

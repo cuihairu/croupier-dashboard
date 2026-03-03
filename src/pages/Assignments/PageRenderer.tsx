@@ -62,7 +62,7 @@ const renderListToolbarActions = (ctx: RenderCtx) =>
             return false;
           })
         }
-        loading={action.key === 'save' || action.key === 'reload' ? ctx.loading : false}
+        loading={action.loadingWhen ? ctx.loading : false}
         onClick={() => runListToolbarAction(action.key, ctx)}
       >
         {action.label}

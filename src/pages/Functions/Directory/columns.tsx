@@ -10,7 +10,7 @@ const { Text } = Typography;
 type BuildColumnsOptions = {
   columns: DirectoryPageSchema['columns'];
   rowActions: DirectoryPageSchema['rowActions'];
-  onOpenDetail: (id: string) => void;
+  onOpenDetail: (record: SummaryRow) => void;
   onOpenUI: (id: string) => void;
   onInvoke: (record: SummaryRow) => void;
 };
@@ -120,7 +120,7 @@ export const buildDirectoryColumns = ({
               size="small"
               icon={rowActionIcon[action.icon]}
               onClick={() => {
-                if (action.key === 'detail') return onOpenDetail(record.id);
+                if (action.key === 'detail') return onOpenDetail(record);
                 if (action.key === 'ui') return onOpenUI(record.id);
                 return onInvoke(record);
               }}

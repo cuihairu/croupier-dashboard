@@ -29,6 +29,7 @@ export type AssignmentPageSchema = {
     type?: 'primary';
     permission?: 'read' | 'write';
     disabledWhen?: Array<'noScope' | 'noSelection' | 'loading'>;
+    loadingWhen?: 'loading';
   }>;
   categoryActions: Array<{
     key: 'enable' | 'disable';
@@ -97,8 +98,16 @@ export const ASSIGNMENTS_PAGE_SCHEMA: AssignmentPageSchema = {
       type: 'primary',
       permission: 'write',
       disabledWhen: ['noScope', 'loading'],
+      loadingWhen: 'loading',
     },
-    { key: 'reload', label: '刷新', icon: 'reload', permission: 'read', disabledWhen: ['loading'] },
+    {
+      key: 'reload',
+      label: '刷新',
+      icon: 'reload',
+      permission: 'read',
+      disabledWhen: ['loading'],
+      loadingWhen: 'loading',
+    },
   ],
   categoryActions: [
     { key: 'enable', label: '启用' },
@@ -131,13 +140,21 @@ export const ASSIGNMENTS_PAGE_SCHEMA: AssignmentPageSchema = {
     { key: 'categories', title: '分类数', icon: 'experiment' },
   ],
   actions: [
-    { key: 'history', label: '变更历史', icon: 'history', permission: 'read' },
+    {
+      key: 'history',
+      label: '变更历史',
+      icon: 'history',
+      permission: 'read',
+      disabledWhen: ['noScope', 'loading'],
+      loadingWhen: 'loading',
+    },
     {
       key: 'clone',
       label: '克隆到环境',
       icon: 'copy',
       permission: 'write',
       disabledWhen: ['noScope', 'noSelection', 'loading'],
+      loadingWhen: 'loading',
     },
   ],
   tabs: [

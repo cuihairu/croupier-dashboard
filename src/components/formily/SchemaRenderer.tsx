@@ -14,12 +14,11 @@ import {
   ArrayItems,
   FormGrid,
   Space,
-  Card,
   Checkbox,
   Radio,
   PreviewText,
 } from '@formily/antd-v5';
-import { Empty } from 'antd';
+import { Card, Empty } from 'antd';
 import FormilyProvider from './FormilyProvider';
 import { FormilyContextProvider, type FormilyRuntimeContext } from './context';
 import type { FormilySchema } from './schema/types';

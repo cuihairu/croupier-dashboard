@@ -17,6 +17,7 @@ export type SchemaAction = {
   icon: string;
   permission?: SchemaPermission;
   disabledWhen?: string[];
+  loadingWhen?: string;
 };
 
 export type SchemaTab = {
@@ -72,6 +73,7 @@ export const renderSchemaActions = (
         key={action.key}
         icon={renderIcon(action.icon)}
         disabled={isDisabled(action.disabledWhen, flags)}
+        loading={action.loadingWhen ? !!flags[action.loadingWhen] : false}
         onClick={() => onAction(action.key)}
       >
         {action.label}
