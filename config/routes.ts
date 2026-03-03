@@ -111,6 +111,17 @@ export default [
       },
       // 虚拟对象编辑器（独立页面）
       {
+        path: '/game/entities',
+        redirect: '/game/component-management',
+      },
+      {
+        path: '/game/entities/:id',
+        name: 'EntityFunctions',
+        access: 'canFunctionsRead',
+        component: './Functions/Invoke',
+        hideInMenu: true,
+      },
+      {
         path: '/game/entities/create',
         name: 'CreateVirtualObject',
         access: 'canFunctionsRead',
