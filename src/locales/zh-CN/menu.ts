@@ -44,6 +44,7 @@ export default {
   'menu.RegisteredFunctions': '注册函数',
   'menu.ControlConsole': '游戏管理',
   'menu.GameManagement.ComponentManagement': '组件管理',
+  'menu.GameManagement.EntityFunctions': '实体函数调用',
   'menu.GameManagement.CreateVirtualObject': '创建虚拟对象',
   'menu.GameManagement.EditVirtualObject': '编辑虚拟对象',
 

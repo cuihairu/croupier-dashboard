@@ -43,6 +43,7 @@ export default {
   'menu.RegisteredFunctions': 'Registered Functions',
   'menu.ControlConsole': 'Game Management',
   'menu.GameManagement.ComponentManagement': 'Component Management',
+  'menu.GameManagement.EntityFunctions': 'Entity Function Invoke',
   'menu.GameManagement.CreateVirtualObject': 'Create Virtual Object',
   'menu.GameManagement.EditVirtualObject': 'Edit Virtual Object',
 
