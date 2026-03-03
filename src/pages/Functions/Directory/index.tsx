@@ -1,51 +1,18 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
-import {
-  App,
-  Button,
-  Space,
-  Tag,
-  Card,
-  Descriptions,
-  Drawer,
-  Badge,
-  Tooltip,
-  Typography,
-} from 'antd';
-import {
-  EyeOutlined,
-  PlayCircleOutlined,
-  InfoCircleOutlined,
-  ReloadOutlined,
-  FilterOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
+import { PageContainer, ProTable } from '@ant-design/pro-components';
+import { App, Button, Space, Tag, Card, Descriptions, Drawer, Badge, Typography } from 'antd';
+import { PlayCircleOutlined, ReloadOutlined, FilterOutlined } from '@ant-design/icons';
 import { history } from '@umijs/max';
 
 import { listDescriptors, listFunctionInstances } from '@/services/api';
 import { getFunctionSummary } from '@/services/api/functions-enhanced';
+import { renderSchemaActions } from '@/components/page-schema/PageSchemaRenderer';
+import { resolveSchemaIcon } from '@/components/page-schema/icons';
+import { DIRECTORY_PAGE_SCHEMA } from './schema';
+import { buildDirectoryColumns } from './columns';
+import type { DetailRow, SummaryRow } from './types';
 
 const { Text } = Typography;
-
-type I18N = { zh?: string; en?: string };
-type Menu = { nodes?: string[]; path?: string; order?: number; hidden?: boolean };
-type SummaryRow = {
-  id: string;
-  enabled?: boolean;
-  display_name?: I18N;
-  summary?: I18N;
-  tags?: string[];
-  menu?: Menu;
-  version?: string;
-};
-type DetailRow = SummaryRow & {
-  description?: I18N;
-  category?: string;
-  author?: string;
-  created_at?: string;
-  updated_at?: string;
-  instances?: number;
-};
 
 async function fetchSummary(): Promise<SummaryRow[]> {
   const descriptors = await listDescriptors();
@@ -143,128 +110,57 @@ export default () => {
     return `${base}${sep}fid=${encodeURIComponent(functionId)}`;
   };
 
-  const columns: ProColumns<SummaryRow>[] = [
-    {
-      title: '函数ID',
-      dataIndex: 'id',
-      width: 250,
-      copyable: true,
-      ellipsis: true,
-      render: (_, record) => (
-        <Space>
-          <Badge status={record.enabled ? 'success' : 'default'} />
-          <Text code>{record.id}</Text>
-          {record.version && <Tag color="blue">v{record.version}</Tag>}
-        </Space>
+  const columns = useMemo(
+    () =>
+      buildDirectoryColumns({
+        columns: DIRECTORY_PAGE_SCHEMA.columns,
+        rowActions: DIRECTORY_PAGE_SCHEMA.rowActions,
+        onOpenDetail: (id) => history.push(`/game/functions/${encodeURIComponent(id)}`),
+        onOpenUI: (id) =>
+          history.push(`/game/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`),
+        onInvoke: (record) => {
+          const path = buildInvokePath(record.menu?.path, record.id);
+          history.push(path);
+        },
+      }),
+    [],
+  );
+
+  const headerActions = useMemo(
+    () =>
+      renderSchemaActions(
+        {
+          canWrite: true,
+          flags: {},
+          onAction: () => reload(),
+          renderIcon: (icon) => resolveSchemaIcon(icon),
+        },
+        DIRECTORY_PAGE_SCHEMA.headerActions,
       ),
-    },
-    {
-      title: '函数名称',
-      dataIndex: 'display_name',
-      width: 200,
-      ellipsis: true,
-      render: (_, record) => record.display_name?.zh || record.display_name?.en || record.id,
-    },
-    {
-      title: '函数摘要',
-      dataIndex: 'summary',
-      width: 300,
-      ellipsis: true,
-      render: (_, record) => record.summary?.zh || record.summary?.en || '-',
-    },
-    {
-      title: '分类',
-      dataIndex: 'category',
-      width: 120,
-      filters: true,
-      onFilter: (value, record) => record.category === value,
-      render: (_, record) => (
-        <Tag color={record.category ? 'geekblue' : 'default'}>{record.category || '未分类'}</Tag>
+    [],
+  );
+
+  const drawerActions = useMemo(
+    () =>
+      renderSchemaActions(
+        {
+          canWrite: true,
+          flags: { noSelection: !selectedFunction },
+          onAction: () => {
+            if (!selectedFunction) return;
+            const path = buildInvokePath(selectedFunction.menu?.path, selectedFunction.id);
+            history.push(path);
+            setDetailVisible(false);
+          },
+          renderIcon: (icon) => resolveSchemaIcon(icon),
+        },
+        DIRECTORY_PAGE_SCHEMA.drawerActions,
       ),
-    },
-    {
-      title: '标签',
-      dataIndex: 'tags',
-      width: 200,
-      render: (_, record) => (
-        <Space wrap>
-          {(record.tags || []).slice(0, 3).map((tag) => (
-            <Tag key={tag} size="small">
-              {tag}
-            </Tag>
-          ))}
-          {(record.tags || []).length > 3 && (
-            <Tag size="small">+{(record.tags || []).length - 3}</Tag>
-          )}
-        </Space>
-      ),
-    },
-    {
-      title: '状态',
-      dataIndex: 'enabled',
-      width: 80,
-      filters: [
-        { text: '启用', value: true },
-        { text: '禁用', value: false },
-      ],
-      onFilter: (value, record) => record.enabled === value,
-      render: (_, record) => (
-        <Badge
-          status={record.enabled ? 'success' : 'default'}
-          text={record.enabled ? '启用' : '禁用'}
-        />
-      ),
-    },
-    {
-      title: '操作',
-      valueType: 'option',
-      width: 200,
-      render: (_, record) => [
-        <Tooltip key="detail" title="查看详情">
-          <Button
-            type="link"
-            size="small"
-            icon={<InfoCircleOutlined />}
-            onClick={() => {
-              history.push(`/game/functions/${encodeURIComponent(record.id)}`);
-            }}
-          />
-        </Tooltip>,
-        <Tooltip key="ui" title="编辑UI">
-          <Button
-            type="link"
-            size="small"
-            icon={<SettingOutlined />}
-            onClick={() => {
-              history.push(`/game/functions/${encodeURIComponent(record.id)}?tab=config&subTab=ui`);
-            }}
-          />
-        </Tooltip>,
-        <Tooltip key="invoke" title="调用函数">
-          <Button
-            type="link"
-            size="small"
-            icon={<PlayCircleOutlined />}
-            onClick={() => {
-              const path = buildInvokePath(record.menu?.path, record.id);
-              history.push(path);
-            }}
-          />
-        </Tooltip>,
-      ],
-    },
-  ];
+    [selectedFunction],
+  );
 
   return (
-    <PageContainer
-      title="函数目录"
-      subTitle="浏览和管理系统中可用的函数"
-      extra={[
-        <Button key="refresh" icon={<ReloadOutlined />} onClick={reload}>
-          刷新
-        </Button>,
-      ]}
-    >
+    <PageContainer title="函数目录" subTitle="浏览和管理系统中可用的函数" extra={headerActions}>
       <ProTable<SummaryRow>
         rowKey="id"
         loading={loading}
@@ -295,21 +191,7 @@ export default () => {
         width={600}
         open={detailVisible}
         onClose={() => setDetailVisible(false)}
-        extra={
-          <Button
-            type="primary"
-            icon={<PlayCircleOutlined />}
-            onClick={() => {
-              if (selectedFunction) {
-                const path = buildInvokePath(selectedFunction.menu?.path, selectedFunction.id);
-                history.push(path);
-                setDetailVisible(false);
-              }
-            }}
-          >
-            调用函数
-          </Button>
-        }
+        extra={drawerActions}
       >
         {selectedFunction && (
           <Card size="small" title="基本信息">

@@ -1,44 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
-import {
-  Card,
-  Space,
-  Select,
-  Button,
-  Typography,
-  Alert,
-  App,
-  Tag,
-  Badge,
-  Tooltip,
-  Modal,
-  Form,
-  Input,
-  Switch,
-  Popconfirm,
-  Divider,
-  Descriptions,
-  Statistic,
-  Row,
-  Col,
-  Tabs,
-  List,
-  Progress,
-} from 'antd';
-import {
-  SaveOutlined,
-  ReloadOutlined,
-  PlusOutlined,
-  DeleteOutlined,
-  CheckCircleOutlined,
-  WarningOutlined,
-  ExperimentOutlined,
-  HistoryOutlined,
-  SettingOutlined,
-  RocketOutlined,
-  CopyOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import { PageContainer } from '@ant-design/pro-components';
+import { App } from 'antd';
 import { useModel } from '@umijs/max';
 import { useIntl } from '@umijs/max';
 import { history as routerHistory } from '@umijs/max';
@@ -49,46 +11,14 @@ import {
   setAssignments,
   FunctionDescriptor,
 } from '@/services/api';
-
-type CanaryConfig = {
-  enabled?: boolean;
-  percentage?: number;
-  rules?: Record<string, any>;
-  duration?: string;
-};
-
-type AssignmentHistory = {
-  id: string;
-  game_id: string;
-  env: string;
-  function_id: string;
-  action: 'assign' | 'remove' | string;
-  count: number;
-  operated_by: string;
-  operated_at: string;
-  details?: Record<string, any>;
-};
-
-type AssignmentItem = {
-  id: string;
-  name: string;
-  version: string;
-  category: string;
-  menuNodes?: string[];
-  menuPath?: string;
-  menuSource?: string;
-  status: 'active' | 'canary' | 'disabled';
-  canary?: CanaryConfig;
-  assignedAt?: string;
-  updatedAt?: string;
-};
-
-type AssignmentGroup = {
-  category: string;
-  items: AssignmentItem[];
-  activeCount: number;
-  canaryCount: number;
-};
+import { buildAssignmentColumns, buildCategoryColumns, buildRouteColumns } from './columns';
+import type { AssignmentHistory, AssignmentItem, HistoryAction } from './types';
+import { buildAssignmentOptions, buildAssignmentStats, buildGroupedAssignments } from './viewModel';
+import HistoryModal from './HistoryModal';
+import CanaryModal from './CanaryModal';
+import CloneModal from './CloneModal';
+import PageRenderer, { renderPageActions } from './PageRenderer';
+import { ASSIGNMENTS_PAGE_SCHEMA } from './pageSchema';
 
 export default function AssignmentsPage() {
   const { message } = App.useApp();
@@ -100,7 +30,6 @@ export default function AssignmentsPage() {
   const [env, setEnv] = useState<string | undefined>(localStorage.getItem('env') || undefined);
   const [selected, setSelected] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<AssignmentItem | null>(null);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [history, setHistory] = useState<AssignmentHistory[]>([]);
@@ -108,29 +37,12 @@ export default function AssignmentsPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPageSize, setHistoryPageSize] = useState(10);
   const [historyTotal, setHistoryTotal] = useState(0);
-  const [historyActionFilter, setHistoryActionFilter] = useState<
-    'all' | 'assign' | 'remove' | 'clone'
-  >('all');
+  const [historyActionFilter, setHistoryActionFilter] = useState<HistoryAction>('all');
   const [canaryModalVisible, setCanaryModalVisible] = useState(false);
+  const [cloneModalVisible, setCloneModalVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
 
-  const options = useMemo(
-    () =>
-      (Array.isArray(descs) ? descs : []).map((d) => ({
-        label: `${d.id} v${d.version || ''}`,
-        value: d.id,
-        version: d.version,
-        category: d.category || 'general',
-        displayName:
-          (typeof d.display_name === 'object'
-            ? d.display_name?.zh || d.display_name?.en
-            : d.display_name) || d.id,
-        menuNodes: Array.isArray(d.menu?.nodes) ? d.menu.nodes : [],
-        menuPath: d.menu?.path || '',
-        menuSource: (d as any).menuSource || 'default',
-      })),
-    [descs],
-  );
+  const options = useMemo(() => buildAssignmentOptions(descs), [descs]);
 
   const { initialState } = useModel('@@initialState');
   const roles = useMemo(() => {
@@ -138,66 +50,15 @@ export default function AssignmentsPage() {
     return (acc ? acc.split(',') : []).filter(Boolean);
   }, [initialState]);
   const canWrite = roles.includes('*') || roles.includes('assignments:write');
-  const renderHistoryDetail = (key: string, value: any) => {
-    if (Array.isArray(value)) {
-      if (value.length === 0) return <Tag>0</Tag>;
-      if (value.length <= 8) {
-        return (
-          <Space wrap>
-            {value.map((x, idx) => (
-              <Tag key={`${key}-${idx}`}>{String(x)}</Tag>
-            ))}
-          </Space>
-        );
-      }
-      return <Tag>{value.length} 项</Tag>;
-    }
-    if (value && typeof value === 'object') {
-      return <pre style={{ margin: 0 }}>{JSON.stringify(value, null, 2)}</pre>;
-    }
-    return String(value);
-  };
 
   // Group assignments by category
-  const groupedAssignments = useMemo(() => {
-    const groups: Record<string, AssignmentItem[]> = {};
-    options.forEach((opt) => {
-      const category = opt.category || 'general';
-      const isSelected = selected.includes(opt.value);
-      const status: AssignmentItem['status'] = isSelected ? 'active' : 'disabled';
-
-      if (!groups[category]) {
-        groups[category] = [];
-      }
-      groups[category].push({
-        id: opt.value,
-        name: opt.displayName,
-        version: opt.version,
-        category: opt.category,
-        menuNodes: opt.menuNodes,
-        menuPath: opt.menuPath,
-        menuSource: opt.menuSource,
-        status,
-      });
-    });
-
-    return Object.entries(groups).map(([category, items]) => ({
-      category,
-      items,
-      activeCount: items.filter((i) => i.status === 'active').length,
-      canaryCount: items.filter((i) => i.status === 'canary').length,
-    }));
-  }, [options, selected]);
+  const groupedAssignments = useMemo(
+    () => buildGroupedAssignments(options, selected),
+    [options, selected],
+  );
 
   // Statistics
-  const stats = useMemo(() => {
-    const total = options.length;
-    const active = selected.length;
-    const inactive = total - active;
-    const categories = new Set(options.map((o) => o.category)).size;
-
-    return { total, active, inactive, categories };
-  }, [options, selected]);
+  const stats = useMemo(() => buildAssignmentStats(options, selected), [options, selected]);
 
   async function load() {
     setLoading(true);
@@ -284,7 +145,11 @@ export default function AssignmentsPage() {
   };
 
   const onCloneToEnv = async (targetEnv: string) => {
-    if (!gameId) return;
+    if (!gameId) return false;
+    if (!targetEnv) {
+      message.warning('请选择目标环境');
+      return false;
+    }
     setLoading(true);
     try {
       await setAssignments({
@@ -294,8 +159,10 @@ export default function AssignmentsPage() {
         functions: selected,
       });
       message.success(`已克隆分配到 ${targetEnv} 环境`);
+      return true;
     } catch (e: any) {
       message.error(`克隆失败: ${e.message}`);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -304,7 +171,7 @@ export default function AssignmentsPage() {
   const loadHistory = async (
     page = historyPage,
     pageSize = historyPageSize,
-    action: 'all' | 'assign' | 'remove' | 'clone' = historyActionFilter,
+    action: HistoryAction = historyActionFilter,
   ) => {
     setHistoryLoading(true);
     try {
@@ -330,607 +197,109 @@ export default function AssignmentsPage() {
     setHistoryVisible(true);
   };
 
-  const columns: ProColumns<AssignmentItem>[] = [
-    {
-      title: '函数ID',
-      dataIndex: 'id',
-      width: 200,
-      copyable: true,
-      render: (_, record) => (
-        <Space>
-          <Badge
-            status={
-              record.status === 'active'
-                ? 'success'
-                : record.status === 'canary'
-                ? 'processing'
-                : 'default'
-            }
-          />
-          <span>{record.id}</span>
-        </Space>
-      ),
+  const columns = useMemo(
+    () =>
+      buildAssignmentColumns({
+        canWrite,
+        selected,
+        setSelected,
+        listColumns: ASSIGNMENTS_PAGE_SCHEMA.listColumns,
+        rowActions: ASSIGNMENTS_PAGE_SCHEMA.rowActions,
+        setEditingAssignment,
+        setCanaryModalVisible,
+        onOpenDetail: (id) => {
+          const targetUrl = `/game/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`;
+          routerHistory.push(targetUrl);
+        },
+        onOpenRoute: (id) => {
+          const targetUrl = `/game/functions/${encodeURIComponent(id)}?tab=config&subTab=route`;
+          routerHistory.push(targetUrl);
+        },
+      }),
+    [canWrite, selected],
+  );
+  const categoryColumns = buildCategoryColumns({
+    categoryColumns: ASSIGNMENTS_PAGE_SCHEMA.categoryColumns,
+    onBatchAssign,
+  });
+  const routeColumns = buildRouteColumns({
+    routeColumns: ASSIGNMENTS_PAGE_SCHEMA.routeColumns,
+    onEditRoute: (id) => {
+      const targetUrl = `/game/functions/${encodeURIComponent(id)}?tab=config&subTab=route`;
+      routerHistory.push(targetUrl);
     },
-    {
-      title: '名称',
-      dataIndex: 'name',
-      width: 180,
-      ellipsis: true,
-    },
-    {
-      title: '版本',
-      dataIndex: 'version',
-      width: 100,
-      render: (text) => <Tag color="blue">{text || '-'}</Tag>,
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      width: 100,
-      render: (text) => {
-        const config = {
-          active: { color: 'success', text: '已启用' },
-          canary: { color: 'processing', text: '灰度中' },
-          disabled: { color: 'default', text: '未启用' },
-        } as const;
-        const c = config[text as keyof typeof config] || config.disabled;
-        return <Tag color={c.color}>{c.text}</Tag>;
-      },
-    },
-    {
-      title: '路由展示',
-      width: 320,
-      render: (_, record) => {
-        const hasRoute = !!(
-          (Array.isArray(record.menuNodes) && record.menuNodes.length > 0) ||
-          record.menuPath
-        );
-        if (!hasRoute) {
-          return <Tag color="default">未配置</Tag>;
-        }
-        return (
-          <Space wrap size={[4, 6]}>
-            {(record.menuNodes || []).map((node) => (
-              <Tag key={node} color="blue">
-                {node}
-              </Tag>
-            ))}
-            {record.menuPath && <Tag color="geekblue">{record.menuPath}</Tag>}
-            <Tag color={record.menuSource === 'metadata' ? 'green' : 'default'}>
-              {record.menuSource === 'metadata' ? '已自定义' : '默认'}
-            </Tag>
-          </Space>
-        );
-      },
-    },
-    {
-      title: '分配时间',
-      dataIndex: 'assignedAt',
-      width: 180,
-      render: (text) => (text ? new Date(text).toLocaleString('zh-CN') : '-'),
-    },
-    {
-      title: '操作',
-      width: 180,
-      render: (_, record) => (
-        <Space>
-          {record.status !== 'active' && (
-            <Tooltip title="启用">
-              <Button
-                type="link"
-                size="small"
-                icon={<CheckCircleOutlined />}
-                onClick={() => setSelected([...selected, record.id])}
-              />
-            </Tooltip>
-          )}
-          {record.status === 'active' && (
-            <Tooltip title="禁用">
-              <Button
-                type="link"
-                size="small"
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => setSelected(selected.filter((id) => id !== record.id))}
-              />
-            </Tooltip>
-          )}
-          <Tooltip title="灰度配置">
-            <Button
-              type="link"
-              size="small"
-              icon={<ExperimentOutlined />}
-              onClick={() => {
-                setEditingAssignment(record);
-                setCanaryModalVisible(true);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="查看详情">
-            <Button
-              type="link"
-              size="small"
-              icon={<SettingOutlined />}
-              onClick={() => {
-                // 跳转到函数详情页的 UI 配置标签
-                const targetUrl = `/game/functions/${encodeURIComponent(
-                  record.id,
-                )}?tab=config&subTab=ui`;
-                routerHistory.push(targetUrl);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="路由配置">
-            <Button
-              type="link"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => {
-                const targetUrl = `/game/functions/${encodeURIComponent(
-                  record.id,
-                )}?tab=config&subTab=route`;
-                routerHistory.push(targetUrl);
-              }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+  });
+  const onSelectAll = () => setSelected(options.map((o) => o.value));
+  const onClearAll = () => setSelected([]);
+  const onReload = () => load().catch(() => {});
+  const onSelectionChange = (keys: React.Key[]) => setSelected(keys as string[]);
+  const pageCtx = {
+    schema: ASSIGNMENTS_PAGE_SCHEMA,
+    stats,
+    groupedAssignments,
+    selected,
+    loading,
+    canWrite,
+    hasScope: !!gameId,
+    activeTab,
+    onTabChange: setActiveTab,
+    columns,
+    categoryColumns,
+    routeColumns,
+    onSelectAll,
+    onClearAll,
+    onBatchAssign,
+    onSave,
+    onReload,
+    onSelectionChange,
+    onOpenHistory: loadHistory,
+    onOpenClone: () => setCloneModalVisible(true),
+  };
+  const headerActions = renderPageActions(pageCtx);
 
   return (
     <PageContainer
       title="函数分配管理"
       subTitle="管理不同游戏环境中可用的函数列表"
-      extra={[
-        <Button key="history" icon={<HistoryOutlined />} onClick={loadHistory}>
-          变更历史
-        </Button>,
-        <Button
-          key="clone"
-          icon={<CopyOutlined />}
-          onClick={() => {
-            Modal.confirm({
-              title: '克隆分配配置',
-              content: (
-                <div>
-                  <p>选择目标环境:</p>
-                  <Select
-                    style={{ width: '100%' }}
-                    options={[
-                      { label: '开发环境 (dev)', value: 'dev' },
-                      { label: '测试环境 (test)', value: 'test' },
-                      { label: '预发布环境 (staging)', value: 'staging' },
-                      { label: '生产环境 (prod)', value: 'prod' },
-                    ]}
-                    onChange={(value) => onCloneToEnv(value)}
-                  />
-                </div>
-              ),
-            });
-          }}
-        >
-          克隆到环境
-        </Button>,
-      ]}
+      extra={headerActions}
     >
-      {/* Statistics Cards */}
-      <Row gutter={16} style={{ marginBottom: 16 }}>
-        <Col span={6}>
-          <Card>
-            <Statistic title="总函数数" value={stats.total} prefix={<SettingOutlined />} />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="已分配"
-              value={stats.active}
-              valueStyle={{ color: '#3f8600' }}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic
-              title="未分配"
-              value={stats.inactive}
-              valueStyle={{ color: '#cf1322' }}
-              prefix={<WarningOutlined />}
-            />
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <Statistic title="分类数" value={stats.categories} prefix={<ExperimentOutlined />} />
-          </Card>
-        </Col>
-      </Row>
+      <PageRenderer {...pageCtx} />
 
-      <Card>
-        <Tabs
-          activeKey={activeTab}
-          onChange={setActiveTab}
-          items={[
-            {
-              key: 'list',
-              label: `列表视图 (${stats.active}/${stats.total})`,
-              children: (
-                <>
-                  {/* Batch Operations Bar */}
-                  <Space style={{ marginBottom: 16, width: '100%' }} wrap>
-                    <Button
-                      icon={<PlusOutlined />}
-                      onClick={() => setSelected(options.map((o) => o.value))}
-                    >
-                      全选
-                    </Button>
-                    <Button icon={<DeleteOutlined />} onClick={() => setSelected([])}>
-                      清空
-                    </Button>
-                    <Divider type="vertical" />
-                    {groupedAssignments.map((group) => (
-                      <Space key={group.category} style={{ marginRight: 16 }}>
-                        <span>{group.category}:</span>
-                        <Button size="small" onClick={() => onBatchAssign(group.category, true)}>
-                          启用
-                        </Button>
-                        <Button size="small" onClick={() => onBatchAssign(group.category, false)}>
-                          禁用
-                        </Button>
-                      </Space>
-                    ))}
-                    <Divider type="vertical" />
-                    <Button
-                      type="primary"
-                      icon={<SaveOutlined />}
-                      onClick={onSave}
-                      disabled={!gameId || !canWrite}
-                      loading={loading}
-                    >
-                      保存分配
-                    </Button>
-                    <Button icon={<ReloadOutlined />} onClick={load} loading={loading}>
-                      刷新
-                    </Button>
-                  </Space>
+      <HistoryModal
+        visible={historyVisible}
+        history={history}
+        loading={historyLoading}
+        page={historyPage}
+        pageSize={historyPageSize}
+        total={historyTotal}
+        actionFilter={historyActionFilter}
+        onClose={() => setHistoryVisible(false)}
+        onActionFilterChange={(next) => {
+          setHistoryActionFilter(next);
+          loadHistory(1, historyPageSize, next);
+        }}
+        onReload={() => loadHistory(historyPage, historyPageSize, historyActionFilter)}
+        onPageChange={(page, pageSize) => loadHistory(page, pageSize, historyActionFilter)}
+      />
 
-                  {/* Category Grouped Display */}
-                  {groupedAssignments.map((group) => (
-                    <Card
-                      key={group.category}
-                      type="inner"
-                      title={
-                        <Space>
-                          <span>{group.category}</span>
-                          <Tag color="blue">{group.items.length} 个函数</Tag>
-                          <Tag color="green">{group.activeCount} 已启用</Tag>
-                          <Tag color="orange">{group.canaryCount} 灰度中</Tag>
-                        </Space>
-                      }
-                      style={{ marginBottom: 16 }}
-                      extra={
-                        <Space>
-                          <Button size="small" onClick={() => onBatchAssign(group.category, true)}>
-                            全部启用
-                          </Button>
-                          <Button size="small" onClick={() => onBatchAssign(group.category, false)}>
-                            全部禁用
-                          </Button>
-                        </Space>
-                      }
-                    >
-                      <ProTable<AssignmentItem>
-                        rowKey="id"
-                        columns={columns}
-                        dataSource={group.items}
-                        pagination={false}
-                        search={false}
-                        toolBarRender={false}
-                        options={false}
-                        rowSelection={{
-                          type: 'checkbox',
-                          selectedRowKeys: selected,
-                          onChange: (keys) => setSelected(keys as string[]),
-                        }}
-                      />
-                    </Card>
-                  ))}
-                </>
-              ),
-            },
-            {
-              key: 'category',
-              label: '分类管理',
-              children: (
-                <ProTable<AssignmentGroup>
-                  rowKey="category"
-                  columns={[
-                    {
-                      title: '分类',
-                      dataIndex: 'category',
-                      width: 200,
-                    },
-                    {
-                      title: '函数数量',
-                      dataIndex: 'items',
-                      width: 120,
-                      render: (_, record) => record.items.length,
-                    },
-                    {
-                      title: '已启用',
-                      dataIndex: 'activeCount',
-                      width: 120,
-                      render: (text) => <Tag color="green">{text}</Tag>,
-                    },
-                    {
-                      title: '启用率',
-                      width: 150,
-                      render: (_, record) => {
-                        const percent =
-                          record.items.length > 0
-                            ? Math.round((record.activeCount / record.items.length) * 100)
-                            : 0;
-                        return (
-                          <Progress
-                            percent={percent}
-                            size="small"
-                            status={percent === 100 ? 'success' : undefined}
-                          />
-                        );
-                      },
-                    },
-                    {
-                      title: '操作',
-                      width: 200,
-                      render: (_, record) => (
-                        <Space>
-                          <Button
-                            size="small"
-                            type="primary"
-                            ghost
-                            onClick={() => onBatchAssign(record.category, true)}
-                          >
-                            全部启用
-                          </Button>
-                          <Button
-                            size="small"
-                            danger
-                            onClick={() => onBatchAssign(record.category, false)}
-                          >
-                            全部禁用
-                          </Button>
-                        </Space>
-                      ),
-                    },
-                  ]}
-                  dataSource={groupedAssignments}
-                  pagination={false}
-                  search={false}
-                  toolBarRender={false}
-                  options={false}
-                />
-              ),
-            },
-            {
-              key: 'route',
-              label: `路由展示 (${selected.length})`,
-              children: (
-                <ProTable<AssignmentItem>
-                  rowKey="id"
-                  columns={[
-                    {
-                      title: '函数ID',
-                      dataIndex: 'id',
-                      width: 240,
-                      copyable: true,
-                    },
-                    {
-                      title: '名称',
-                      dataIndex: 'name',
-                      width: 180,
-                      ellipsis: true,
-                    },
-                    {
-                      title: '路由展示',
-                      width: 420,
-                      render: (_, record) => (
-                        <Space wrap size={[4, 6]}>
-                          {Array.isArray(record.menuNodes) && record.menuNodes.length > 0 ? (
-                            record.menuNodes.map((node) => (
-                              <Tag key={node} color="blue">
-                                {node}
-                              </Tag>
-                            ))
-                          ) : (
-                            <Tag>未分组</Tag>
-                          )}
-                          {record.menuPath ? (
-                            <Tag color="geekblue">{record.menuPath}</Tag>
-                          ) : (
-                            <Tag color="default">默认调用页</Tag>
-                          )}
-                          <Tag color={record.menuSource === 'metadata' ? 'green' : 'default'}>
-                            {record.menuSource === 'metadata' ? '已自定义' : '默认'}
-                          </Tag>
-                        </Space>
-                      ),
-                    },
-                    {
-                      title: '操作',
-                      width: 150,
-                      render: (_, record) => (
-                        <Button
-                          type="link"
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => {
-                            const targetUrl = `/game/functions/${encodeURIComponent(
-                              record.id,
-                            )}?tab=config&subTab=route`;
-                            routerHistory.push(targetUrl);
-                          }}
-                        >
-                          编辑路由
-                        </Button>
-                      ),
-                    },
-                  ]}
-                  dataSource={groupedAssignments
-                    .flatMap((g) => g.items)
-                    .filter((item) => selected.includes(item.id))}
-                  pagination={{ pageSize: 10 }}
-                  search={false}
-                  toolBarRender={() => [
-                    <Alert
-                      key="hint"
-                      message="分配后路由展示说明"
-                      description="这里显示的是函数描述符中的 menu 路由信息（nodes/path）。如需调整请点击“编辑路由”。"
-                      type="info"
-                      showIcon
-                    />,
-                  ]}
-                />
-              ),
-            },
-          ]}
-        />
-      </Card>
-
-      {/* History Modal */}
-      <Modal
-        title="分配变更历史"
-        open={historyVisible}
-        onCancel={() => setHistoryVisible(false)}
-        width={800}
-        footer={[
-          <Button key="close" onClick={() => setHistoryVisible(false)}>
-            关闭
-          </Button>,
-        ]}
-      >
-        <Space style={{ marginBottom: 12 }}>
-          <span>动作筛选:</span>
-          <Select
-            value={historyActionFilter}
-            style={{ width: 160 }}
-            onChange={(v) => {
-              const next = v as 'all' | 'assign' | 'remove' | 'clone';
-              setHistoryActionFilter(next);
-              loadHistory(1, historyPageSize, next);
-            }}
-            options={[
-              { label: '全部', value: 'all' },
-              { label: '分配', value: 'assign' },
-              { label: '移除', value: 'remove' },
-              { label: '克隆', value: 'clone' },
-            ]}
-          />
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={() => loadHistory(historyPage, historyPageSize, historyActionFilter)}
-          >
-            刷新
-          </Button>
-        </Space>
-        <List
-          loading={historyLoading}
-          dataSource={history}
-          pagination={{
-            current: historyPage,
-            pageSize: historyPageSize,
-            total: historyTotal,
-            showSizeChanger: true,
-            onChange: (page, pageSize) => loadHistory(page, pageSize, historyActionFilter),
-          }}
-          renderItem={(item) => (
-            <List.Item>
-              <List.Item.Meta
-                title={
-                  <Space>
-                    <Tag
-                      color={
-                        item.action === 'assign'
-                          ? 'green'
-                          : item.action === 'clone'
-                          ? 'blue'
-                          : 'red'
-                      }
-                    >
-                      {item.action === 'assign'
-                        ? '分配'
-                        : item.action === 'clone'
-                        ? '克隆'
-                        : '移除'}
-                    </Tag>
-                    <span>{item.function_id}</span>
-                    <span>({item.count} 个函数)</span>
-                  </Space>
-                }
-                description={
-                  <Space direction="vertical" style={{ width: '100%' }}>
-                    <span>
-                      操作人: {item.operated_by} | 时间:{' '}
-                      {new Date(item.operated_at).toLocaleString('zh-CN')}
-                    </span>
-                    {item.details && (
-                      <Descriptions size="small" column={1} bordered>
-                        {Object.entries(item.details).map(([k, v]) => (
-                          <Descriptions.Item key={k} label={k}>
-                            {renderHistoryDetail(k, v)}
-                          </Descriptions.Item>
-                        ))}
-                      </Descriptions>
-                    )}
-                  </Space>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </Modal>
-
-      {/* Canary Configuration Modal */}
-      <Modal
-        title="灰度配置"
-        open={canaryModalVisible}
-        onCancel={() => setCanaryModalVisible(false)}
-        onOk={() => {
-          message.success('灰度配置已保存');
+      <CanaryModal
+        visible={canaryModalVisible}
+        assignment={editingAssignment}
+        onClose={() => setCanaryModalVisible(false)}
+        onSave={(values) => {
+          message.success(`灰度配置已保存 (${values.functionId || editingAssignment?.id || '-'})`);
           setCanaryModalVisible(false);
         }}
-        width={600}
-      >
-        {editingAssignment && (
-          <Form layout="vertical">
-            <Form.Item label="函数ID">
-              <Input value={editingAssignment.id} disabled />
-            </Form.Item>
-            <Form.Item label="启用灰度发布">
-              <Switch />
-            </Form.Item>
-            <Form.Item label="灰度比例 (%)">
-              <Input type="number" min={1} max={100} defaultValue={10} />
-            </Form.Item>
-            <Form.Item label="灰度规则">
-              <Input.TextArea rows={4} placeholder='例如: {"user_id": "prefix:1000"}' />
-            </Form.Item>
-            <Form.Item label="灰度时长">
-              <Select
-                defaultValue="7d"
-                options={[
-                  { label: '1 天', value: '1d' },
-                  { label: '3 天', value: '3d' },
-                  { label: '7 天', value: '7d' },
-                  { label: '14 天', value: '14d' },
-                  { label: '30 天', value: '30d' },
-                ]}
-              />
-            </Form.Item>
-          </Form>
-        )}
-      </Modal>
+      />
+
+      <CloneModal
+        visible={cloneModalVisible}
+        onClose={() => setCloneModalVisible(false)}
+        onSave={async (targetEnv) => {
+          const ok = await onCloneToEnv(targetEnv);
+          if (ok) setCloneModalVisible(false);
+        }}
+      />
     </PageContainer>
   );
 }
