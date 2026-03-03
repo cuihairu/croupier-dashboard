@@ -368,92 +368,104 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         signature === cachedConsoleSignature
           ? cachedConsoleItems
           : (() => {
+              const CATALOG_PATH = '/game/functions/catalog';
+              const MAX_GROUPS = 10;
+              const MAX_ITEMS_PER_GROUP = 6;
               const sorted = [...visible].sort(
                 (a, b) => a.order - b.order || a.name.localeCompare(b.name),
               );
-              type MenuTreeNode = {
+              type MenuGroup = {
                 key: string;
                 name: string;
                 order: number;
-                leaves: DynamicMenuItem[];
-                children: Map<string, MenuTreeNode>;
+                items: Array<{
+                  id: string;
+                  name: string;
+                  path: string;
+                  order: number;
+                }>;
               };
-              const root = new Map<string, MenuTreeNode>();
-
-              const ensureNode = (
-                holder: Map<string, MenuTreeNode>,
-                fullKey: string,
-                displayName: string,
-                order: number,
-              ) => {
-                const hit = holder.get(fullKey);
-                if (hit) {
-                  hit.order = Math.min(hit.order, order);
-                  return hit;
-                }
-                const created: MenuTreeNode = {
-                  key: fullKey,
-                  name: displayName,
-                  order,
-                  leaves: [],
-                  children: new Map(),
-                };
-                holder.set(fullKey, created);
-                return created;
-              };
+              const groups = new Map<string, MenuGroup>();
 
               sorted.forEach((it) => {
-                const functionItem: DynamicMenuItem = {
-                  key: `console-fn-${it.id}`,
-                  name: it.name,
-                  path: it.path,
-                  locale: false,
-                };
                 const nodes = (it.nodes || []).filter(Boolean);
-                if (nodes.length === 0) {
-                  const fallbackKey = preferZh ? '未分组' : 'ungrouped';
-                  const fallback = ensureNode(
-                    root,
-                    `console-node-${fallbackKey}`,
-                    preferZh ? '未分组' : 'Ungrouped',
-                    it.order,
-                  );
-                  fallback.leaves.push(functionItem);
-                  return;
-                }
-                let cursor = root;
-                let parentKey = 'console-node';
-                let current: MenuTreeNode | null = null;
-                nodes.forEach((n) => {
-                  const nodeKey = sanitizeNodeKey(n) || 'general';
-                  const displayName =
-                    localizeFreeText(nodeKey) || localizeToken(nodeKey) || nodeKey;
-                  const fullKey = `${parentKey}-${nodeKey}`;
-                  current = ensureNode(cursor, fullKey, displayName, it.order);
-                  cursor = current.children;
-                  parentKey = fullKey;
+                const primary = sanitizeNodeKey(nodes[0] || it.category || 'general') || 'general';
+                const secondary = sanitizeNodeKey(nodes[1] || '');
+                const groupName =
+                  localizeFreeText(primary) ||
+                  localizeToken(primary) ||
+                  (preferZh ? '未分组' : 'Ungrouped');
+                const itemName = secondary
+                  ? `${localizeToken(secondary) || secondary} · ${it.name}`
+                  : it.name;
+                const key = `console-group-${primary}`;
+                const current = groups.get(key) || {
+                  key,
+                  name: groupName,
+                  order: it.order,
+                  items: [],
+                };
+                current.order = Math.min(current.order, it.order);
+                current.items.push({
+                  id: it.id,
+                  name: itemName,
+                  path: it.path,
+                  order: it.order,
                 });
-                if (current) current.leaves.push(functionItem);
+                groups.set(key, current);
               });
 
-              const toMenuItems = (nodes: Map<string, MenuTreeNode>): DynamicMenuItem[] =>
-                Array.from(nodes.values())
-                  .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-                  .map((node) => {
-                    const childNodes = toMenuItems(node.children);
-                    const leaves = [...node.leaves].sort((a, b) => a.name.localeCompare(b.name));
-                    const children = [...childNodes, ...leaves];
-                    return {
-                      key: node.key,
-                      name: node.name,
-                      path: children[0]?.path,
+              const browseLabel = preferZh ? '打开目录' : 'Open Catalog';
+              const moreLabel = preferZh ? '更多函数…' : 'More Functions…';
+              const catalogLabel = preferZh ? '函数目录' : 'Function Catalog';
+              const builtGroups = Array.from(groups.values())
+                .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+                .slice(0, MAX_GROUPS)
+                .map((group) => {
+                  const groupPath = CATALOG_PATH;
+                  const sortedItems = [...group.items].sort(
+                    (a, b) => a.order - b.order || a.name.localeCompare(b.name),
+                  );
+                  const children: DynamicMenuItem[] = [
+                    {
+                      key: `${group.key}-all`,
+                      name: `${browseLabel} (${group.items.length})`,
+                      path: groupPath,
                       locale: false,
-                      children,
-                      routes: children,
-                    };
-                  });
-
-              return toMenuItems(root);
+                    },
+                    ...sortedItems.slice(0, MAX_ITEMS_PER_GROUP).map((item) => ({
+                      key: `console-fn-${item.id}`,
+                      name: item.name,
+                      path: item.path,
+                      locale: false,
+                    })),
+                  ];
+                  if (sortedItems.length > MAX_ITEMS_PER_GROUP) {
+                    children.push({
+                      key: `${group.key}-more`,
+                      name: moreLabel,
+                      path: groupPath,
+                      locale: false,
+                    });
+                  }
+                  return {
+                    key: group.key,
+                    name: group.name,
+                    path: groupPath,
+                    locale: false,
+                    children,
+                    routes: children,
+                  };
+                });
+              return [
+                {
+                  key: 'console-catalog',
+                  name: catalogLabel,
+                  path: CATALOG_PATH,
+                  locale: false,
+                },
+                ...builtGroups,
+              ];
             })();
       if (signature !== cachedConsoleSignature) {
         cachedConsoleSignature = signature;
@@ -473,10 +485,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
           if (out.path === '/console') {
             out.children = consoleItems;
             out.routes = consoleItems;
-            if (consoleItems[0]?.path) {
-              // Top-level "Control Console" should land on the first registered function's runtime UI.
-              out.path = consoleItems[0].path;
-            }
+            out.path = '/game/functions/catalog';
           }
           return out;
         });
