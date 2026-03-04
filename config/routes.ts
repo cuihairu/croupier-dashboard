@@ -60,8 +60,9 @@ export default [
           },
           {
             path: '/system/functions/catalog',
-            redirect: '/system/functions/workspaces',
-            hideInMenu: true,
+            name: 'FunctionCatalog',
+            access: 'canFunctionsRead',
+            component: './Functions/Directory',
           },
           {
             path: '/system/functions/:id',

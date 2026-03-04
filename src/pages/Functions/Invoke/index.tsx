@@ -623,7 +623,7 @@ export default function FunctionRuntimeUIPage() {
         <Button key="info" icon={<InfoCircleOutlined />} onClick={() => setInfoOpen(true)}>
           函数信息
         </Button>,
-        <Button key="catalog" onClick={() => history.push('/game/functions/catalog')}>
+        <Button key="catalog" onClick={() => history.push('/system/functions/catalog')}>
           函数目录
         </Button>,
       ]}

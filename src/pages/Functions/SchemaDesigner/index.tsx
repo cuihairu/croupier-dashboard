@@ -239,7 +239,7 @@ export default function SchemaDesigner() {
         <Button
           key="back"
           onClick={() =>
-            history.push(`/game/functions/${encodeURIComponent(functionId)}?tab=config&subTab=ui`)
+            history.push(`/system/functions/${encodeURIComponent(functionId)}?tab=config&subTab=ui`)
           }
         >
           返回预览

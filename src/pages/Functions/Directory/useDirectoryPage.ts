@@ -54,7 +54,7 @@ export default function useDirectoryPage() {
   const [selectedFunction, setSelectedFunction] = useState<DetailRow | null>(null);
 
   const buildInvokePath = useCallback((basePath: string | undefined, functionId: string) => {
-    const base = basePath || '/game/functions/invoke';
+    const base = basePath || '/system/functions/invoke';
     const sep = base.includes('?') ? '&' : '?';
     return `${base}${sep}fid=${encodeURIComponent(functionId)}`;
   }, []);
@@ -111,7 +111,7 @@ export default function useDirectoryPage() {
         rowActions: DIRECTORY_PAGE_SCHEMA.rowActions,
         onOpenDetail: (record) => handleViewDetail(record),
         onOpenUI: (id) =>
-          history.push(`/game/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`),
+          history.push(`/system/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`),
         onInvoke: (record) => {
           history.push(buildInvokePath(record.menu?.path, record.id));
         },
@@ -144,7 +144,7 @@ export default function useDirectoryPage() {
           onAction: (key) => {
             if (!selectedFunction) return;
             if (key === 'detailPage') {
-              history.push(`/game/functions/${encodeURIComponent(selectedFunction.id)}`);
+              history.push(`/system/functions/${encodeURIComponent(selectedFunction.id)}`);
               return;
             }
             history.push(buildInvokePath(selectedFunction.menu?.path, selectedFunction.id));

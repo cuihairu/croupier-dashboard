@@ -413,7 +413,7 @@ export default function FunctionUIManager({
             <Button
               type="primary"
               onClick={() =>
-                history.push(`/game/functions/${encodeURIComponent(functionId)}/ui-designer`)
+                history.push(`/system/functions/${encodeURIComponent(functionId)}/ui-designer`)
               }
             >
               打开设计器

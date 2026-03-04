@@ -77,7 +77,7 @@ export default function FunctionDetailPage() {
           type="error"
           showIcon
           action={
-            <Button type="primary" onClick={() => history.push('/game/functions/catalog')}>
+            <Button type="primary" onClick={() => history.push('/system/functions/catalog')}>
               返回函数列表
             </Button>
           }
@@ -114,7 +114,7 @@ export default function FunctionDetailPage() {
         routeConfigSaving={routeConfigSaving}
         onSaveRoute={handleSaveRoute}
         onResetRoute={handleResetRoute}
-        onOpenAssignments={() => history.push('/game/functions/assignments')}
+        onOpenAssignments={() => history.push('/system/functions/assignments')}
       />
     ),
     permissions: (
@@ -158,7 +158,7 @@ export default function FunctionDetailPage() {
         <Space>
           <Button
             icon={<ArrowLeftOutlined />}
-            onClick={() => history.push('/game/functions/catalog')}
+            onClick={() => history.push('/system/functions/catalog')}
           >
             返回
           </Button>

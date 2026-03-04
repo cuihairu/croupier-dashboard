@@ -292,7 +292,7 @@ export default function useFunctionDetailPage(functionId?: string) {
     try {
       const next = await copyFunction(functionId);
       message.success(`复制成功，新函数ID: ${next.function_id}`);
-      history.push(`/game/functions/${next.function_id}`);
+      history.push(`/system/functions/${next.function_id}`);
     } catch {
       message.error('复制失败');
     }
@@ -308,7 +308,7 @@ export default function useFunctionDetailPage(functionId?: string) {
         try {
           await deleteFunction(functionId);
           message.success('删除成功');
-          history.push('/game/functions/catalog');
+          history.push('/system/functions/catalog');
         } catch {
           message.error('删除失败');
         }

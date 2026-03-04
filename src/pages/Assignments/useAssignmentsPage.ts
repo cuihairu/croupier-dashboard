@@ -205,10 +205,10 @@ export default function useAssignmentsPage() {
         setEditingAssignment,
         setCanaryModalVisible,
         onOpenDetail: (id) => {
-          routerHistory.push(`/game/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`);
+          routerHistory.push(`/system/functions/${encodeURIComponent(id)}?tab=config&subTab=ui`);
         },
         onOpenRoute: (id) => {
-          routerHistory.push(`/game/functions/${encodeURIComponent(id)}?tab=config&subTab=route`);
+          routerHistory.push(`/system/functions/${encodeURIComponent(id)}?tab=config&subTab=route`);
         },
       }),
     [canWrite, selected],
@@ -228,7 +228,7 @@ export default function useAssignmentsPage() {
       buildRouteColumns({
         routeColumns: ASSIGNMENTS_PAGE_SCHEMA.routeColumns,
         onEditRoute: (id) => {
-          routerHistory.push(`/game/functions/${encodeURIComponent(id)}?tab=config&subTab=route`);
+          routerHistory.push(`/system/functions/${encodeURIComponent(id)}?tab=config&subTab=route`);
         },
       }),
     [],

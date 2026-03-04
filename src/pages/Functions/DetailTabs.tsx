@@ -160,7 +160,9 @@ export function WarningsTab({ functionId }: { functionId: string }) {
           <Button
             size="small"
             onClick={() =>
-              history.push(`/game/functions/warnings?function_id=${encodeURIComponent(functionId)}`)
+              history.push(
+                `/system/functions/warnings?function_id=${encodeURIComponent(functionId)}`,
+              )
             }
           >
             查看全部
