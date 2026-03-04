@@ -121,6 +121,12 @@ export default [
         access: 'canFunctionsRead',
         component: './ComponentManagement',
       },
+      {
+        path: '/system/terms',
+        name: 'Terms',
+        access: 'canOpsManage',
+        component: './Ops/Terms',
+      },
       // 虚拟对象编辑器（独立页面）
       {
         path: '/system/entities',
@@ -149,27 +155,6 @@ export default [
       },
     ],
   },
-  // Legacy /game routes compatibility
-  { path: '/game', redirect: '/system' },
-  { path: '/game/manage', redirect: '/system/manage' },
-  { path: '/game/environments', redirect: '/system/environments' },
-  { path: '/game/functions', redirect: '/system/functions' },
-  { path: '/game/functions/workspaces', redirect: '/system/functions/workspaces' },
-  {
-    path: '/game/functions/workspaces/:objectKey',
-    redirect: '/system/functions/workspaces/:objectKey',
-  },
-  { path: '/game/functions/catalog', redirect: '/system/functions/catalog' },
-  { path: '/game/functions/invoke', redirect: '/system/functions/invoke' },
-  { path: '/game/functions/instances', redirect: '/system/functions/instances' },
-  { path: '/game/functions/warnings', redirect: '/system/functions/warnings' },
-  { path: '/game/functions/assignments', redirect: '/system/functions/assignments' },
-  { path: '/game/functions/packs', redirect: '/system/functions/packs' },
-  { path: '/game/component-management', redirect: '/system/component-management' },
-  { path: '/game/entities', redirect: '/system/entities' },
-  { path: '/game/entities/create', redirect: '/system/entities/create' },
-  { path: '/game/entities/:id', redirect: '/system/entities/:id' },
-  { path: '/game/entities/:id/edit', redirect: '/system/entities/:id/edit' },
   {
     path: '/console',
     name: 'ControlConsole',
@@ -182,10 +167,6 @@ export default [
     access: 'canFunctionsRead',
     redirect: '/system/functions/workspaces/:objectKey',
     hideInMenu: true,
-  },
-  {
-    path: '/operations/audit',
-    redirect: '/ops/audit',
   },
   {
     path: '/analytics',
@@ -246,29 +227,69 @@ export default [
       },
     ],
   },
-  // Operations / Ops merged into a single menu
+  // Operations (运营)
   {
-    path: '/ops',
+    path: '/operations',
     name: 'Operations',
-    icon: 'dashboard',
+    icon: 'shop',
     access: 'canOpsRead',
     routes: [
-      { path: '/ops', redirect: '/ops/approvals' },
-      // Governance & audit
+      { path: '/operations', redirect: '/operations/approvals' },
       {
-        path: '/ops/approvals',
+        path: '/operations/approvals',
         name: 'Approvals',
         access: 'canApprovalsRead',
         component: './Approvals',
       },
-      { path: '/ops/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
+      { path: '/operations/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
       {
-        path: '/ops/operation-logs',
+        path: '/operations/operation-logs',
         name: 'OperationLogs',
         access: 'canAuditRead',
         component: './Admin/OperationLogs',
       },
-      // Registry & servers (advanced)
+      {
+        path: '/operations/configs',
+        name: 'Configs',
+        access: 'canOpsRead',
+        component: './Operations/Configs',
+      },
+      {
+        path: '/operations/platforms',
+        name: 'Platforms',
+        access: 'canOpsRead',
+        component: './Platforms',
+      },
+      {
+        path: '/operations/storage',
+        name: 'Storage',
+        access: 'canOpsRead',
+        component: './Storage',
+      },
+      {
+        path: '/operations/registry',
+        name: 'Registry',
+        access: 'canRegistryRead',
+        component: './Registry',
+        hideInMenu: true,
+      },
+      {
+        path: '/operations/servers',
+        name: 'Servers',
+        access: 'canRegistryRead',
+        component: './Servers',
+        hideInMenu: true,
+      },
+    ],
+  },
+  // Ops (运维)
+  {
+    path: '/ops',
+    name: 'Ops',
+    icon: 'tool',
+    access: 'canOpsRead',
+    routes: [
+      { path: '/ops', redirect: '/ops/services' },
       {
         path: '/ops/registry',
         name: 'Registry',
@@ -283,22 +304,6 @@ export default [
         component: './Servers',
         hideInMenu: true,
       },
-      // Config & integrations
-      {
-        path: '/ops/configs',
-        name: 'Configs',
-        access: 'canOpsRead',
-        component: './Operations/Configs',
-      },
-      {
-        path: '/ops/terms',
-        name: 'Terms',
-        access: 'canOpsManage',
-        component: './Ops/Terms',
-      },
-      { path: '/ops/platforms', name: 'Platforms', access: 'canOpsRead', component: './Platforms' },
-      { path: '/ops/storage', name: 'Storage', access: 'canOpsRead', component: './Storage' },
-      // Infra & runtime
       {
         path: '/ops/services',
         name: 'Services',
