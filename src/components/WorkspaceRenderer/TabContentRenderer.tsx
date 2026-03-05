@@ -9,6 +9,10 @@
 import React from 'react';
 import { Alert } from 'antd';
 import type { TabConfig } from '@/types/workspace';
+import FormDetailRenderer from './renderers/FormDetailRenderer';
+import ListRenderer from './renderers/ListRenderer';
+import FormRenderer from './renderers/FormRenderer';
+import DetailRenderer from './renderers/DetailRenderer';
 
 export interface TabContentRendererProps {
   /** Tab 配置 */
@@ -32,16 +36,16 @@ export default function TabContentRenderer({ tab, objectKey, context }: TabConte
   // 根据布局类型渲染
   switch (layout.type) {
     case 'form-detail':
-      return renderFormDetailLayout(layout, tab, objectKey, context);
+      return <FormDetailRenderer layout={layout} objectKey={objectKey} context={context} />;
 
     case 'list':
-      return renderListLayout(layout, tab, objectKey, context);
+      return <ListRenderer layout={layout} objectKey={objectKey} context={context} />;
 
     case 'form':
-      return renderFormLayout(layout, tab, objectKey, context);
+      return <FormRenderer layout={layout} objectKey={objectKey} context={context} />;
 
     case 'detail':
-      return renderDetailLayout(layout, tab, objectKey, context);
+      return <DetailRenderer layout={layout} objectKey={objectKey} context={context} />;
 
     case 'custom':
       return renderCustomLayout(layout, tab, objectKey, context);
@@ -57,90 +61,6 @@ export default function TabContentRenderer({ tab, objectKey, context }: TabConte
         />
       );
   }
-}
-
-/**
- * 渲染表单-详情布局
- */
-function renderFormDetailLayout(
-  layout: any,
-  tab: TabConfig,
-  objectKey: string,
-  context?: Record<string, any>,
-): React.ReactNode {
-  // TODO: 实现 FormDetailRenderer
-  return (
-    <Alert
-      message="开发中"
-      description="FormDetail 布局渲染器将在 Week 2 实现"
-      type="info"
-      showIcon
-      style={{ margin: '20px' }}
-    />
-  );
-}
-
-/**
- * 渲染列表布局
- */
-function renderListLayout(
-  layout: any,
-  tab: TabConfig,
-  objectKey: string,
-  context?: Record<string, any>,
-): React.ReactNode {
-  // TODO: 实现 ListRenderer
-  return (
-    <Alert
-      message="开发中"
-      description="List 布局渲染器将在 Week 2 实现"
-      type="info"
-      showIcon
-      style={{ margin: '20px' }}
-    />
-  );
-}
-
-/**
- * 渲染表单布局
- */
-function renderFormLayout(
-  layout: any,
-  tab: TabConfig,
-  objectKey: string,
-  context?: Record<string, any>,
-): React.ReactNode {
-  // TODO: 实现 FormRenderer
-  return (
-    <Alert
-      message="开发中"
-      description="Form 布局渲染器将在 Week 2 实现"
-      type="info"
-      showIcon
-      style={{ margin: '20px' }}
-    />
-  );
-}
-
-/**
- * 渲染详情布局
- */
-function renderDetailLayout(
-  layout: any,
-  tab: TabConfig,
-  objectKey: string,
-  context?: Record<string, any>,
-): React.ReactNode {
-  // TODO: 实现 DetailRenderer
-  return (
-    <Alert
-      message="开发中"
-      description="Detail 布局渲染器将在 Week 2 实现"
-      type="info"
-      showIcon
-      style={{ margin: '20px' }}
-    />
-  );
 }
 
 /**
