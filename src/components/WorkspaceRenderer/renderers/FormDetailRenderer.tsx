@@ -21,7 +21,8 @@ import {
   Tag,
 } from 'antd';
 import type { FormDetailLayout } from '@/types/workspace';
-import { request } from '@umijs/max';
+import { invokeFunction } from '@/services/functionInvoke';
+import { useAnyPermission } from '@/services/permission';
 import * as Icons from '@ant-design/icons';
 
 export interface FormDetailRendererProps {
@@ -56,11 +57,8 @@ export default function FormDetailRenderer({
 
     setLoading(true);
     try {
-      // 调用查询函数
-      const result = await request(`/api/v1/functions/${layout.queryFunction}/invoke`, {
-        method: 'POST',
-        data: values,
-      });
+      // 使用函数调用服务
+      const result = await invokeFunction(layout.queryFunction, values);
 
       setDetailData(result);
       message.success('查询成功');
@@ -86,10 +84,8 @@ export default function FormDetailRenderer({
     // - direct: 直接执行
 
     try {
-      await request(`/api/v1/functions/${action.function}/invoke`, {
-        method: 'POST',
-        data: detailData,
-      });
+      // 使用函数调用服务
+      await invokeFunction(action.function, detailData);
 
       message.success(`${action.label}成功`);
       // 重新查询
