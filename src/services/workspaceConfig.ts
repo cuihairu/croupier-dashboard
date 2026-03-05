@@ -8,6 +8,15 @@
 
 import type { WorkspaceConfig } from '@/types/workspace';
 import { request } from '@umijs/max';
+import {
+  mockLoadWorkspaceConfig,
+  mockSaveWorkspaceConfig,
+  mockListWorkspaceConfigs,
+  mockDeleteWorkspaceConfig,
+} from './mock/workspaceMock';
+
+// 是否使用 Mock 数据
+const USE_MOCK = process.env.USE_MOCK !== 'false';
 
 /**
  * 配置缓存
@@ -95,6 +104,15 @@ export async function loadWorkspaceConfig(
   }
 
   try {
+    // 如果使用 Mock 数据
+    if (USE_MOCK) {
+      const config = await mockLoadWorkspaceConfig(objectKey);
+      if (useCache && config) {
+        setCache(objectKey, config);
+      }
+      return config;
+    }
+
     // 调用 API 加载配置
     const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/config`, {
       method: 'GET',
@@ -124,6 +142,13 @@ export async function loadWorkspaceConfig(
  */
 export async function saveWorkspaceConfig(config: WorkspaceConfig): Promise<WorkspaceConfig> {
   try {
+    // 如果使用 Mock 数据
+    if (USE_MOCK) {
+      const savedConfig = await mockSaveWorkspaceConfig(config);
+      setCache(config.objectKey, savedConfig);
+      return savedConfig;
+    }
+
     // 调用 API 保存配置
     const savedConfig = await request<WorkspaceConfig>(
       `/api/v1/workspaces/${config.objectKey}/config`,
@@ -149,6 +174,15 @@ export async function saveWorkspaceConfig(config: WorkspaceConfig): Promise<Work
  */
 export async function listWorkspaceConfigs(): Promise<WorkspaceConfig[]> {
   try {
+    // 如果使用 Mock 数据
+    if (USE_MOCK) {
+      const configs = await mockListWorkspaceConfigs();
+      configs.forEach((config) => {
+        setCache(config.objectKey, config);
+      });
+      return configs;
+    }
+
     const configs = await request<WorkspaceConfig[]>('/api/v1/workspaces/configs', {
       method: 'GET',
     });
@@ -171,6 +205,13 @@ export async function listWorkspaceConfigs(): Promise<WorkspaceConfig[]> {
  */
 export async function deleteWorkspaceConfig(objectKey: string): Promise<void> {
   try {
+    // 如果使用 Mock 数据
+    if (USE_MOCK) {
+      await mockDeleteWorkspaceConfig(objectKey);
+      clearCache(objectKey);
+      return;
+    }
+
     await request(`/api/v1/workspaces/${objectKey}/config`, {
       method: 'DELETE',
     });

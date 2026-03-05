@@ -3,8 +3,12 @@
  */
 
 import { request } from '@umijs/max';
+import { mockFunctionInvoke } from './mock/workspaceMock';
 
 const API_PREFIX = '/api/v1/functions';
+
+// 是否使用 Mock 数据
+const USE_MOCK = process.env.USE_MOCK !== 'false';
 
 export interface InvokeFunctionOptions {
   timeout?: number;
@@ -32,6 +36,12 @@ export async function invokeFunction<T = any>(
   const { timeout = 30000, signal } = options || {};
 
   try {
+    // 如果使用 Mock 数据
+    if (USE_MOCK) {
+      return await mockFunctionInvoke(functionId, params);
+    }
+
+    // 真实 API 调用
     const result = await request<InvokeFunctionResult<T>>(
       `${API_PREFIX}/${encodeURIComponent(functionId)}/invoke`,
       {
