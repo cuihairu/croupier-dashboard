@@ -11,7 +11,7 @@ import { ProTable } from '@ant-design/pro-components';
 import type { ProColumns } from '@ant-design/pro-components';
 import { Button, Space, message, Tag, Badge } from 'antd';
 import type { ListLayout } from '@/types/workspace';
-import { request } from '@umijs/max';
+import { invokeFunction } from '@/services/functionInvoke';
 import * as Icons from '@ant-design/icons';
 
 export interface ListRendererProps {
@@ -44,14 +44,11 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
 
     setLoading(true);
     try {
-      // 调用函数获取数据
-      const result = await request(`/api/v1/functions/${layout.listFunction}/invoke`, {
-        method: 'POST',
-        data: {
-          page: params?.current || current,
-          pageSize: params?.pageSize || pageSize,
-          ...params?.filters,
-        },
+      // 使用函数调用服务
+      const result = await invokeFunction(layout.listFunction, {
+        page: params?.current || current,
+        pageSize: params?.pageSize || pageSize,
+        ...params?.filters,
       });
 
       // 处理返回数据

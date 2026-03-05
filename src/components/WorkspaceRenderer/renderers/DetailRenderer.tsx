@@ -9,7 +9,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Descriptions, Spin, message, Badge, Tag, Button, Space } from 'antd';
 import type { DetailLayout } from '@/types/workspace';
-import { request } from '@umijs/max';
+import { invokeFunction } from '@/services/functionInvoke';
 import * as Icons from '@ant-design/icons';
 
 export interface DetailRendererProps {
@@ -38,11 +38,8 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
 
     setLoading(true);
     try {
-      // 调用详情函数
-      const result = await request(`/api/v1/functions/${layout.detailFunction}/invoke`, {
-        method: 'POST',
-        data: context || {},
-      });
+      // 使用函数调用服务
+      const result = await invokeFunction(layout.detailFunction, context || {});
 
       setData(result);
     } catch (error: any) {
@@ -65,10 +62,8 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
     }
 
     try {
-      await request(`/api/v1/functions/${action.function}/invoke`, {
-        method: 'POST',
-        data: data,
-      });
+      // 使用函数调用服务
+      await invokeFunction(action.function, data);
 
       message.success(`${action.label}成功`);
       // 重新加载

@@ -21,7 +21,7 @@ import {
   message,
 } from 'antd';
 import type { FormLayout } from '@/types/workspace';
-import { request } from '@umijs/max';
+import { invokeFunction } from '@/services/functionInvoke';
 
 export interface FormRendererProps {
   /** 表单布局配置 */
@@ -50,11 +50,8 @@ export default function FormRenderer({ layout, objectKey, context }: FormRendere
 
     setLoading(true);
     try {
-      // 调用提交函数
-      await request(`/api/v1/functions/${layout.submitFunction}/invoke`, {
-        method: 'POST',
-        data: values,
-      });
+      // 使用函数调用服务
+      await invokeFunction(layout.submitFunction, values);
 
       message.success('提交成功');
 
