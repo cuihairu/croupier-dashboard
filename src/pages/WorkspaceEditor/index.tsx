@@ -1,14 +1,14 @@
-/**
- * Workspace 编排器
- *
- * 可视化编排 Workspace 配置的工具。
- *
- * @module pages/WorkspaceEditor
- */
-
 import React, { useState, useEffect } from 'react';
 import { PageContainer } from '@ant-design/pro-components';
-import { Row, Col, Button, message, Spin } from 'antd';
+import { Button, message, Spin, Tooltip } from 'antd';
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  AppstoreOutlined,
+  LayoutOutlined,
+  EyeOutlined,
+  SaveOutlined,
+} from '@ant-design/icons';
 import { useParams, history } from '@umijs/max';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { loadWorkspaceConfig, saveWorkspaceConfig } from '@/services/workspaceConfig';
@@ -17,9 +17,9 @@ import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
 import ConfigPreview from './components/ConfigPreview';
 
-/**
- * Workspace 编排器页面
- */
+/** 布局模式：1=仅设计器，2=函数+设计器（默认），3=函数+设计器+预览 */
+type ViewMode = 1 | 2 | 3;
+
 export default function WorkspaceEditor() {
   const params = useParams<{ objectKey: string }>();
   const objectKey = params.objectKey || '';
@@ -28,8 +28,9 @@ export default function WorkspaceEditor() {
   const [availableFunctions, setAvailableFunctions] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(2);
+  const [functionPanelCollapsed, setFunctionPanelCollapsed] = useState(false);
 
-  // 加载数据
   useEffect(() => {
     loadData();
   }, [objectKey]);
@@ -39,23 +40,17 @@ export default function WorkspaceEditor() {
       message.error('缺少对象标识');
       return;
     }
-
     setLoading(true);
     try {
-      // 加载配置
       const workspaceConfig = await loadWorkspaceConfig(objectKey);
-      if (workspaceConfig) {
-        setConfig(workspaceConfig);
-      } else {
-        // 创建新配置
-        setConfig({
+      setConfig(
+        workspaceConfig || {
           objectKey,
           title: `${objectKey} 管理`,
           layout: { type: 'tabs', tabs: [] },
-        });
-      }
+        },
+      );
 
-      // 加载可用函数
       const descriptors = await listDescriptors();
       const functions = descriptors.filter(
         (d) => !d.entity || d.entity === objectKey || d.id.startsWith(`${objectKey}.`),
@@ -68,18 +63,12 @@ export default function WorkspaceEditor() {
     }
   };
 
-  // 保存配置
   const handleSave = async () => {
-    if (!config) {
-      message.error('配置为空');
-      return;
-    }
-
+    if (!config) return;
     setSaving(true);
     try {
       await saveWorkspaceConfig(config);
       message.success('保存成功');
-      history.push(`/system/functions/workspaces/${encodeURIComponent(objectKey)}`);
     } catch (error: any) {
       message.error(error.message || '保存失败');
     } finally {
@@ -87,53 +76,173 @@ export default function WorkspaceEditor() {
     }
   };
 
-  // 预览配置
-  const handlePreview = () => {
-    if (!config) {
-      message.error('配置为空');
-      return;
-    }
-
-    // 跳转到 Workspace 页面预览
-    history.push(`/console/${objectKey}`);
-  };
-
   if (loading) {
     return (
       <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
+        <Spin size="large" />
       </div>
     );
   }
+
+  const showFunctions = viewMode >= 2;
+  const showPreview = viewMode >= 3;
+
+  // 计算各面板宽度
+  const getFunctionWidth = () => {
+    if (!showFunctions) return 0;
+    return functionPanelCollapsed ? 40 : 260;
+  };
+
+  const getPreviewWidth = () => (showPreview ? 320 : 0);
+
+  const functionWidth = getFunctionWidth();
+  const previewWidth = getPreviewWidth();
+  const designerWidth = `calc(100% - ${functionWidth}px - ${previewWidth}px - ${
+    showFunctions && showPreview ? 32 : showFunctions || showPreview ? 16 : 0
+  }px)`;
 
   return (
     <PageContainer
       title={`编排 Workspace: ${objectKey}`}
       extra={[
-        <Button key="preview" onClick={handlePreview}>
-          预览
-        </Button>,
-        <Button key="save" type="primary" onClick={handleSave} loading={saving}>
-          保存配置
+        // 布局切换按钮组（VSCode 风格）
+        <div
+          key="view-mode"
+          style={{
+            display: 'inline-flex',
+            border: '1px solid #d9d9d9',
+            borderRadius: 6,
+            overflow: 'hidden',
+            marginRight: 8,
+          }}
+        >
+          <Tooltip title="仅设计器">
+            <Button
+              type={viewMode === 1 ? 'primary' : 'text'}
+              icon={<LayoutOutlined />}
+              size="small"
+              style={{ borderRadius: 0, border: 'none' }}
+              onClick={() => setViewMode(1)}
+            />
+          </Tooltip>
+          <Tooltip title="函数 + 设计器">
+            <Button
+              type={viewMode === 2 ? 'primary' : 'text'}
+              icon={<AppstoreOutlined />}
+              size="small"
+              style={{ borderRadius: 0, border: 'none', borderLeft: '1px solid #d9d9d9' }}
+              onClick={() => setViewMode(2)}
+            />
+          </Tooltip>
+          <Tooltip title="函数 + 设计器 + 预览">
+            <Button
+              type={viewMode === 3 ? 'primary' : 'text'}
+              icon={<EyeOutlined />}
+              size="small"
+              style={{ borderRadius: 0, border: 'none', borderLeft: '1px solid #d9d9d9' }}
+              onClick={() => setViewMode(3)}
+            />
+          </Tooltip>
+        </div>,
+        <Button
+          key="save"
+          type="primary"
+          icon={<SaveOutlined />}
+          onClick={handleSave}
+          loading={saving}
+        >
+          保存
         </Button>,
       ]}
     >
-      <Row gutter={16}>
-        {/* 左侧：可用函数列表 */}
-        <Col span={6}>
-          <FunctionList functions={availableFunctions} />
-        </Col>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          height: 'calc(100vh - 180px)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* 函数面板 */}
+        {showFunctions && (
+          <div
+            style={{
+              width: functionWidth,
+              flexShrink: 0,
+              transition: 'width 0.2s',
+              overflow: 'hidden',
+              position: 'relative',
+            }}
+          >
+            {functionPanelCollapsed ? (
+              // 收缩状态：只显示展开按钮
+              <div
+                style={{
+                  width: 40,
+                  height: '100%',
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 6,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  paddingTop: 12,
+                  backgroundColor: '#fafafa',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setFunctionPanelCollapsed(false)}
+              >
+                <Tooltip title="展开函数面板" placement="right">
+                  <MenuUnfoldOutlined style={{ color: '#666' }} />
+                </Tooltip>
+                <div
+                  style={{
+                    marginTop: 16,
+                    writingMode: 'vertical-rl',
+                    fontSize: 12,
+                    color: '#999',
+                    letterSpacing: 2,
+                  }}
+                >
+                  可用函数
+                </div>
+              </div>
+            ) : (
+              // 展开状态
+              <div style={{ height: '100%', position: 'relative' }}>
+                <FunctionList functions={availableFunctions} />
+                {/* 收缩按钮 */}
+                <Tooltip title="收起函数面板" placement="right">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MenuFoldOutlined />}
+                    onClick={() => setFunctionPanelCollapsed(true)}
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      zIndex: 10,
+                      color: '#666',
+                    }}
+                  />
+                </Tooltip>
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* 中间：布局设计器 */}
-        <Col span={12}>
+        {/* 布局设计器 */}
+        <div style={{ width: designerWidth, flexShrink: 0, overflow: 'auto' }}>
           <LayoutDesigner config={config} onChange={setConfig} descriptors={availableFunctions} />
-        </Col>
+        </div>
 
-        {/* 右侧：实时预览 */}
-        <Col span={6}>
-          <ConfigPreview config={config} />
-        </Col>
-      </Row>
+        {/* 预览面板 */}
+        {showPreview && (
+          <div style={{ width: previewWidth, flexShrink: 0, overflow: 'auto' }}>
+            <ConfigPreview config={config} />
+          </div>
+        )}
+      </div>
     </PageContainer>
   );
 }
