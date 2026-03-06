@@ -89,13 +89,7 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
     <div>
       {/* 详情分区 */}
       {(layout.sections || []).map((section, index) => (
-        <Card
-          key={index}
-          title={section.title}
-          style={{ marginBottom: 16 }}
-          collapsible={section.collapsible ? 'header' : undefined}
-          defaultCollapsed={!section.defaultExpanded}
-        >
+        <Card key={index} title={section.title} style={{ marginBottom: 16 }}>
           <Descriptions column={section.column || 2}>
             {section.fields.map((field) => (
               <Descriptions.Item key={field.key} label={field.label} span={field.span}>

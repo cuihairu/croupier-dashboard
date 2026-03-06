@@ -138,6 +138,10 @@ export const orderWorkspaceConfig: WorkspaceConfig = {
     ],
   },
   permissions: ['order.view'],
+  published: true,
+  publishedAt: '2026-03-06T08:00:00Z',
+  publishedBy: 'admin',
+  menuOrder: 2,
   meta: {
     createdAt: '2026-03-06T08:00:00Z',
     updatedAt: '2026-03-06T08:00:00Z',

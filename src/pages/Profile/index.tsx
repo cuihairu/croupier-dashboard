@@ -113,7 +113,9 @@ export default function Profile() {
         getMyGames(),
         getMyPermissions({}),
         listAudit({ actor: username, size: 5 }),
-        username ? listAudit({ actor: username, kinds: 'auth_login', size: 8 }) : Promise.resolve({ events: [] }),
+        username
+          ? listAudit({ actor: username, kinds: 'auth_login', size: 8 })
+          : Promise.resolve({ events: [] }),
         listMessages({ status: 'all', size: 5 }),
       ]);
       setGames(gamesRes?.games || []);
@@ -182,15 +184,29 @@ export default function Profile() {
   const getStatusBadge = (status?: boolean) => (
     <Badge
       status={status ? 'success' : 'default'}
-      text={status ? formatMessage('profile.status.active') : formatMessage('profile.status.inactive')}
+      text={
+        status ? formatMessage('profile.status.active') : formatMessage('profile.status.inactive')
+      }
     />
   );
 
   const stats = [
     { title: formatMessage('profile.stats.games'), value: games.length, icon: <RocketOutlined /> },
-    { title: formatMessage('profile.stats.roles'), value: profile?.roles?.length || 0, icon: <UserOutlined /> },
-    { title: formatMessage('profile.stats.permissions'), value: permissions.length, icon: <SafetyOutlined /> },
-    { title: formatMessage('profile.stats.activities'), value: activities.length, icon: <HistoryOutlined /> },
+    {
+      title: formatMessage('profile.stats.roles'),
+      value: profile?.roles?.length || 0,
+      icon: <UserOutlined />,
+    },
+    {
+      title: formatMessage('profile.stats.permissions'),
+      value: permissions.length,
+      icon: <SafetyOutlined />,
+    },
+    {
+      title: formatMessage('profile.stats.activities'),
+      value: activities.length,
+      icon: <HistoryOutlined />,
+    },
   ];
 
   const permissionGroups = useMemo(() => {
@@ -265,7 +281,12 @@ export default function Profile() {
             <List.Item.Meta
               title={
                 <Space>
-                  <Text strong>{game.game_name || (game as any).gameName || game.game_id || (game as any).gameId}</Text>
+                  <Text strong>
+                    {game.game_name ||
+                      (game as any).gameName ||
+                      game.game_id ||
+                      (game as any).gameId}
+                  </Text>
                   <Tag>{game.game_id || (game as any).gameId}</Tag>
                 </Space>
               }
@@ -341,7 +362,9 @@ export default function Profile() {
             }
             description={
               <Space direction="vertical" size={0}>
-                <Text type="secondary">{item.time ? new Date(item.time).toLocaleString() : '-'}</Text>
+                <Text type="secondary">
+                  {item.time ? new Date(item.time).toLocaleString() : '-'}
+                </Text>
                 {item.meta && (
                   <Text type="secondary">
                     {Object.entries(item.meta)
@@ -369,7 +392,9 @@ export default function Profile() {
               title={
                 <Space>
                   <Badge status={item.read ? 'default' : 'processing'} />
-                  <Text strong>{item.title || formatMessage('profile.notifications.untitled')}</Text>
+                  <Text strong>
+                    {item.title || formatMessage('profile.notifications.untitled')}
+                  </Text>
                 </Space>
               }
               description={
@@ -464,286 +489,307 @@ export default function Profile() {
     <>
       <PageContainer className="profile-page">
         <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Card className="profile-hero" bodyStyle={{ padding: 24 }}>
-          <Row gutter={[32, 24]} align="middle">
-            <Col xs={24} md={10}>
-              <Space align="center">
-                <Upload
-                  name="avatar"
-                  listType="picture-card"
-                  className="avatar-uploader"
-                  showUploadList={false}
-                  action={getMyAvatarUploadUrl()}
-                  beforeUpload={() => false}
-                  onChange={handleAvatarChange}
-                  headers={{
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                  }}
-                >
-                  <Avatar
-                    size={96}
-                    src={profile?.avatar}
-                    icon={!profile?.avatar ? <UserOutlined /> : undefined}
-                    style={{
-                      border: '3px solid #1890ff',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          <Card className="profile-hero" styles={{ body: { padding: 24 } }}>
+            <Row gutter={[32, 24]} align="middle">
+              <Col xs={24} md={10}>
+                <Space align="center">
+                  <Upload
+                    name="avatar"
+                    listType="picture-card"
+                    className="avatar-uploader"
+                    showUploadList={false}
+                    action={getMyAvatarUploadUrl()}
+                    beforeUpload={() => false}
+                    onChange={handleAvatarChange}
+                    headers={{
+                      Authorization: `Bearer ${localStorage.getItem('token')}`,
                     }}
-                  />
-                </Upload>
-                <div>
-                  <Space align="center">
-                    <Title level={3} style={{ margin: 0 }}>
-                      {profile?.display_name || profile?.username}
-                    </Title>
-                    {getStatusBadge(profile?.active)}
-                  </Space>
-                  <Space wrap style={{ marginTop: 8 }}>
-                    {(profile?.roles || []).map((role: string) => (
-                      <Tag color="blue" key={role}>
-                        {role}
-                      </Tag>
-                    ))}
-                  </Space>
-                  <Descriptions column={1} size="small" style={{ marginTop: 12 }}>
-                    <Descriptions.Item label={formatMessage('profile.info.username')}>
-                      <Text strong>{profile?.username}</Text>
-                    </Descriptions.Item>
-                    <Descriptions.Item label={formatMessage('profile.info.email')}>
-                      {profile?.email || 'N/A'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={formatMessage('profile.info.phone')}>
-                      {profile?.phone || 'N/A'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={formatMessage('profile.info.joined')}>
-                      {profile?.created_at
-                        ? new Date(profile.created_at).toLocaleString()
-                        : profile?.createdAt
-                        ? new Date(profile.createdAt).toLocaleString()
-                        : 'N/A'}
-                    </Descriptions.Item>
-                    <Descriptions.Item label={formatMessage('profile.info.last.login')}>
-                      {profile?.last_login_at
-                        ? new Date(profile.last_login_at).toLocaleString()
-                        : profile?.lastLoginAt
-                        ? new Date(profile.lastLoginAt).toLocaleString()
-                        : 'N/A'}
-                    </Descriptions.Item>
-                  </Descriptions>
-                  <Space style={{ marginTop: 12 }}>
-                    <Button
-                      type="primary"
-                      onClick={() => infoSectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                    >
-                      {formatMessage('profile.hero.edit')}
-                    </Button>
-                    <Button onClick={showPasswordModal}>{formatMessage('profile.password.change.btn')}</Button>
-                  </Space>
-                </div>
-              </Space>
-            </Col>
-            <Col xs={24} md={14}>
-              <Row gutter={[16, 16]} className="profile-stats">
-                {stats.map((stat) => (
-                  <Col xs={12} md={6} key={stat.title}>
-                    <Card bordered={false} className="profile-stats__card">
-                      <Statistic title={stat.title} value={stat.value} prefix={stat.icon} />
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </Col>
-          </Row>
-        </Card>
-
-        <Tabs
-          activeKey={activeTab}
-          onChange={(key) => {
-            setActiveTab(key);
-            const search = new URLSearchParams(location.search);
-            search.set('tab', key);
-            navigate(`${location.pathname}?${search.toString()}`, { replace: true });
-          }}
-          items={[
-            {
-              key: TAB_KEYS.PROFILE,
-              label: (
-                <Space>
-                  <UserOutlined />
-                  {formatMessage('profile.tab.info')}
+                  >
+                    <Avatar
+                      size={96}
+                      src={profile?.avatar}
+                      icon={!profile?.avatar ? <UserOutlined /> : undefined}
+                      style={{
+                        border: '3px solid #1890ff',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      }}
+                    />
+                  </Upload>
+                  <div>
+                    <Space align="center">
+                      <Title level={3} style={{ margin: 0 }}>
+                        {profile?.display_name || profile?.username}
+                      </Title>
+                      {getStatusBadge(profile?.active)}
+                    </Space>
+                    <Space wrap style={{ marginTop: 8 }}>
+                      {(profile?.roles || []).map((role: string) => (
+                        <Tag color="blue" key={role}>
+                          {role}
+                        </Tag>
+                      ))}
+                    </Space>
+                    <Descriptions column={1} size="small" style={{ marginTop: 12 }}>
+                      <Descriptions.Item label={formatMessage('profile.info.username')}>
+                        <Text strong>{profile?.username}</Text>
+                      </Descriptions.Item>
+                      <Descriptions.Item label={formatMessage('profile.info.email')}>
+                        {profile?.email || 'N/A'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label={formatMessage('profile.info.phone')}>
+                        {profile?.phone || 'N/A'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label={formatMessage('profile.info.joined')}>
+                        {profile?.created_at
+                          ? new Date(profile.created_at).toLocaleString()
+                          : profile?.createdAt
+                          ? new Date(profile.createdAt).toLocaleString()
+                          : 'N/A'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label={formatMessage('profile.info.last.login')}>
+                        {profile?.last_login_at
+                          ? new Date(profile.last_login_at).toLocaleString()
+                          : profile?.lastLoginAt
+                          ? new Date(profile.lastLoginAt).toLocaleString()
+                          : 'N/A'}
+                      </Descriptions.Item>
+                    </Descriptions>
+                    <Space style={{ marginTop: 12 }}>
+                      <Button
+                        type="primary"
+                        onClick={() =>
+                          infoSectionRef.current?.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      >
+                        {formatMessage('profile.hero.edit')}
+                      </Button>
+                      <Button onClick={showPasswordModal}>
+                        {formatMessage('profile.password.change.btn')}
+                      </Button>
+                    </Space>
+                  </div>
                 </Space>
-              ),
-              children: (
-                <Row gutter={[24, 24]} ref={infoSectionRef}>
-                  <Col xs={24} lg={16}>
-                    <Card title={formatMessage('profile.section.profileForm')}>
-                      <Form form={form} layout="vertical" onFinish={handleProfileSubmit}>
-                        <Form.Item
-                          name="display_name"
-                          label={formatMessage('profile.info.display.name')}
-                          rules={[
-                            { required: true, message: formatMessage('profile.display.name.required') },
-                            { max: 50, message: formatMessage('profile.display.name.max.length') },
-                          ]}
-                        >
-                          <Input placeholder={formatMessage('profile.display.name.placeholder')} />
-                        </Form.Item>
+              </Col>
+              <Col xs={24} md={14}>
+                <Row gutter={[16, 16]} className="profile-stats">
+                  {stats.map((stat) => (
+                    <Col xs={12} md={6} key={stat.title}>
+                      <Card bordered={false} className="profile-stats__card">
+                        <Statistic title={stat.title} value={stat.value} prefix={stat.icon} />
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </Col>
+            </Row>
+          </Card>
 
-                        <Form.Item
-                          name="email"
-                          label={formatMessage('profile.info.email')}
-                          rules={[
-                            { type: 'email', message: formatMessage('profile.email.invalid') },
-                          ]}
-                        >
-                          <Input placeholder={formatMessage('profile.email.placeholder')} />
-                        </Form.Item>
+          <Tabs
+            activeKey={activeTab}
+            onChange={(key) => {
+              setActiveTab(key);
+              const search = new URLSearchParams(location.search);
+              search.set('tab', key);
+              navigate(`${location.pathname}?${search.toString()}`, { replace: true });
+            }}
+            items={[
+              {
+                key: TAB_KEYS.PROFILE,
+                label: (
+                  <Space>
+                    <UserOutlined />
+                    {formatMessage('profile.tab.info')}
+                  </Space>
+                ),
+                children: (
+                  <Row gutter={[24, 24]} ref={infoSectionRef}>
+                    <Col xs={24} lg={16}>
+                      <Card title={formatMessage('profile.section.profileForm')}>
+                        <Form form={form} layout="vertical" onFinish={handleProfileSubmit}>
+                          <Form.Item
+                            name="display_name"
+                            label={formatMessage('profile.info.display.name')}
+                            rules={[
+                              {
+                                required: true,
+                                message: formatMessage('profile.display.name.required'),
+                              },
+                              {
+                                max: 50,
+                                message: formatMessage('profile.display.name.max.length'),
+                              },
+                            ]}
+                          >
+                            <Input
+                              placeholder={formatMessage('profile.display.name.placeholder')}
+                            />
+                          </Form.Item>
 
-                        <Form.Item
-                          name="phone"
-                          label={formatMessage('profile.info.phone')}
-                          rules={[
-                            { max: 20, message: formatMessage('profile.phone.max.length') },
-                            { pattern: /^1[3-9]\d{9}$/, message: formatMessage('profile.phone.invalid') },
-                          ]}
-                        >
-                          <Input placeholder={formatMessage('profile.phone.placeholder')} />
-                        </Form.Item>
+                          <Form.Item
+                            name="email"
+                            label={formatMessage('profile.info.email')}
+                            rules={[
+                              { type: 'email', message: formatMessage('profile.email.invalid') },
+                            ]}
+                          >
+                            <Input placeholder={formatMessage('profile.email.placeholder')} />
+                          </Form.Item>
 
-                        <Form.Item>
-                          <Button type="primary" htmlType="submit" loading={loading}>
-                            {formatMessage('profile.save')}
+                          <Form.Item
+                            name="phone"
+                            label={formatMessage('profile.info.phone')}
+                            rules={[
+                              { max: 20, message: formatMessage('profile.phone.max.length') },
+                              {
+                                pattern: /^1[3-9]\d{9}$/,
+                                message: formatMessage('profile.phone.invalid'),
+                              },
+                            ]}
+                          >
+                            <Input placeholder={formatMessage('profile.phone.placeholder')} />
+                          </Form.Item>
+
+                          <Form.Item>
+                            <Button type="primary" htmlType="submit" loading={loading}>
+                              {formatMessage('profile.save')}
+                            </Button>
+                          </Form.Item>
+                        </Form>
+                      </Card>
+                    </Col>
+                    <Col xs={24} lg={8}>
+                      <Card title={formatMessage('profile.account.info')}>
+                        <Descriptions column={1} size="small">
+                          {infoItems.map((item) => (
+                            <Descriptions.Item key={item.title} label={item.title}>
+                              <Space>
+                                {item.icon}
+                                <span>{item.value || 'N/A'}</span>
+                              </Space>
+                            </Descriptions.Item>
+                          ))}
+                        </Descriptions>
+                      </Card>
+                    </Col>
+                  </Row>
+                ),
+              },
+              {
+                key: TAB_KEYS.SECURITY,
+                label: (
+                  <Space>
+                    <SafetyOutlined />
+                    {formatMessage('profile.security.center')}
+                  </Space>
+                ),
+                children: (
+                  <Row gutter={[24, 24]}>
+                    <Col xs={24} lg={12}>
+                      <Card
+                        title={formatMessage('profile.security.center')}
+                        extra={
+                          <Button type="link" icon={<LockOutlined />} onClick={showPasswordModal}>
+                            {formatMessage('profile.password.change.btn')}
                           </Button>
-                        </Form.Item>
-                      </Form>
-                    </Card>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <Card title={formatMessage('profile.account.info')}>
-                      <Descriptions column={1} size="small">
-                        {infoItems.map((item) => (
-                          <Descriptions.Item key={item.title} label={item.title}>
+                        }
+                      >
+                        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                          <div className="security-item">
                             <Space>
-                              {item.icon}
-                              <span>{item.value || 'N/A'}</span>
+                              <SafetyOutlined />
+                              <div>
+                                <Text strong>
+                                  {formatMessage('profile.security.settings.title')}
+                                </Text>
+                                <br />
+                                <Text type="secondary">
+                                  {formatMessage('profile.security.description')}
+                                </Text>
+                              </div>
                             </Space>
-                          </Descriptions.Item>
-                        ))}
-                      </Descriptions>
-                    </Card>
-                  </Col>
-                </Row>
-              ),
-            },
-            {
-              key: TAB_KEYS.SECURITY,
-              label: (
-                <Space>
-                  <SafetyOutlined />
-                  {formatMessage('profile.security.center')}
-                </Space>
-              ),
-              children: (
-                <Row gutter={[24, 24]}>
-                  <Col xs={24} lg={12}>
-                    <Card
-                      title={formatMessage('profile.security.center')}
-                      extra={
-                        <Button type="link" icon={<LockOutlined />} onClick={showPasswordModal}>
-                          {formatMessage('profile.password.change.btn')}
-                        </Button>
-                      }
-                    >
-                      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                        <div className="security-item">
-                          <Space>
-                            <SafetyOutlined />
-                            <div>
-                              <Text strong>{formatMessage('profile.security.settings.title')}</Text>
-                              <br />
-                              <Text type="secondary">{formatMessage('profile.security.description')}</Text>
-                            </div>
-                          </Space>
-                          <Badge status="processing" text={formatMessage('profile.enabled')} />
-                        </div>
-                        <div className="security-item">
-                          <Space>
-                            <PhoneOutlined />
-                            <div>
-                              <Text strong>{formatMessage('profile.login.notification')}</Text>
-                              <br />
-                              <Text type="secondary">{formatMessage('profile.security.phone.helper')}</Text>
-                            </div>
-                          </Space>
-                        </div>
-                      </Space>
-                    </Card>
-                  </Col>
-                </Row>
-              ),
-            },
-            {
-              key: TAB_KEYS.GAMES,
-              label: (
-                <Space>
-                  <RocketOutlined />
-                  {formatMessage('profile.games.title')}
-                </Space>
-              ),
-              children: renderGames(),
-            },
-            {
-              key: TAB_KEYS.PERMISSIONS,
-              label: (
-                <Space>
-                  <SafetyOutlined />
-                  {formatMessage('profile.permissions.summary.title')}
-                </Space>
-              ),
-              children: renderPermissions(),
-            },
-            {
-              key: TAB_KEYS.ACTIVITY,
-              label: (
-                <Space>
-                  <HistoryOutlined />
-                  {formatMessage('profile.activities.title')}
-                </Space>
-              ),
-              children: (
-                <Card
-                  loading={extrasLoading}
-                  extra={
-                    <Button type="link" onClick={() => loadExtras(profile?.username)}>
-                      {formatMessage('profile.activities.refresh')}
-                    </Button>
-                  }
-                >
-                  {renderAuditList(activities, formatMessage('profile.activities.empty'))}
-                </Card>
-              ),
-            },
-            {
-              key: TAB_KEYS.SESSIONS,
-              label: (
-                <Space>
-                  <HistoryOutlined />
-                  {formatMessage('profile.sessions.title')}
-                </Space>
-              ),
-              children: renderAuditList(loginRecords, formatMessage('profile.sessions.empty')),
-            },
-            {
-              key: TAB_KEYS.NOTIFICATIONS,
-              label: (
-                <Space>
-                  <BellOutlined />
-                  {formatMessage('profile.notifications.title')}
-                </Space>
-              ),
-              children: renderNotifications(),
-            },
-          ]}
-        />
+                            <Badge status="processing" text={formatMessage('profile.enabled')} />
+                          </div>
+                          <div className="security-item">
+                            <Space>
+                              <PhoneOutlined />
+                              <div>
+                                <Text strong>{formatMessage('profile.login.notification')}</Text>
+                                <br />
+                                <Text type="secondary">
+                                  {formatMessage('profile.security.phone.helper')}
+                                </Text>
+                              </div>
+                            </Space>
+                          </div>
+                        </Space>
+                      </Card>
+                    </Col>
+                  </Row>
+                ),
+              },
+              {
+                key: TAB_KEYS.GAMES,
+                label: (
+                  <Space>
+                    <RocketOutlined />
+                    {formatMessage('profile.games.title')}
+                  </Space>
+                ),
+                children: renderGames(),
+              },
+              {
+                key: TAB_KEYS.PERMISSIONS,
+                label: (
+                  <Space>
+                    <SafetyOutlined />
+                    {formatMessage('profile.permissions.summary.title')}
+                  </Space>
+                ),
+                children: renderPermissions(),
+              },
+              {
+                key: TAB_KEYS.ACTIVITY,
+                label: (
+                  <Space>
+                    <HistoryOutlined />
+                    {formatMessage('profile.activities.title')}
+                  </Space>
+                ),
+                children: (
+                  <Card
+                    loading={extrasLoading}
+                    extra={
+                      <Button type="link" onClick={() => loadExtras(profile?.username)}>
+                        {formatMessage('profile.activities.refresh')}
+                      </Button>
+                    }
+                  >
+                    {renderAuditList(activities, formatMessage('profile.activities.empty'))}
+                  </Card>
+                ),
+              },
+              {
+                key: TAB_KEYS.SESSIONS,
+                label: (
+                  <Space>
+                    <HistoryOutlined />
+                    {formatMessage('profile.sessions.title')}
+                  </Space>
+                ),
+                children: renderAuditList(loginRecords, formatMessage('profile.sessions.empty')),
+              },
+              {
+                key: TAB_KEYS.NOTIFICATIONS,
+                label: (
+                  <Space>
+                    <BellOutlined />
+                    {formatMessage('profile.notifications.title')}
+                  </Space>
+                ),
+                children: renderNotifications(),
+              },
+            ]}
+          />
         </Space>
       </PageContainer>
       {passwordModal}

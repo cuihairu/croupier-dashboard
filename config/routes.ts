@@ -11,40 +11,6 @@
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
-  // ==================== V2 测试路由（新架构） ====================
-  {
-    path: '/v2',
-    name: 'V2Test',
-    icon: 'experiment',
-    routes: [
-      {
-        path: '/v2',
-        redirect: '/v2/users',
-      },
-      {
-        path: '/v2/users',
-        name: 'UsersV2',
-        component: './DynamicPage',
-      },
-      {
-        path: '/v2/users/create',
-        name: 'CreateUserV2',
-        component: './DynamicPage',
-        hideInMenu: true,
-      },
-      {
-        path: '/v2/users/:id',
-        name: 'UserDetailV2',
-        component: './DynamicPage',
-        hideInMenu: true,
-      },
-      {
-        path: '/v2/roles',
-        name: 'RolesV2',
-        component: './DynamicPage',
-      },
-    ],
-  },
   // ==================== 现有路由 ====================
   {
     path: '/system',
@@ -82,15 +48,22 @@ export default [
           {
             path: '/system/functions/workspaces',
             name: 'ObjectWorkspaces',
-            access: 'canFunctionsRead',
+            access: 'canWorkspaceManage',
             component: './Workspaces',
-            hideInMenu: true,
+            icon: 'tool',
           },
           {
             path: '/system/functions/workspaces/:objectKey',
             name: 'ObjectWorkspaceDetail',
-            access: 'canFunctionsRead',
+            access: 'canWorkspaceManage',
             component: './Workspaces/Detail',
+            hideInMenu: true,
+          },
+          {
+            path: '/system/functions/workspace-editor/:objectKey',
+            name: 'WorkspaceEditor',
+            access: 'canWorkspaceManage',
+            component: './WorkspaceEditor',
             hideInMenu: true,
           },
           {
@@ -196,13 +169,26 @@ export default [
     name: 'ControlConsole',
     icon: 'appstore',
     access: 'canFunctionsRead',
-    redirect: '/system/functions/workspaces',
-  },
-  {
-    path: '/console/:objectKey',
-    access: 'canFunctionsRead',
-    redirect: '/system/functions/workspaces/:objectKey',
-    hideInMenu: true,
+    routes: [
+      {
+        path: '/console',
+        redirect: '/console/home',
+      },
+      {
+        path: '/console/home',
+        name: 'ConsoleHome',
+        access: 'canFunctionsRead',
+        component: './Console',
+        hideInMenu: true,
+      },
+      {
+        path: '/console/:objectKey',
+        name: 'ConsoleWorkspace',
+        access: 'canFunctionsRead',
+        component: './Console/Detail',
+        hideInMenu: true,
+      },
+    ],
   },
   {
     path: '/analytics',

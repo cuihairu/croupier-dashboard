@@ -4,101 +4,26 @@ import { LinkOutlined, UserOutlined } from '@ant-design/icons';
 import type { Settings as LayoutSettings } from '@ant-design/pro-components';
 import { SettingDrawer } from '@ant-design/pro-components';
 import type { RunTimeLayoutConfig } from '@umijs/max';
-import { history, Link, getLocale } from '@umijs/max';
+import { history, Link } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
-import {
-  fetchCurrentUser,
-  getMyPermissions,
-  listDescriptors,
-  type FunctionDescriptor,
-} from '@/services/api';
+import { fetchCurrentUser, getMyPermissions } from '@/services/api';
 import { hydrateScope } from '@/stores/scope';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
 import { loadPackPlugins } from './plugin/registry';
-import {
-  buildWorkspaceItems,
-  injectWorkspaceMenu,
-  type DynamicMenuItem,
-} from '@/features/navigation/workspaceMenu';
+
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
-let cachedConsoleSignature = '';
-let cachedConsoleItems: DynamicMenuItem[] = [];
+
 type InitialCurrentUser = {
   name?: string;
   userid?: string;
   access?: string;
   roles?: any[];
   avatar?: string;
-};
-
-const TOKEN_ZH_MAP: Record<string, string> = {
-  examples: '示例',
-  analytics: '分析',
-  game: '游戏',
-  player: '玩家',
-  players: '玩家',
-  user: '用户',
-  users: '用户',
-  create: '创建',
-  update: '更新',
-  delete: '删除',
-  remove: '删除',
-  list: '列表',
-  get: '详情',
-  detail: '详情',
-  query: '查询',
-  search: '搜索',
-  invoke: '调用',
-  retention: '留存',
-  ban: '封禁',
-  batch: '批量',
-  ban_batch: '批量封禁',
-  unban: '解封',
-  report: '报表',
-  export: '导出',
-};
-const humanizeToken = (token: string) =>
-  token
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/[_-]+/g, ' ')
-    .trim();
-
-const toReadableEn = (token: string) =>
-  humanizeToken(token)
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
-
-const toReadableZh = (token: string) => {
-  const normalized = String(token || '')
-    .trim()
-    .toLowerCase();
-  if (!normalized) return '';
-  if (TOKEN_ZH_MAP[normalized]) return TOKEN_ZH_MAP[normalized];
-  const words = humanizeToken(normalized)
-    .split(/\s+/)
-    .map((w) => TOKEN_ZH_MAP[w] || w);
-  return words.join('');
-};
-
-const isZhLocale = (locale?: string) =>
-  String(locale || '')
-    .toLowerCase()
-    .startsWith('zh');
-
-const fallbackNameFromId = (id?: string, locale?: string) => {
-  const parts = String(id || '')
-    .split('.')
-    .filter(Boolean);
-  if (parts.length === 0) return 'unknown';
-  const tail = parts.slice(-2).map((t) => (isZhLocale(locale) ? toReadableZh(t) : toReadableEn(t)));
-  return tail.join(' · ');
 };
 
 /**
@@ -109,10 +34,8 @@ export async function getInitialState(): Promise<{
   currentUser?: InitialCurrentUser;
   loading?: boolean;
   fetchUserInfo?: () => Promise<InitialCurrentUser | undefined>;
-  functionDescriptors?: FunctionDescriptor[];
 }> {
   const fetchUserInfo = async () => {
-    // Only call backend when we have a token; otherwise avoid a 401 on boot
     try {
       const token = localStorage.getItem('token');
       if (!token) return undefined;
@@ -141,7 +64,6 @@ export async function getInitialState(): Promise<{
         roles: roleNames,
       } as any;
     } catch (error: any) {
-      // 如果是认证错误，清除无效token
       if (error?.response?.status === 401 || error?.response?.status === 400) {
         localStorage.removeItem('token');
       }
@@ -149,25 +71,17 @@ export async function getInitialState(): Promise<{
       return undefined;
     }
   };
-  // 如果不是登录页面，执行
+
   const { location } = history;
   if (location.pathname !== loginPath) {
     const currentUser = await fetchUserInfo();
-    let functionDescriptors: FunctionDescriptor[] | undefined;
     if (currentUser) {
       hydrateScope();
-      try {
-        const descriptors = await listDescriptors();
-        functionDescriptors = Array.isArray(descriptors) ? descriptors : [];
-      } catch {
-        functionDescriptors = undefined;
-      }
     }
     return {
       fetchUserInfo,
       currentUser,
       settings: defaultSettings as Partial<LayoutSettings>,
-      functionDescriptors,
     };
   }
   return {
@@ -188,35 +102,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         loadPackPlugins().catch(() => {});
       }
     }, [initialState?.currentUser]);
-    useEffect(() => {
-      const refreshDescriptors = async () => {
-        if (!initialState?.currentUser) return;
-        try {
-          const descriptors = await listDescriptors();
-          const next = Array.isArray(descriptors) ? descriptors : [];
-          setInitialState((prev) => ({
-            ...prev,
-            functionDescriptors: next,
-          }));
-        } catch {
-          // ignore refresh errors
-        }
-      };
-      const onRouteChanged = () => {
-        refreshDescriptors().catch(() => {});
-      };
-      const onScopeChanged = () => {
-        refreshDescriptors().catch(() => {});
-      };
-      window.addEventListener('function-route:changed', onRouteChanged as EventListener);
-      window.addEventListener('scope:change', onScopeChanged as EventListener);
-      return () => {
-        window.removeEventListener('function-route:changed', onRouteChanged as EventListener);
-        window.removeEventListener('scope:change', onScopeChanged as EventListener);
-      };
-    }, [initialState?.currentUser, setInitialState]);
     return null;
   };
+
   const isAuthed = !!initialState?.currentUser;
   return {
     actionsRender: () =>
@@ -234,169 +122,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         return <AvatarDropdown menu>{avatarChildren}</AvatarDropdown>;
       },
     },
-    menuDataRender: (menuData) => {
-      const descriptors = (initialState as any)?.functionDescriptors as
-        | FunctionDescriptor[]
-        | undefined;
-      if (!Array.isArray(descriptors)) return menuData;
-      const locale = getLocale();
-      const preferZh = isZhLocale(locale);
-
-      const resolveText = (text?: { zh?: string; en?: string }) => {
-        if (!text) return '';
-        if (preferZh) return text.zh || text.en || '';
-        return text.en || text.zh || '';
-      };
-
-      const localizeToken = (value?: string) => {
-        const raw = String(value || '').trim();
-        if (!raw) return '';
-        return preferZh ? toReadableZh(raw) : toReadableEn(raw);
-      };
-      const localizeFreeText = (value?: string) => {
-        const raw = String(value || '').trim();
-        if (!raw) return '';
-        const chunks = raw
-          .split(/[./\s]+/)
-          .map((c) => c.trim())
-          .filter(Boolean);
-        if (chunks.length === 0) return localizeToken(raw);
-        return chunks.map((c) => localizeToken(c)).join(preferZh ? '' : ' / ');
-      };
-
-      const safeName = (d: FunctionDescriptor) => {
-        const displayName = resolveText(d?.display_name);
-        if (displayName) return displayName;
-        const operationDisplay = resolveText((d as any)?.operation_display);
-        if (operationDisplay) return operationDisplay;
-        const operation = sanitizeNodeKey(String((d as any)?.operation || ''));
-        if (operation && operation !== 'custom') {
-          return localizeToken(operation) || operation;
-        }
-        const entity = sanitizeNodeKey(String((d as any)?.entity || ''));
-        const parts = String(d?.id || '')
-          .split('.')
-          .filter(Boolean);
-        const tail = sanitizeNodeKey(parts[parts.length - 1] || '');
-        if (tail && tail !== entity) {
-          return localizeToken(tail) || tail;
-        }
-        return fallbackNameFromId(d?.id, locale);
-      };
-      const sanitizeNodeKey = (raw?: string) => {
-        const text = String(raw || '')
-          .trim()
-          .toLowerCase()
-          .replace(/[^a-z0-9._-]+/g, '_')
-          .replace(/[_\-.]{2,}/g, '_')
-          .replace(/^[_\-.]+|[_\-.]+$/g, '');
-        return text;
-      };
-      const normalizeNodes = (nodes: string[]) => {
-        const out: string[] = [];
-        nodes.forEach((raw) => {
-          String(raw || '')
-            .split(/[/>.]+/)
-            .forEach((part) => {
-              const node = sanitizeNodeKey(part);
-              if (!node) return;
-              if (out[out.length - 1] === node) return;
-              out.push(node);
-            });
-        });
-        return out;
-      };
-      const inferMenuNodes = (d: FunctionDescriptor) => {
-        const menuNodes = Array.isArray(d.menu?.nodes) ? d.menu!.nodes! : [];
-        const normalizedMenuNodes = normalizeNodes(menuNodes);
-        const operation = sanitizeNodeKey(String((d as any)?.operation || ''));
-        if (normalizedMenuNodes.length > 0) return normalizedMenuNodes;
-
-        const category = sanitizeNodeKey(d.category || '');
-        const entity = sanitizeNodeKey(String((d as any)?.entity || ''));
-        const inferred: string[] = [];
-        if (category) inferred.push(category);
-        if (entity) inferred.push(entity);
-        const normalizedInferred = normalizeNodes(inferred);
-        if (normalizedInferred.length > 0) return normalizedInferred;
-
-        const parts = String(d.id || '')
-          .split('.')
-          .map((p) => sanitizeNodeKey(p));
-        const normalizedParts = normalizeNodes(parts);
-        if (normalizedParts.length >= 3) {
-          const candidate = [normalizedParts[0], normalizedParts[normalizedParts.length - 2]];
-          return normalizeNodes(candidate.filter((node) => node && node !== operation));
-        }
-        if (normalizedParts.length === 1) return normalizedParts;
-        return ['general'];
-      };
-
-      const isEntity = (d: FunctionDescriptor) => d?.type === 'entity';
-
-      const buildPath = (base: string, fid: string, entityType = false) => {
-        const inferredEntity = sanitizeNodeKey(
-          String((descriptors.find((x) => x.id === fid) as any)?.entity || ''),
-        );
-        if (!base) {
-          if (entityType || inferredEntity) {
-            base = `/system/entities/${inferredEntity || 'general'}`;
-          } else {
-            base = '/system/functions/invoke';
-          }
-        }
-        const sep = base.includes('?') ? '&' : '?';
-        const paramKey = entityType ? 'id' : 'fid';
-        return `${base}${sep}${paramKey}=${encodeURIComponent(fid)}`;
-      };
-
-      const visible = descriptors
-        .filter((d) => d && d.id && !(d.menu && d.menu.hidden))
-        .map((d) => ({
-          nodes: inferMenuNodes(d),
-          id: d.id,
-          name: safeName(d),
-          category: d.category || 'uncategorized',
-          order: typeof d.menu?.order === 'number' ? d.menu!.order! : 100,
-          entityType: isEntity(d),
-          path: buildPath(d.menu?.path || '', d.id, isEntity(d)),
-        }));
-
-      if (visible.length === 0) {
-        return injectWorkspaceMenu(menuData as any, []);
-      }
-
-      const signature = visible
-        .map(
-          (it) =>
-            `${locale}|${it.id}|${it.order}|${it.name}|${(it.nodes || []).join('/') || ''}|${
-              it.path
-            }`,
-        )
-        .sort()
-        .join('||');
-      const workspaceItems =
-        signature === cachedConsoleSignature
-          ? cachedConsoleItems
-          : buildWorkspaceItems({
-              visible,
-              preferZh,
-              localizeFreeText,
-              localizeToken,
-              sanitizeNodeKey,
-            });
-      if (signature !== cachedConsoleSignature) {
-        cachedConsoleSignature = signature;
-        cachedConsoleItems = workspaceItems;
-      }
-
-      return injectWorkspaceMenu(menuData as any, workspaceItems);
-    },
     footerRender: () => <Footer />,
-
     onPageChange: () => {
       const { location } = history;
-      // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && location.pathname !== loginPath) {
         history.push(loginPath);
       }
@@ -430,11 +158,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         ]
       : [],
     menuHeaderRender: undefined,
-    // 自定义 403 页面
-    // unAccessible: <div>unAccessible</div>,
-    // 增加一个 loading 的状态
     childrenRender: (children) => {
-      // if (initialState?.loading) return <PageLoading />;
       return (
         <AntdApp>
           <AppApiRegistrar />
@@ -460,8 +184,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
 };
 
 /**
- * @name request 配置，可以配置错误处理
- * 它基于 axios 和 ahooks 的 useRequest 提供了一套统一的网络请求和错误处理方案。
+ * @name request 配置
  * @doc https://umijs.org/docs/max/request#配置
  */
 export const request = {

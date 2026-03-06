@@ -19,8 +19,11 @@ import {
   message,
   Badge,
   Tag,
+  Modal,
+  Drawer,
+  Popconfirm,
 } from 'antd';
-import type { FormDetailLayout } from '@/types/workspace';
+import type { FormDetailLayout, ActionConfig } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
 import { useAnyPermission } from '@/services/permission';
 import * as Icons from '@ant-design/icons';
@@ -45,8 +48,13 @@ export default function FormDetailRenderer({
   context,
 }: FormDetailRendererProps) {
   const [form] = Form.useForm();
+  const [actionForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [currentAction, setCurrentAction] = useState<ActionConfig | null>(null);
 
   // 处理查询
   const handleQuery = async (values: any) => {
@@ -57,9 +65,7 @@ export default function FormDetailRenderer({
 
     setLoading(true);
     try {
-      // 使用函数调用服务
       const result = await invokeFunction(layout.queryFunction, values);
-
       setDetailData(result);
       message.success('查询成功');
     } catch (error: any) {
@@ -70,28 +76,58 @@ export default function FormDetailRenderer({
     }
   };
 
-  // 处理操作
-  const handleAction = async (action: any) => {
+  // 执行函数调用
+  const executeAction = async (action: ActionConfig, extraParams?: Record<string, any>) => {
+    setActionLoading(true);
+    try {
+      await invokeFunction(action.function, { ...detailData, ...extraParams });
+      message.success(`${action.label}成功`);
+      form.submit();
+    } catch (error: any) {
+      message.error(error.message || `${action.label}失败`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // 处理操作按钮点击
+  const handleAction = (action: ActionConfig) => {
     if (!action.function) {
       message.error('未配置操作函数');
       return;
     }
 
-    // TODO: 根据操作类型显示不同的交互方式
-    // - modal: 显示模态框
-    // - drawer: 显示抽屉
-    // - popconfirm: 显示确认框
-    // - direct: 直接执行
+    setCurrentAction(action);
 
+    switch (action.type) {
+      case 'modal':
+        actionForm.resetFields();
+        setModalVisible(true);
+        break;
+      case 'drawer':
+        actionForm.resetFields();
+        setDrawerVisible(true);
+        break;
+      case 'popconfirm':
+        // popconfirm 在按钮上直接处理
+        break;
+      case 'direct':
+      default:
+        executeAction(action);
+        break;
+    }
+  };
+
+  // 提交 modal/drawer 表单
+  const handleFormSubmit = async () => {
+    if (!currentAction) return;
     try {
-      // 使用函数调用服务
-      await invokeFunction(action.function, detailData);
-
-      message.success(`${action.label}成功`);
-      // 重新查询
-      form.submit();
-    } catch (error: any) {
-      message.error(error.message || `${action.label}失败`);
+      const values = await actionForm.validateFields();
+      await executeAction(currentAction, values);
+      setModalVisible(false);
+      setDrawerVisible(false);
+    } catch {
+      // 表单验证失败
     }
   };
 
@@ -130,13 +166,7 @@ export default function FormDetailRenderer({
       {detailData && (
         <>
           {(layout.detailSections || []).map((section, index) => (
-            <Card
-              key={index}
-              title={section.title}
-              style={{ marginBottom: 16 }}
-              collapsible={section.collapsible ? 'header' : undefined}
-              defaultCollapsed={!section.defaultExpanded}
-            >
+            <Card key={index} title={section.title} style={{ marginBottom: 16 }}>
               <Descriptions column={section.column || 2}>
                 {section.fields.map((field) => (
                   <Descriptions.Item key={field.key} label={field.label} span={field.span}>
@@ -151,23 +181,88 @@ export default function FormDetailRenderer({
           {layout.actions && layout.actions.length > 0 && (
             <Card title="操作">
               <Space>
-                {layout.actions.map((action) => (
-                  <Button
-                    key={action.key}
-                    type={action.buttonType || 'default'}
-                    danger={action.danger}
-                    icon={getIcon(action.icon)}
-                    onClick={() => handleAction(action)}
-                    disabled={action.disabled}
-                  >
-                    {action.label}
-                  </Button>
-                ))}
+                {layout.actions.map((action) =>
+                  action.type === 'popconfirm' ? (
+                    <Popconfirm
+                      key={action.key}
+                      title={action.confirmMessage || `确认执行"${action.label}"？`}
+                      onConfirm={() => executeAction(action)}
+                      okButtonProps={{ danger: action.danger, loading: actionLoading }}
+                      disabled={action.disabled}
+                    >
+                      <Button
+                        type={action.buttonType || 'default'}
+                        danger={action.danger}
+                        icon={getIcon(action.icon)}
+                        disabled={action.disabled}
+                      >
+                        {action.label}
+                      </Button>
+                    </Popconfirm>
+                  ) : (
+                    <Button
+                      key={action.key}
+                      type={action.buttonType || 'default'}
+                      danger={action.danger}
+                      icon={getIcon(action.icon)}
+                      onClick={() => handleAction(action)}
+                      disabled={action.disabled}
+                      loading={actionLoading && currentAction?.key === action.key}
+                    >
+                      {action.label}
+                    </Button>
+                  ),
+                )}
               </Space>
             </Card>
           )}
         </>
       )}
+
+      <Modal
+        title={currentAction?.label}
+        open={modalVisible}
+        onOk={handleFormSubmit}
+        onCancel={() => setModalVisible(false)}
+        confirmLoading={actionLoading}
+      >
+        <Form form={actionForm} layout="vertical">
+          {(currentAction?.fields || []).map((field) => (
+            <Form.Item
+              key={field.key}
+              name={field.key}
+              label={field.label}
+              rules={[{ required: field.required, message: `请输入${field.label}` }]}
+            >
+              {renderField(field)}
+            </Form.Item>
+          ))}
+        </Form>
+      </Modal>
+
+      <Drawer
+        title={currentAction?.label}
+        open={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        extra={
+          <Button type="primary" loading={actionLoading} onClick={handleFormSubmit}>
+            提交
+          </Button>
+        }
+      >
+        <Form form={actionForm} layout="vertical">
+          {(currentAction?.fields || []).map((field) => (
+            <Form.Item
+              key={field.key}
+              name={field.key}
+              label={field.label}
+              rules={[{ required: field.required, message: `请输入${field.label}` }]}
+            >
+              {renderField(field)}
+            </Form.Item>
+          ))}
+        </Form>
+      </Drawer>
     </div>
   );
 }

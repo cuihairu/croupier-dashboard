@@ -13,10 +13,13 @@ import {
   mockSaveWorkspaceConfig,
   mockListWorkspaceConfigs,
   mockDeleteWorkspaceConfig,
+  mockPublishWorkspaceConfig,
+  mockUnpublishWorkspaceConfig,
+  mockListPublishedWorkspaceConfigs,
 } from './mock/workspaceMock';
 
-// 是否使用 Mock 数据
-const USE_MOCK = process.env.USE_MOCK !== 'false';
+// Workspace 配置接口后端已实现
+const USE_MOCK = false;
 
 /**
  * 配置缓存
@@ -221,6 +224,48 @@ export async function deleteWorkspaceConfig(objectKey: string): Promise<void> {
   } catch (error) {
     throw error;
   }
+}
+
+/**
+ * 发布 Workspace 配置
+ */
+export async function publishWorkspaceConfig(objectKey: string): Promise<WorkspaceConfig> {
+  if (USE_MOCK) {
+    const config = await mockPublishWorkspaceConfig(objectKey);
+    setCache(objectKey, config);
+    return config;
+  }
+  const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/publish`, {
+    method: 'POST',
+  });
+  setCache(objectKey, config);
+  return config;
+}
+
+/**
+ * 取消发布 Workspace 配置
+ */
+export async function unpublishWorkspaceConfig(objectKey: string): Promise<WorkspaceConfig> {
+  if (USE_MOCK) {
+    const config = await mockUnpublishWorkspaceConfig(objectKey);
+    setCache(objectKey, config);
+    return config;
+  }
+  const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/unpublish`, {
+    method: 'POST',
+  });
+  setCache(objectKey, config);
+  return config;
+}
+
+/**
+ * 获取已发布的 Workspace 列表（控制台用）
+ */
+export async function listPublishedWorkspaceConfigs(): Promise<WorkspaceConfig[]> {
+  if (USE_MOCK) {
+    return mockListPublishedWorkspaceConfigs();
+  }
+  return request<WorkspaceConfig[]>('/api/v1/workspaces/published', { method: 'GET' });
 }
 
 /**

@@ -5,9 +5,9 @@
  */
 
 import type { WorkspaceConfig } from '@/types/workspace';
-import playerWorkspaceConfig from '../../config/workspaces/player';
-import orderWorkspaceConfig from '../../config/workspaces/order';
-import itemWorkspaceConfig from '../../config/workspaces/item';
+import playerWorkspaceConfig from '@/config/workspaces/player';
+import orderWorkspaceConfig from '@/config/workspaces/order';
+import itemWorkspaceConfig from '@/config/workspaces/item';
 
 /**
  * Mock Workspace 配置数据
@@ -277,4 +277,51 @@ export const mockDeleteWorkspaceConfig = async (objectKey: string): Promise<void
   await new Promise((resolve) => setTimeout(resolve, 200));
 
   delete mockWorkspaceConfigs[objectKey];
+};
+
+/**
+ * Mock Workspace 发布
+ */
+export const mockPublishWorkspaceConfig = async (objectKey: string): Promise<WorkspaceConfig> => {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const config = mockWorkspaceConfigs[objectKey];
+  if (!config) throw new Error(`配置不存在: ${objectKey}`);
+
+  mockWorkspaceConfigs[objectKey] = {
+    ...config,
+    published: true,
+    publishedAt: new Date().toISOString(),
+    publishedBy: 'admin',
+  };
+  return mockWorkspaceConfigs[objectKey];
+};
+
+/**
+ * Mock Workspace 取消发布
+ */
+export const mockUnpublishWorkspaceConfig = async (objectKey: string): Promise<WorkspaceConfig> => {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  const config = mockWorkspaceConfigs[objectKey];
+  if (!config) throw new Error(`配置不存在: ${objectKey}`);
+
+  mockWorkspaceConfigs[objectKey] = {
+    ...config,
+    published: false,
+    publishedAt: undefined,
+    publishedBy: undefined,
+  };
+  return mockWorkspaceConfigs[objectKey];
+};
+
+/**
+ * Mock 已发布 Workspace 列表
+ */
+export const mockListPublishedWorkspaceConfigs = async (): Promise<WorkspaceConfig[]> => {
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
+  return Object.values(mockWorkspaceConfigs)
+    .filter((c) => c.published)
+    .sort((a, b) => (a.menuOrder ?? 99) - (b.menuOrder ?? 99));
 };

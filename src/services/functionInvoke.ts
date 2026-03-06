@@ -2,13 +2,11 @@
  * 函数调用服务
  */
 
-import { request } from '@umijs/max';
+import { invokeFunction as apiInvokeFunction } from './api/functions';
 import { mockFunctionInvoke } from './mock/workspaceMock';
 
-const API_PREFIX = '/api/v1/functions';
-
-// 是否使用 Mock 数据
-const USE_MOCK = process.env.USE_MOCK !== 'false';
+// 只有明确设置 USE_MOCK=true 才走 mock，默认走真实 API
+const USE_MOCK = process.env.USE_MOCK === 'true';
 
 export interface InvokeFunctionOptions {
   timeout?: number;
@@ -33,32 +31,14 @@ export async function invokeFunction<T = any>(
   params: Record<string, any>,
   options?: InvokeFunctionOptions,
 ): Promise<T> {
-  const { timeout = 30000, signal } = options || {};
-
   try {
-    // 如果使用 Mock 数据
     if (USE_MOCK) {
       return await mockFunctionInvoke(functionId, params);
     }
-
-    // 真实 API 调用
-    const result = await request<InvokeFunctionResult<T>>(
-      `${API_PREFIX}/${encodeURIComponent(functionId)}/invoke`,
-      {
-        method: 'POST',
-        data: params,
-        timeout,
-        signal,
-      },
-    );
-
-    if (!result.success) {
-      throw new Error(result.error?.message || '函数调用失败');
-    }
-
-    return result.data as T;
+    // 复用 api/functions.ts 里的真实调用，格式一致
+    const result = await apiInvokeFunction(functionId, params);
+    return result as T;
   } catch (error: any) {
-    // 记录调用日志
     console.error(`[FunctionInvoke] ${functionId} failed:`, error);
     throw error;
   }

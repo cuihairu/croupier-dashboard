@@ -130,6 +130,7 @@ export const playerWorkspaceConfig: WorkspaceConfig = {
               key: 'view',
               label: '查看',
               function: 'player.getInfo',
+              type: 'drawer',
             },
             {
               key: 'ban',
@@ -151,6 +152,10 @@ export const playerWorkspaceConfig: WorkspaceConfig = {
     ],
   },
   permissions: ['player.view'],
+  published: true,
+  publishedAt: '2026-03-06T08:00:00Z',
+  publishedBy: 'admin',
+  menuOrder: 1,
   meta: {
     createdAt: '2026-03-06T08:00:00Z',
     updatedAt: '2026-03-06T08:00:00Z',

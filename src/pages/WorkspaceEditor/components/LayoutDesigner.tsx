@@ -10,20 +10,24 @@ import React from 'react';
 import { Card, Tabs, Button, Empty, Modal, Form, Input } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { WorkspaceConfig, TabConfig } from '@/types/workspace';
+import type { FunctionDescriptor } from '@/services/api/functions';
 import TabEditor from './TabEditor';
+import IconPicker from './IconPicker';
 
 export interface LayoutDesignerProps {
-  /** Workspace 配置 */
   config: WorkspaceConfig | null;
-
-  /** 配置变化回调 */
   onChange: (config: WorkspaceConfig) => void;
+  descriptors?: FunctionDescriptor[];
 }
 
 /**
  * 布局设计器组件
  */
-export default function LayoutDesigner({ config, onChange }: LayoutDesignerProps) {
+export default function LayoutDesigner({
+  config,
+  onChange,
+  descriptors = [],
+}: LayoutDesignerProps) {
   const [activeKey, setActiveKey] = React.useState<string>();
   const [showAddModal, setShowAddModal] = React.useState(false);
   const [form] = Form.useForm();
@@ -125,7 +129,11 @@ export default function LayoutDesigner({ config, onChange }: LayoutDesignerProps
       </span>
     ),
     children: (
-      <TabEditor tab={tab} onChange={(updatedTab) => handleUpdateTab(tab.key, updatedTab)} />
+      <TabEditor
+        tab={tab}
+        onChange={(updatedTab) => handleUpdateTab(tab.key, updatedTab)}
+        descriptors={descriptors}
+      />
     ),
   }));
 
@@ -162,8 +170,8 @@ export default function LayoutDesigner({ config, onChange }: LayoutDesignerProps
             <Input placeholder="请输入标题" />
           </Form.Item>
 
-          <Form.Item name="icon" label="图标" tooltip="Ant Design Icons 图标名称，如: UserOutlined">
-            <Input placeholder="如: UserOutlined" />
+          <Form.Item name="icon" label="图标">
+            <IconPicker />
           </Form.Item>
         </Form>
       </Modal>

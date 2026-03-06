@@ -31,6 +31,8 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     // Functions management
     canFunctionsRead: has('functions:read') || has('functions:manage') || has('admin'),
     canFunctionsManage: has('functions:manage') || has('admin'),
+    // Workspace management (design/publish) - admin only
+    canWorkspaceManage: has('workspaces:manage') || has('functions:manage') || has('admin'),
     canEntitiesRead: has('entities:read') || has('entities:manage') || has('admin'),
     canPacksRead: has('packs:read') || has('packs:manage') || has('admin'),
     // 运维管理（Ops）
