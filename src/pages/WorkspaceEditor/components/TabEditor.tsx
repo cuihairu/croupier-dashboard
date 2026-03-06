@@ -1,42 +1,46 @@
-/**
- * Tab 编辑器组件
- *
- * 编辑单个 Tab 的配置。
- *
- * @module pages/WorkspaceEditor/components/TabEditor
- */
-
-import React from 'react';
-import { Form, Input, Select, Card, Space, List, Tag, Button, message } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import type { TabConfig } from '@/types/workspace';
+import React, { useState } from 'react';
+import {
+  Form,
+  Input,
+  Select,
+  Card,
+  Space,
+  List,
+  Tag,
+  Button,
+  message,
+  Table,
+  Popconfirm,
+  Modal,
+  Switch,
+} from 'antd';
+import { DeleteOutlined, PlusOutlined, EditOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
+import type { FunctionDescriptor } from '@/services/api/functions';
 import IconPicker from './IconPicker';
+import { descriptorToLayout, schemaToColumns, schemaToFields } from '../utils/schemaToLayout';
 
 export interface TabEditorProps {
-  /** Tab 配置 */
   tab: TabConfig;
-
-  /** 配置变化回调 */
   onChange: (tab: TabConfig) => void;
+  /** 所有可用函数描述符，用于自动推导 */
+  descriptors?: FunctionDescriptor[];
 }
 
-/**
- * Tab 编辑器组件
- */
-export default function TabEditor({ tab, onChange }: TabEditorProps) {
-  // 更新基本信息
+export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditorProps) {
+  const [editingColumn, setEditingColumn] = useState<ColumnConfig | null>(null);
+  const [editingField, setEditingField] = useState<FieldConfig | null>(null);
+  const [columnModalOpen, setColumnModalOpen] = useState(false);
+  const [fieldModalOpen, setFieldModalOpen] = useState(false);
+  const [columnForm] = Form.useForm();
+  const [fieldForm] = Form.useForm();
+
   const handleBasicChange = (field: string, value: any) => {
-    onChange({
-      ...tab,
-      [field]: value,
-    });
+    onChange({ ...tab, [field]: value });
   };
 
-  // 更新布局类型
   const handleLayoutTypeChange = (type: string) => {
-    // 根据布局类型创建默认配置
     let defaultLayout: any = { type };
-
     switch (type) {
       case 'form-detail':
         defaultLayout = {
@@ -47,76 +51,68 @@ export default function TabEditor({ tab, onChange }: TabEditorProps) {
           actions: [],
         };
         break;
-
       case 'list':
-        defaultLayout = {
-          type: 'list',
-          listFunction: '',
-          columns: [],
-        };
+        defaultLayout = { type: 'list', listFunction: '', columns: [] };
         break;
-
       case 'form':
-        defaultLayout = {
-          type: 'form',
-          submitFunction: '',
-          fields: [],
-        };
+        defaultLayout = { type: 'form', submitFunction: '', fields: [] };
         break;
-
       case 'detail':
-        defaultLayout = {
-          type: 'detail',
-          detailFunction: '',
-          sections: [],
-        };
+        defaultLayout = { type: 'detail', detailFunction: '', sections: [] };
         break;
     }
-
-    onChange({
-      ...tab,
-      layout: defaultLayout,
-    });
+    onChange({ ...tab, layout: defaultLayout });
   };
 
-  // 处理拖拽放置
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const funcData = e.dataTransfer.getData('function');
-    if (funcData) {
-      try {
-        const func = JSON.parse(funcData);
-        handleAddFunction(func.id);
-      } catch (error) {
-        message.error('添加函数失败');
+    if (!funcData) return;
+    try {
+      const func: FunctionDescriptor = JSON.parse(funcData);
+      // 添加到函数列表
+      if (!tab.functions.includes(func.id)) {
+        const newFunctions = [...tab.functions, func.id];
+        // 如果是第一个函数，自动推导布局
+        if (tab.functions.length === 0) {
+          const autoLayout = descriptorToLayout(func);
+          onChange({ ...tab, functions: newFunctions, layout: autoLayout });
+          message.success(`已添加函数并自动生成 ${autoLayout.type} 布局`);
+        } else {
+          onChange({ ...tab, functions: newFunctions });
+          message.success('函数已添加');
+        }
+      } else {
+        message.warning('函数已存在');
       }
+    } catch {
+      message.error('添加函数失败');
     }
   };
 
-  // 添加函数
-  const handleAddFunction = (functionId: string) => {
-    if (!tab.functions.includes(functionId)) {
-      onChange({
-        ...tab,
-        functions: [...tab.functions, functionId],
-      });
-      message.success('添加成功');
-    } else {
-      message.warning('函数已存在');
-    }
-  };
-
-  // 删除函数
   const handleRemoveFunction = (functionId: string) => {
-    onChange({
-      ...tab,
-      functions: tab.functions.filter((f) => f !== functionId),
-    });
+    onChange({ ...tab, functions: tab.functions.filter((f) => f !== functionId) });
+  };
+
+  // 自动推导布局（手动触发）
+  const handleAutoLayout = () => {
+    if (tab.functions.length === 0) {
+      message.warning('请先添加函数');
+      return;
+    }
+    const firstFuncId = tab.functions[0];
+    const descriptor = descriptors.find((d) => d.id === firstFuncId);
+    if (!descriptor) {
+      message.warning('未找到函数描述符，无法自动推导');
+      return;
+    }
+    const autoLayout = descriptorToLayout(descriptor);
+    onChange({ ...tab, layout: autoLayout });
+    message.success(`已自动生成 ${autoLayout.type} 布局`);
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }} size="large">
-      {/* 基本信息 */}
+    <Space direction="vertical" style={{ width: '100%' }} size="middle">
       <Card title="基本信息" size="small">
         <Form layout="vertical">
           <Form.Item label="标题">
@@ -126,24 +122,12 @@ export default function TabEditor({ tab, onChange }: TabEditorProps) {
               placeholder="请输入标题"
             />
           </Form.Item>
-
           <Form.Item label="图标">
             <IconPicker value={tab.icon} onChange={(val) => handleBasicChange('icon', val)} />
           </Form.Item>
         </Form>
       </Card>
 
-      {/* 布局类型 */}
-      <Card title="布局类型" size="small">
-        <Select value={tab.layout.type} onChange={handleLayoutTypeChange} style={{ width: '100%' }}>
-          <Select.Option value="form-detail">表单-详情</Select.Option>
-          <Select.Option value="list">列表</Select.Option>
-          <Select.Option value="form">表单</Select.Option>
-          <Select.Option value="detail">详情</Select.Option>
-        </Select>
-      </Card>
-
-      {/* 使用的函数 */}
       <Card
         title="使用的函数"
         size="small"
@@ -153,138 +137,576 @@ export default function TabEditor({ tab, onChange }: TabEditorProps) {
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           style={{
-            minHeight: 100,
+            minHeight: 80,
             border: '2px dashed #d9d9d9',
             borderRadius: 4,
-            padding: 16,
+            padding: 12,
             backgroundColor: '#fafafa',
           }}
         >
           {tab.functions.length > 0 ? (
             <List
+              size="small"
               dataSource={tab.functions}
-              renderItem={(funcId) => (
-                <List.Item
-                  actions={[
-                    <Button
-                      type="link"
-                      danger
-                      size="small"
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleRemoveFunction(funcId)}
-                    />,
-                  ]}
-                >
-                  <Tag color="blue">{funcId}</Tag>
-                </List.Item>
-              )}
+              renderItem={(funcId) => {
+                const desc = descriptors.find((d) => d.id === funcId);
+                return (
+                  <List.Item
+                    actions={[
+                      <Button
+                        type="link"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined />}
+                        onClick={() => handleRemoveFunction(funcId)}
+                      />,
+                    ]}
+                  >
+                    <Tag color="blue">{desc?.display_name?.zh || funcId}</Tag>
+                    <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>{funcId}</span>
+                  </List.Item>
+                );
+              }}
             />
           ) : (
-            <div style={{ textAlign: 'center', color: '#999' }}>拖拽函数到这里</div>
+            <div style={{ textAlign: 'center', color: '#999', padding: '8px 0' }}>
+              拖拽函数到这里
+            </div>
           )}
         </div>
       </Card>
 
-      {/* 布局详细配置 */}
-      <Card title="布局配置" size="small">
-        {renderLayoutConfig(tab.layout, (layout) => {
-          onChange({ ...tab, layout });
-        })}
+      <Card
+        title="布局类型"
+        size="small"
+        extra={
+          <Button
+            size="small"
+            icon={<ThunderboltOutlined />}
+            onClick={handleAutoLayout}
+            title="根据第一个函数自动推导布局"
+          >
+            自动推导
+          </Button>
+        }
+      >
+        <Select value={tab.layout.type} onChange={handleLayoutTypeChange} style={{ width: '100%' }}>
+          <Select.Option value="form-detail">表单-详情（查询后展示）</Select.Option>
+          <Select.Option value="list">列表</Select.Option>
+          <Select.Option value="form">表单（提交操作）</Select.Option>
+          <Select.Option value="detail">详情（只读）</Select.Option>
+        </Select>
       </Card>
+
+      <Card title="布局配置" size="small">
+        {renderLayoutConfig(
+          tab.layout,
+          (layout) => onChange({ ...tab, layout }),
+          tab,
+          onChange,
+          descriptors,
+          { editingColumn, setEditingColumn, columnModalOpen, setColumnModalOpen, columnForm },
+          { editingField, setEditingField, fieldModalOpen, setFieldModalOpen, fieldForm },
+        )}
+      </Card>
+
+      {/* 列编辑 Modal */}
+      <Modal
+        title={editingColumn ? '编辑列' : '添加列'}
+        open={columnModalOpen}
+        onOk={async () => {
+          const values = await columnForm.validateFields();
+          const layout = tab.layout as any;
+          const cols: ColumnConfig[] = layout.columns || [];
+          if (editingColumn) {
+            onChange({
+              ...tab,
+              layout: {
+                ...layout,
+                columns: cols.map((c) => (c.key === editingColumn.key ? { ...c, ...values } : c)),
+              },
+            });
+          } else {
+            onChange({ ...tab, layout: { ...layout, columns: [...cols, values] } });
+          }
+          setColumnModalOpen(false);
+          columnForm.resetFields();
+        }}
+        onCancel={() => {
+          setColumnModalOpen(false);
+          columnForm.resetFields();
+        }}
+      >
+        <Form form={columnForm} layout="vertical">
+          <Form.Item name="key" label="字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: playerId" />
+          </Form.Item>
+          <Form.Item name="title" label="列标题" rules={[{ required: true }]}>
+            <Input placeholder="如: 玩家ID" />
+          </Form.Item>
+          <Form.Item name="render" label="渲染方式">
+            <Select allowClear placeholder="默认文本">
+              {['text', 'status', 'datetime', 'date', 'tag', 'money', 'link', 'image'].map((r) => (
+                <Select.Option key={r} value={r}>
+                  {r}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="width" label="列宽">
+            <Input type="number" placeholder="如: 120" />
+          </Form.Item>
+          <Form.Item name="sortable" label="可排序" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 字段编辑 Modal */}
+      <Modal
+        title={editingField ? '编辑字段' : '添加字段'}
+        open={fieldModalOpen}
+        onOk={async () => {
+          const values = await fieldForm.validateFields();
+          const layout = tab.layout as any;
+          const fieldsKey = layout.type === 'form' ? 'fields' : 'queryFields';
+          const fields: FieldConfig[] = layout[fieldsKey] || [];
+          if (editingField) {
+            onChange({
+              ...tab,
+              layout: {
+                ...layout,
+                [fieldsKey]: fields.map((f) =>
+                  f.key === editingField.key ? { ...f, ...values } : f,
+                ),
+              },
+            });
+          } else {
+            onChange({ ...tab, layout: { ...layout, [fieldsKey]: [...fields, values] } });
+          }
+          setFieldModalOpen(false);
+          fieldForm.resetFields();
+        }}
+        onCancel={() => {
+          setFieldModalOpen(false);
+          fieldForm.resetFields();
+        }}
+      >
+        <Form form={fieldForm} layout="vertical">
+          <Form.Item name="key" label="字段名" rules={[{ required: true }]}>
+            <Input placeholder="如: playerId" />
+          </Form.Item>
+          <Form.Item name="label" label="字段标签" rules={[{ required: true }]}>
+            <Input placeholder="如: 玩家ID" />
+          </Form.Item>
+          <Form.Item name="type" label="字段类型" rules={[{ required: true }]}>
+            <Select>
+              {['input', 'number', 'select', 'date', 'datetime', 'textarea', 'switch'].map((t) => (
+                <Select.Option key={t} value={t}>
+                  {t}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="required" label="必填" valuePropName="checked">
+            <Switch />
+          </Form.Item>
+          <Form.Item name="placeholder" label="占位符">
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Space>
   );
 }
 
-/**
- * 渲染布局配置
- */
-function renderLayoutConfig(layout: any, onChange: (layout: any) => void): React.ReactNode {
+function renderLayoutConfig(
+  layout: any,
+  onLayoutChange: (layout: any) => void,
+  tab: TabConfig,
+  onTabChange: (tab: TabConfig) => void,
+  descriptors: FunctionDescriptor[],
+  columnCtx: any,
+  fieldCtx: any,
+): React.ReactNode {
   switch (layout.type) {
-    case 'form-detail':
-      return renderFormDetailConfig(layout, onChange);
-
     case 'list':
-      return renderListConfig(layout, onChange);
-
+      return renderListConfig(layout, tab, onTabChange, descriptors, columnCtx);
+    case 'form-detail':
+      return renderFormDetailConfig(layout, tab, onTabChange, descriptors, fieldCtx);
     case 'form':
-      return renderFormConfig(layout, onChange);
-
+      return renderFormConfig(layout, tab, onTabChange, descriptors, fieldCtx);
     case 'detail':
-      return renderDetailConfig(layout, onChange);
-
+      return renderDetailConfig(layout, tab, onTabChange, descriptors);
     default:
       return <div style={{ color: '#999' }}>请选择布局类型</div>;
   }
 }
 
-/**
- * 渲染表单-详情配置
- */
-function renderFormDetailConfig(layout: any, onChange: (layout: any) => void): React.ReactNode {
+function renderListConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+  descriptors: FunctionDescriptor[],
+  { setEditingColumn, setColumnModalOpen, columnForm }: any,
+): React.ReactNode {
+  const columns: ColumnConfig[] = layout.columns || [];
+
+  const openAdd = () => {
+    setEditingColumn(null);
+    columnForm.resetFields();
+    setColumnModalOpen(true);
+  };
+
+  const openEdit = (col: ColumnConfig) => {
+    setEditingColumn(col);
+    columnForm.setFieldsValue(col);
+    setColumnModalOpen(true);
+  };
+
+  const removeCol = (key: string) => {
+    onChange({ ...tab, layout: { ...layout, columns: columns.filter((c) => c.key !== key) } });
+  };
+
+  const autoFill = () => {
+    const funcId = layout.listFunction || tab.functions[0];
+    const desc = descriptors.find((d) => d.id === funcId);
+    if (!desc) {
+      message.warning('未找到函数描述符');
+      return;
+    }
+    const cols = schemaToColumns(desc);
+    onChange({ ...tab, layout: { ...layout, columns: cols } });
+    message.success(`已自动生成 ${cols.length} 列`);
+  };
+
   return (
-    <Form layout="vertical">
-      <Form.Item label="查询函数">
-        <Input
-          value={layout.queryFunction}
-          onChange={(e) => onChange({ ...layout, queryFunction: e.target.value })}
-          placeholder="请输入查询函数 ID"
-        />
-      </Form.Item>
-      <div style={{ color: '#999', fontSize: 12 }}>更多配置项将在后续版本中添加</div>
-    </Form>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Form layout="vertical">
+        <Form.Item label="列表函数">
+          <Select
+            value={layout.listFunction}
+            onChange={(v) => onChange({ ...tab, layout: { ...layout, listFunction: v } })}
+            placeholder="选择列表函数"
+            allowClear
+            showSearch
+          >
+            {tab.functions.map((fid) => {
+              const d = descriptors.find((x) => x.id === fid);
+              return (
+                <Select.Option key={fid} value={fid}>
+                  {d?.display_name?.zh || fid}
+                </Select.Option>
+              );
+            })}
+          </Select>
+        </Form.Item>
+      </Form>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>列配置 ({columns.length})</span>
+        <Space>
+          <Button size="small" icon={<ThunderboltOutlined />} onClick={autoFill}>
+            自动填充
+          </Button>
+          <Button size="small" icon={<PlusOutlined />} onClick={openAdd}>
+            添加列
+          </Button>
+        </Space>
+      </div>
+      <Table
+        size="small"
+        dataSource={columns}
+        rowKey="key"
+        pagination={false}
+        columns={[
+          { title: '字段名', dataIndex: 'key', width: 100 },
+          { title: '标题', dataIndex: 'title', width: 100 },
+          { title: '渲染', dataIndex: 'render', width: 80, render: (v) => v || 'text' },
+          {
+            title: '操作',
+            width: 80,
+            render: (_, col) => (
+              <Space>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => openEdit(col)}
+                />
+                <Popconfirm title="确认删除？" onConfirm={() => removeCol(col.key)}>
+                  <Button type="link" danger size="small" icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+        locale={{ emptyText: '暂无列，点击添加或自动填充' }}
+      />
+    </Space>
   );
 }
 
-/**
- * 渲染列表配置
- */
-function renderListConfig(layout: any, onChange: (layout: any) => void): React.ReactNode {
+function renderFormDetailConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+  descriptors: FunctionDescriptor[],
+  { setEditingField, setFieldModalOpen, fieldForm }: any,
+): React.ReactNode {
+  const queryFields: FieldConfig[] = layout.queryFields || [];
+
+  const openAdd = () => {
+    setEditingField(null);
+    fieldForm.resetFields();
+    setFieldModalOpen(true);
+  };
+
+  const openEdit = (f: FieldConfig) => {
+    setEditingField(f);
+    fieldForm.setFieldsValue(f);
+    setFieldModalOpen(true);
+  };
+
+  const removeField = (key: string) => {
+    onChange({
+      ...tab,
+      layout: { ...layout, queryFields: queryFields.filter((f) => f.key !== key) },
+    });
+  };
+
+  const autoFill = () => {
+    const funcId = layout.queryFunction || tab.functions[0];
+    const desc = descriptors.find((d) => d.id === funcId);
+    if (!desc) {
+      message.warning('未找到函数描述符');
+      return;
+    }
+    const fields = schemaToFields(desc);
+    onChange({ ...tab, layout: { ...layout, queryFields: fields } });
+    message.success(`已自动生成 ${fields.length} 个查询字段`);
+  };
+
   return (
-    <Form layout="vertical">
-      <Form.Item label="列表函数">
-        <Input
-          value={layout.listFunction}
-          onChange={(e) => onChange({ ...layout, listFunction: e.target.value })}
-          placeholder="请输入列表函数 ID"
-        />
-      </Form.Item>
-      <div style={{ color: '#999', fontSize: 12 }}>更多配置项将在后续版本中添加</div>
-    </Form>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Form layout="vertical">
+        <Form.Item label="查询函数">
+          <Select
+            value={layout.queryFunction}
+            onChange={(v) => onChange({ ...tab, layout: { ...layout, queryFunction: v } })}
+            placeholder="选择查询函数"
+            allowClear
+            showSearch
+          >
+            {tab.functions.map((fid) => {
+              const d = descriptors.find((x) => x.id === fid);
+              return (
+                <Select.Option key={fid} value={fid}>
+                  {d?.display_name?.zh || fid}
+                </Select.Option>
+              );
+            })}
+          </Select>
+        </Form.Item>
+      </Form>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>查询字段 ({queryFields.length})</span>
+        <Space>
+          <Button size="small" icon={<ThunderboltOutlined />} onClick={autoFill}>
+            自动填充
+          </Button>
+          <Button size="small" icon={<PlusOutlined />} onClick={openAdd}>
+            添加字段
+          </Button>
+        </Space>
+      </div>
+      <Table
+        size="small"
+        dataSource={queryFields}
+        rowKey="key"
+        pagination={false}
+        columns={[
+          { title: '字段名', dataIndex: 'key', width: 100 },
+          { title: '标签', dataIndex: 'label', width: 100 },
+          { title: '类型', dataIndex: 'type', width: 80 },
+          { title: '必填', dataIndex: 'required', width: 60, render: (v) => (v ? '是' : '否') },
+          {
+            title: '操作',
+            width: 80,
+            render: (_, f) => (
+              <Space>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => openEdit(f)}
+                />
+                <Popconfirm title="确认删除？" onConfirm={() => removeField(f.key)}>
+                  <Button type="link" danger size="small" icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+        locale={{ emptyText: '暂无字段' }}
+      />
+    </Space>
   );
 }
 
-/**
- * 渲染表单配置
- */
-function renderFormConfig(layout: any, onChange: (layout: any) => void): React.ReactNode {
+function renderFormConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+  descriptors: FunctionDescriptor[],
+  { setEditingField, setFieldModalOpen, fieldForm }: any,
+): React.ReactNode {
+  const fields: FieldConfig[] = layout.fields || [];
+
+  const openAdd = () => {
+    setEditingField(null);
+    fieldForm.resetFields();
+    setFieldModalOpen(true);
+  };
+
+  const openEdit = (f: FieldConfig) => {
+    setEditingField(f);
+    fieldForm.setFieldsValue(f);
+    setFieldModalOpen(true);
+  };
+
+  const removeField = (key: string) => {
+    onChange({ ...tab, layout: { ...layout, fields: fields.filter((f) => f.key !== key) } });
+  };
+
+  const autoFill = () => {
+    const funcId = layout.submitFunction || tab.functions[0];
+    const desc = descriptors.find((d) => d.id === funcId);
+    if (!desc) {
+      message.warning('未找到函数描述符');
+      return;
+    }
+    const autoFields = schemaToFields(desc);
+    onChange({ ...tab, layout: { ...layout, fields: autoFields } });
+    message.success(`已自动生成 ${autoFields.length} 个字段`);
+  };
+
   return (
-    <Form layout="vertical">
-      <Form.Item label="提交函数">
-        <Input
-          value={layout.submitFunction}
-          onChange={(e) => onChange({ ...layout, submitFunction: e.target.value })}
-          placeholder="请输入提交函数 ID"
-        />
-      </Form.Item>
-      <div style={{ color: '#999', fontSize: 12 }}>更多配置项将在后续版本中添加</div>
-    </Form>
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Form layout="vertical">
+        <Form.Item label="提交函数">
+          <Select
+            value={layout.submitFunction}
+            onChange={(v) => onChange({ ...tab, layout: { ...layout, submitFunction: v } })}
+            placeholder="选择提交函数"
+            allowClear
+            showSearch
+          >
+            {tab.functions.map((fid) => {
+              const d = descriptors.find((x) => x.id === fid);
+              return (
+                <Select.Option key={fid} value={fid}>
+                  {d?.display_name?.zh || fid}
+                </Select.Option>
+              );
+            })}
+          </Select>
+        </Form.Item>
+      </Form>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontWeight: 500 }}>表单字段 ({fields.length})</span>
+        <Space>
+          <Button size="small" icon={<ThunderboltOutlined />} onClick={autoFill}>
+            自动填充
+          </Button>
+          <Button size="small" icon={<PlusOutlined />} onClick={openAdd}>
+            添加字段
+          </Button>
+        </Space>
+      </div>
+      <Table
+        size="small"
+        dataSource={fields}
+        rowKey="key"
+        pagination={false}
+        columns={[
+          { title: '字段名', dataIndex: 'key', width: 100 },
+          { title: '标签', dataIndex: 'label', width: 100 },
+          { title: '类型', dataIndex: 'type', width: 80 },
+          { title: '必填', dataIndex: 'required', width: 60, render: (v) => (v ? '是' : '否') },
+          {
+            title: '操作',
+            width: 80,
+            render: (_, f) => (
+              <Space>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => openEdit(f)}
+                />
+                <Popconfirm title="确认删除？" onConfirm={() => removeField(f.key)}>
+                  <Button type="link" danger size="small" icon={<DeleteOutlined />} />
+                </Popconfirm>
+              </Space>
+            ),
+          },
+        ]}
+        locale={{ emptyText: '暂无字段' }}
+      />
+    </Space>
   );
 }
 
-/**
- * 渲染详情配置
- */
-function renderDetailConfig(layout: any, onChange: (layout: any) => void): React.ReactNode {
+function renderDetailConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+  descriptors: FunctionDescriptor[],
+): React.ReactNode {
   return (
     <Form layout="vertical">
       <Form.Item label="详情函数">
-        <Input
+        <Select
           value={layout.detailFunction}
-          onChange={(e) => onChange({ ...layout, detailFunction: e.target.value })}
-          placeholder="请输入详情函数 ID"
-        />
+          onChange={(v) => onChange({ ...tab, layout: { ...layout, detailFunction: v } })}
+          placeholder="选择详情函数"
+          allowClear
+          showSearch
+        >
+          {tab.functions.map((fid) => {
+            const d = descriptors.find((x) => x.id === fid);
+            return (
+              <Select.Option key={fid} value={fid}>
+                {d?.display_name?.zh || fid}
+              </Select.Option>
+            );
+          })}
+        </Select>
       </Form.Item>
-      <div style={{ color: '#999', fontSize: 12 }}>更多配置项将在后续版本中添加</div>
     </Form>
   );
 }

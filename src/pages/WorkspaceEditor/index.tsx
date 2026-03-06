@@ -12,6 +12,7 @@ import { Row, Col, Button, message, Spin } from 'antd';
 import { useParams, history } from '@umijs/max';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { loadWorkspaceConfig, saveWorkspaceConfig } from '@/services/workspaceConfig';
+import { listDescriptors } from '@/services/api/functions';
 import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
 import ConfigPreview from './components/ConfigPreview';
@@ -55,44 +56,11 @@ export default function WorkspaceEditor() {
       }
 
       // 加载可用函数
-      // TODO: 调用 API 获取函数描述符列表
-      // const descriptors = await listDescriptors();
-      // const functions = descriptors.filter(d => d.entity === objectKey);
-      // setAvailableFunctions(functions);
-
-      // 临时使用模拟数据
-      setAvailableFunctions([
-        {
-          id: `${objectKey}.list`,
-          entity: objectKey,
-          operation: 'list',
-          display_name: { zh: '列表查询', en: 'List' },
-        },
-        {
-          id: `${objectKey}.getInfo`,
-          entity: objectKey,
-          operation: 'query',
-          display_name: { zh: '获取信息', en: 'Get Info' },
-        },
-        {
-          id: `${objectKey}.create`,
-          entity: objectKey,
-          operation: 'create',
-          display_name: { zh: '创建', en: 'Create' },
-        },
-        {
-          id: `${objectKey}.update`,
-          entity: objectKey,
-          operation: 'update',
-          display_name: { zh: '更新', en: 'Update' },
-        },
-        {
-          id: `${objectKey}.delete`,
-          entity: objectKey,
-          operation: 'delete',
-          display_name: { zh: '删除', en: 'Delete' },
-        },
-      ]);
+      const descriptors = await listDescriptors();
+      const functions = descriptors.filter(
+        (d) => !d.entity || d.entity === objectKey || d.id.startsWith(`${objectKey}.`),
+      );
+      setAvailableFunctions(functions.length > 0 ? functions : descriptors);
     } catch (error: any) {
       message.error(error.message || '加载失败');
     } finally {
@@ -111,6 +79,7 @@ export default function WorkspaceEditor() {
     try {
       await saveWorkspaceConfig(config);
       message.success('保存成功');
+      history.push(`/system/functions/workspaces/${encodeURIComponent(objectKey)}`);
     } catch (error: any) {
       message.error(error.message || '保存失败');
     } finally {
@@ -157,7 +126,7 @@ export default function WorkspaceEditor() {
 
         {/* 中间：布局设计器 */}
         <Col span={12}>
-          <LayoutDesigner config={config} onChange={setConfig} />
+          <LayoutDesigner config={config} onChange={setConfig} descriptors={availableFunctions} />
         </Col>
 
         {/* 右侧：实时预览 */}

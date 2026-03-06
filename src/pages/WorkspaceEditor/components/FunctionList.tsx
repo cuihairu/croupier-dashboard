@@ -11,28 +11,67 @@ import { Card, List, Tag, Typography, Input } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 
 export interface FunctionListProps {
-  /** 函数列表 */
   functions: any[];
 }
 
-/**
- * 函数列表组件
- */
+const OPERATION_COLOR: Record<string, string> = {
+  list: '#1677ff',
+  query: '#52c41a',
+  create: '#13c2c2',
+  update: '#fa8c16',
+  delete: '#ff4d4f',
+  action: '#722ed1',
+  read: '#52c41a',
+  custom: '#eb2f96',
+};
+
+const OPERATION_TAG_COLOR: Record<string, string> = {
+  list: 'blue',
+  query: 'green',
+  create: 'cyan',
+  update: 'orange',
+  delete: 'red',
+  action: 'purple',
+  read: 'green',
+  custom: 'magenta',
+};
+
+// 根据 entity 生成稳定的背景色（浅色）
+const ENTITY_BG_COLORS = [
+  '#f0f5ff',
+  '#f6ffed',
+  '#fff7e6',
+  '#fff0f6',
+  '#f9f0ff',
+  '#e6fffb',
+  '#fffbe6',
+  '#fff1f0',
+  '#fcffe6',
+  '#e6f4ff',
+];
+
+function entityColorIndex(entity?: string): number {
+  if (!entity) return 0;
+  let hash = 0;
+  for (let i = 0; i < entity.length; i++) hash = (hash * 31 + entity.charCodeAt(i)) & 0xffff;
+  return hash % ENTITY_BG_COLORS.length;
+}
+
 export default function FunctionList({ functions }: FunctionListProps) {
   const [searchText, setSearchText] = React.useState('');
 
-  // 过滤函数
   const filteredFunctions = functions.filter((func) => {
     if (!searchText) return true;
     const text = searchText.toLowerCase();
     return (
       func.id.toLowerCase().includes(text) ||
       func.display_name?.zh?.toLowerCase().includes(text) ||
-      func.operation?.toLowerCase().includes(text)
+      func.operation?.toLowerCase().includes(text) ||
+      func.entity?.toLowerCase().includes(text) ||
+      func.category?.toLowerCase().includes(text)
     );
   });
 
-  // 处理拖拽开始
   const handleDragStart = (e: React.DragEvent, func: any) => {
     e.dataTransfer.setData('function', JSON.stringify(func));
     e.dataTransfer.effectAllowed = 'copy';
@@ -44,76 +83,86 @@ export default function FunctionList({ functions }: FunctionListProps) {
       style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
       extra={
         <Input
-          placeholder="搜索函数"
+          placeholder="搜索"
           prefix={<SearchOutlined />}
           size="small"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 150 }}
+          style={{ width: 120 }}
+          allowClear
         />
       }
     >
       <List
         dataSource={filteredFunctions}
-        renderItem={(func) => (
-          <List.Item
-            draggable
-            onDragStart={(e) => handleDragStart(e, func)}
-            style={{
-              cursor: 'move',
-              padding: '12px',
-              border: '1px solid #f0f0f0',
-              borderRadius: '4px',
-              marginBottom: '8px',
-              backgroundColor: '#fafafa',
-              transition: 'all 0.3s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e6f7ff';
-              e.currentTarget.style.borderColor = '#1890ff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#fafafa';
-              e.currentTarget.style.borderColor = '#f0f0f0';
-            }}
-          >
-            <List.Item.Meta
-              title={
-                <div>
-                  <Typography.Text strong>{func.display_name?.zh || func.id}</Typography.Text>
-                </div>
-              }
-              description={
-                <>
-                  <Typography.Text
-                    type="secondary"
-                    style={{ fontSize: 12, display: 'block', marginBottom: 4 }}
-                  >
-                    {func.id}
+        renderItem={(func) => {
+          const op = func.operation || 'custom';
+          const borderColor = OPERATION_COLOR[op] || '#d9d9d9';
+          const bgColor = ENTITY_BG_COLORS[entityColorIndex(func.entity || func.category)];
+          const tagColor = OPERATION_TAG_COLOR[op] || 'default';
+
+          return (
+            <List.Item
+              draggable
+              onDragStart={(e) => handleDragStart(e, func)}
+              style={{
+                cursor: 'grab',
+                padding: '10px 12px',
+                borderRadius: 6,
+                marginBottom: 8,
+                backgroundColor: bgColor,
+                borderLeft: `4px solid ${borderColor}`,
+                border: `1px solid ${borderColor}22`,
+                borderLeftWidth: 4,
+                transition: 'box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow = `0 2px 8px ${borderColor}44`;
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+              }}
+            >
+              <List.Item.Meta
+                title={
+                  <Typography.Text strong style={{ fontSize: 13 }}>
+                    {func.display_name?.zh || func.id}
                   </Typography.Text>
-                  <Tag color={getOperationColor(func.operation)}>{func.operation}</Tag>
-                </>
-              }
-            />
-          </List.Item>
-        )}
+                }
+                description={
+                  <div style={{ marginTop: 2 }}>
+                    <Typography.Text
+                      type="secondary"
+                      style={{ fontSize: 11, display: 'block', marginBottom: 4 }}
+                      ellipsis
+                    >
+                      {func.id}
+                    </Typography.Text>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                      {op && (
+                        <Tag color={tagColor} style={{ margin: 0, fontSize: 11 }}>
+                          {op}
+                        </Tag>
+                      )}
+                      {func.entity && (
+                        <Tag color="default" style={{ margin: 0, fontSize: 11 }}>
+                          {func.entity}
+                        </Tag>
+                      )}
+                      {func.category && !func.entity && (
+                        <Tag color="default" style={{ margin: 0, fontSize: 11 }}>
+                          {func.category}
+                        </Tag>
+                      )}
+                    </div>
+                  </div>
+                }
+              />
+            </List.Item>
+          );
+        }}
         locale={{ emptyText: '暂无可用函数' }}
       />
     </Card>
   );
-}
-
-/**
- * 根据操作类型获取标签颜色
- */
-function getOperationColor(operation: string): string {
-  const colorMap: Record<string, string> = {
-    list: 'blue',
-    query: 'green',
-    create: 'cyan',
-    update: 'orange',
-    delete: 'red',
-    action: 'purple',
-  };
-  return colorMap[operation] || 'default';
 }
