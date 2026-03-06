@@ -107,7 +107,7 @@ export default function ConfigPreview({ config }: ConfigPreviewProps) {
         footer={null}
         width="90%"
         style={{ top: 20 }}
-        bodyStyle={{ height: 'calc(100vh - 150px)', overflow: 'auto' }}
+        styles={{ body: { height: 'calc(100vh - 150px)', overflow: 'auto' } }}
       >
         <WorkspaceRenderer config={config} />
       </Modal>
