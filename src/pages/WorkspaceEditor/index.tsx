@@ -5,11 +5,10 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   AppstoreOutlined,
-  LayoutOutlined,
   EyeOutlined,
   SaveOutlined,
 } from '@ant-design/icons';
-import { useParams, history } from '@umijs/max';
+import { useParams } from '@umijs/max';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { loadWorkspaceConfig, saveWorkspaceConfig } from '@/services/workspaceConfig';
 import { listDescriptors } from '@/services/api/functions';
@@ -17,8 +16,8 @@ import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
 import ConfigPreview from './components/ConfigPreview';
 
-/** 布局模式：1=仅设计器，2=函数+设计器（默认），3=函数+设计器+预览 */
-type ViewMode = 1 | 2 | 3;
+/** 两种模式：2=函数+设计器（默认），3=函数+设计器+预览 */
+type ViewMode = 2 | 3;
 
 export default function WorkspaceEditor() {
   const params = useParams<{ objectKey: string }>();
@@ -29,7 +28,7 @@ export default function WorkspaceEditor() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(2);
-  const [functionPanelCollapsed, setFunctionPanelCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -50,7 +49,6 @@ export default function WorkspaceEditor() {
           layout: { type: 'tabs', tabs: [] },
         },
       );
-
       const descriptors = await listDescriptors();
       const functions = descriptors.filter(
         (d) => !d.entity || d.entity === objectKey || d.id.startsWith(`${objectKey}.`),
@@ -84,28 +82,15 @@ export default function WorkspaceEditor() {
     );
   }
 
-  const showFunctions = viewMode >= 2;
-  const showPreview = viewMode >= 3;
-
-  // 计算各面板宽度
-  const getFunctionWidth = () => {
-    if (!showFunctions) return 0;
-    return functionPanelCollapsed ? 40 : 260;
-  };
-
-  const getPreviewWidth = () => (showPreview ? 320 : 0);
-
-  const functionWidth = getFunctionWidth();
-  const previewWidth = getPreviewWidth();
-  const designerWidth = `calc(100% - ${functionWidth}px - ${previewWidth}px - ${
-    showFunctions && showPreview ? 32 : showFunctions || showPreview ? 16 : 0
-  }px)`;
+  const functionWidth = collapsed ? 40 : 260;
+  const previewWidth = viewMode === 3 ? 320 : 0;
+  const gap = viewMode === 3 ? 16 : 8;
+  const designerWidth = `calc(100% - ${functionWidth}px - ${previewWidth}px - ${gap}px)`;
 
   return (
     <PageContainer
       title={`编排 Workspace: ${objectKey}`}
       extra={[
-        // 布局切换按钮组（VSCode 风格）
         <div
           key="view-mode"
           style={{
@@ -116,21 +101,12 @@ export default function WorkspaceEditor() {
             marginRight: 8,
           }}
         >
-          <Tooltip title="仅设计器">
-            <Button
-              type={viewMode === 1 ? 'primary' : 'text'}
-              icon={<LayoutOutlined />}
-              size="small"
-              style={{ borderRadius: 0, border: 'none' }}
-              onClick={() => setViewMode(1)}
-            />
-          </Tooltip>
           <Tooltip title="函数 + 设计器">
             <Button
               type={viewMode === 2 ? 'primary' : 'text'}
               icon={<AppstoreOutlined />}
               size="small"
-              style={{ borderRadius: 0, border: 'none', borderLeft: '1px solid #d9d9d9' }}
+              style={{ borderRadius: 0, border: 'none' }}
               onClick={() => setViewMode(2)}
             />
           </Tooltip>
@@ -155,81 +131,62 @@ export default function WorkspaceEditor() {
         </Button>,
       ]}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          height: 'calc(100vh - 180px)',
-          overflow: 'hidden',
-        }}
-      >
+      <div style={{ display: 'flex', gap: 8, height: 'calc(100vh - 180px)', overflow: 'hidden' }}>
         {/* 函数面板 */}
-        {showFunctions && (
-          <div
-            style={{
-              width: functionWidth,
-              flexShrink: 0,
-              transition: 'width 0.2s',
-              overflow: 'hidden',
-              position: 'relative',
-            }}
-          >
-            {functionPanelCollapsed ? (
-              // 收缩状态：只显示展开按钮
+        <div
+          style={{
+            width: functionWidth,
+            flexShrink: 0,
+            transition: 'width 0.2s',
+            overflow: 'hidden',
+          }}
+        >
+          {collapsed ? (
+            <div
+              style={{
+                width: 40,
+                height: '100%',
+                border: '1px solid #f0f0f0',
+                borderRadius: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 12,
+                backgroundColor: '#fafafa',
+                cursor: 'pointer',
+              }}
+              onClick={() => setCollapsed(false)}
+            >
+              <Tooltip title="展开函数面板" placement="right">
+                <MenuUnfoldOutlined style={{ color: '#666' }} />
+              </Tooltip>
               <div
                 style={{
-                  width: 40,
-                  height: '100%',
-                  border: '1px solid #f0f0f0',
-                  borderRadius: 6,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  paddingTop: 12,
-                  backgroundColor: '#fafafa',
-                  cursor: 'pointer',
+                  marginTop: 16,
+                  writingMode: 'vertical-rl',
+                  fontSize: 12,
+                  color: '#999',
+                  letterSpacing: 2,
                 }}
-                onClick={() => setFunctionPanelCollapsed(false)}
               >
-                <Tooltip title="展开函数面板" placement="right">
-                  <MenuUnfoldOutlined style={{ color: '#666' }} />
-                </Tooltip>
-                <div
-                  style={{
-                    marginTop: 16,
-                    writingMode: 'vertical-rl',
-                    fontSize: 12,
-                    color: '#999',
-                    letterSpacing: 2,
-                  }}
-                >
-                  可用函数
-                </div>
+                可用函数
               </div>
-            ) : (
-              // 展开状态
-              <div style={{ height: '100%', position: 'relative' }}>
-                <FunctionList functions={availableFunctions} />
-                {/* 收缩按钮 */}
-                <Tooltip title="收起函数面板" placement="right">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<MenuFoldOutlined />}
-                    onClick={() => setFunctionPanelCollapsed(true)}
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      zIndex: 10,
-                      color: '#666',
-                    }}
-                  />
-                </Tooltip>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div style={{ height: '100%', position: 'relative' }}>
+              <FunctionList functions={availableFunctions} />
+              <Tooltip title="收起" placement="right">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<MenuFoldOutlined />}
+                  onClick={() => setCollapsed(true)}
+                  style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, color: '#666' }}
+                />
+              </Tooltip>
+            </div>
+          )}
+        </div>
 
         {/* 布局设计器 */}
         <div style={{ width: designerWidth, flexShrink: 0, overflow: 'auto' }}>
@@ -237,7 +194,7 @@ export default function WorkspaceEditor() {
         </div>
 
         {/* 预览面板 */}
-        {showPreview && (
+        {viewMode === 3 && (
           <div style={{ width: previewWidth, flexShrink: 0, overflow: 'auto' }}>
             <ConfigPreview config={config} />
           </div>
