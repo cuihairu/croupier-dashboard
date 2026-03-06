@@ -1,7 +1,11 @@
 /**
  * @see https://umijs.org/docs/max/access#access
  * */
-export default function access(initialState: { currentUser?: API.CurrentUser } | undefined) {
+type AccessCurrentUser = {
+  access?: string;
+};
+
+export default function access(initialState: { currentUser?: AccessCurrentUser } | undefined) {
   const acc = ((initialState?.currentUser as any)?.access as string | undefined) || '';
   const perms = new Set(
     acc
@@ -40,7 +44,12 @@ export default function access(initialState: { currentUser?: API.CurrentUser } |
     canAnalyticsManage: has('analytics:manage') || has('admin'),
     canAnalyticsExport: has('analytics:export') || has('admin'),
     // 权限管理相关权限（与后端的 RBAC key 对齐）
-    canPermissionManage: has('roles:read') || has('roles:manage') || has('users:read') || has('users:manage') || has('admin'),
+    canPermissionManage:
+      has('roles:read') ||
+      has('roles:manage') ||
+      has('users:read') ||
+      has('users:manage') ||
+      has('admin'),
     canRoleManage: has('roles:read') || has('roles:manage') || has('admin'),
     canUserManage: has('users:read') || has('users:manage') || has('admin'),
     canPermissionConfig: has('system:config') || has('admin'),

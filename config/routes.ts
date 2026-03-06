@@ -11,6 +11,41 @@
  * @doc https://umijs.org/docs/guides/routes
  */
 export default [
+  // ==================== V2 测试路由（新架构） ====================
+  {
+    path: '/v2',
+    name: 'V2Test',
+    icon: 'experiment',
+    routes: [
+      {
+        path: '/v2',
+        redirect: '/v2/users',
+      },
+      {
+        path: '/v2/users',
+        name: 'UsersV2',
+        component: './DynamicPage',
+      },
+      {
+        path: '/v2/users/create',
+        name: 'CreateUserV2',
+        component: './DynamicPage',
+        hideInMenu: true,
+      },
+      {
+        path: '/v2/users/:id',
+        name: 'UserDetailV2',
+        component: './DynamicPage',
+        hideInMenu: true,
+      },
+      {
+        path: '/v2/roles',
+        name: 'RolesV2',
+        component: './DynamicPage',
+      },
+    ],
+  },
+  // ==================== 现有路由 ====================
   {
     path: '/system',
     name: 'SystemConfig',

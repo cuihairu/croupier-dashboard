@@ -19,18 +19,22 @@ import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
 import { loadPackPlugins } from './plugin/registry';
+import {
+  buildWorkspaceItems,
+  injectWorkspaceMenu,
+  type DynamicMenuItem,
+} from '@/features/navigation/workspaceMenu';
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
 let cachedConsoleSignature = '';
-type DynamicMenuItem = {
-  key: string;
-  name: string;
-  path?: string;
-  locale: false;
-  children?: DynamicMenuItem[];
-  routes?: DynamicMenuItem[];
-};
 let cachedConsoleItems: DynamicMenuItem[] = [];
+type InitialCurrentUser = {
+  name?: string;
+  userid?: string;
+  access?: string;
+  roles?: any[];
+  avatar?: string;
+};
 
 const TOKEN_ZH_MAP: Record<string, string> = {
   examples: '示例',
@@ -102,9 +106,9 @@ const fallbackNameFromId = (id?: string, locale?: string) => {
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
-  currentUser?: API.CurrentUser;
+  currentUser?: InitialCurrentUser;
   loading?: boolean;
-  fetchUserInfo?: () => Promise<API.CurrentUser | undefined>;
+  fetchUserInfo?: () => Promise<InitialCurrentUser | undefined>;
   functionDescriptors?: FunctionDescriptor[];
 }> {
   const fetchUserInfo = async () => {
@@ -201,9 +205,14 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       const onRouteChanged = () => {
         refreshDescriptors().catch(() => {});
       };
+      const onScopeChanged = () => {
+        refreshDescriptors().catch(() => {});
+      };
       window.addEventListener('function-route:changed', onRouteChanged as EventListener);
+      window.addEventListener('scope:change', onScopeChanged as EventListener);
       return () => {
         window.removeEventListener('function-route:changed', onRouteChanged as EventListener);
+        window.removeEventListener('scope:change', onScopeChanged as EventListener);
       };
     }, [initialState?.currentUser, setInitialState]);
     return null;
@@ -229,7 +238,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
       const descriptors = (initialState as any)?.functionDescriptors as
         | FunctionDescriptor[]
         | undefined;
-      if (!Array.isArray(descriptors) || descriptors.length === 0) return menuData;
+      if (!Array.isArray(descriptors)) return menuData;
       const locale = getLocale();
       const preferZh = isZhLocale(locale);
 
@@ -331,9 +340,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         );
         if (!base) {
           if (entityType || inferredEntity) {
-            base = `/game/entities/${inferredEntity || 'general'}`;
+            base = `/system/entities/${inferredEntity || 'general'}`;
           } else {
-            base = '/game/functions/invoke';
+            base = '/system/functions/invoke';
           }
         }
         const sep = base.includes('?') ? '&' : '?';
@@ -353,7 +362,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
           path: buildPath(d.menu?.path || '', d.id, isEntity(d)),
         }));
 
-      if (visible.length === 0) return menuData;
+      if (visible.length === 0) {
+        return injectWorkspaceMenu(menuData as any, []);
+      }
 
       const signature = visible
         .map(
@@ -364,133 +375,22 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
         )
         .sort()
         .join('||');
-      const consoleItems =
+      const workspaceItems =
         signature === cachedConsoleSignature
           ? cachedConsoleItems
-          : (() => {
-              const CATALOG_PATH = '/game/functions/catalog';
-              const MAX_GROUPS = 10;
-              const MAX_ITEMS_PER_GROUP = 6;
-              const sorted = [...visible].sort(
-                (a, b) => a.order - b.order || a.name.localeCompare(b.name),
-              );
-              type MenuGroup = {
-                key: string;
-                name: string;
-                order: number;
-                items: Array<{
-                  id: string;
-                  name: string;
-                  path: string;
-                  order: number;
-                }>;
-              };
-              const groups = new Map<string, MenuGroup>();
-
-              sorted.forEach((it) => {
-                const nodes = (it.nodes || []).filter(Boolean);
-                const primary = sanitizeNodeKey(nodes[0] || it.category || 'general') || 'general';
-                const secondary = sanitizeNodeKey(nodes[1] || '');
-                const groupName =
-                  localizeFreeText(primary) ||
-                  localizeToken(primary) ||
-                  (preferZh ? '未分组' : 'Ungrouped');
-                const itemName = secondary
-                  ? `${localizeToken(secondary) || secondary} · ${it.name}`
-                  : it.name;
-                const key = `console-group-${primary}`;
-                const current = groups.get(key) || {
-                  key,
-                  name: groupName,
-                  order: it.order,
-                  items: [],
-                };
-                current.order = Math.min(current.order, it.order);
-                current.items.push({
-                  id: it.id,
-                  name: itemName,
-                  path: it.path,
-                  order: it.order,
-                });
-                groups.set(key, current);
-              });
-
-              const browseLabel = preferZh ? '打开目录' : 'Open Catalog';
-              const moreLabel = preferZh ? '更多函数…' : 'More Functions…';
-              const catalogLabel = preferZh ? '函数目录' : 'Function Catalog';
-              const builtGroups = Array.from(groups.values())
-                .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-                .slice(0, MAX_GROUPS)
-                .map((group) => {
-                  const groupPath = CATALOG_PATH;
-                  const sortedItems = [...group.items].sort(
-                    (a, b) => a.order - b.order || a.name.localeCompare(b.name),
-                  );
-                  const children: DynamicMenuItem[] = [
-                    {
-                      key: `${group.key}-all`,
-                      name: `${browseLabel} (${group.items.length})`,
-                      path: groupPath,
-                      locale: false,
-                    },
-                    ...sortedItems.slice(0, MAX_ITEMS_PER_GROUP).map((item) => ({
-                      key: `console-fn-${item.id}`,
-                      name: item.name,
-                      path: item.path,
-                      locale: false,
-                    })),
-                  ];
-                  if (sortedItems.length > MAX_ITEMS_PER_GROUP) {
-                    children.push({
-                      key: `${group.key}-more`,
-                      name: moreLabel,
-                      path: groupPath,
-                      locale: false,
-                    });
-                  }
-                  return {
-                    key: group.key,
-                    name: group.name,
-                    path: groupPath,
-                    locale: false,
-                    children,
-                    routes: children,
-                  };
-                });
-              return [
-                {
-                  key: 'console-catalog',
-                  name: catalogLabel,
-                  path: CATALOG_PATH,
-                  locale: false,
-                },
-                ...builtGroups,
-              ];
-            })();
+          : buildWorkspaceItems({
+              visible,
+              preferZh,
+              localizeFreeText,
+              localizeToken,
+              sanitizeNodeKey,
+            });
       if (signature !== cachedConsoleSignature) {
         cachedConsoleSignature = signature;
-        cachedConsoleItems = consoleItems;
+        cachedConsoleItems = workspaceItems;
       }
 
-      const inject = (items: any[]): any[] =>
-        (items || []).map((it: any) => {
-          const children = it.children || it.routes;
-          const patchedChildren = Array.isArray(children) ? inject(children) : children;
-          const out = {
-            ...it,
-            ...(Array.isArray(children)
-              ? { children: patchedChildren, routes: patchedChildren }
-              : {}),
-          };
-          if (out.path === '/console') {
-            out.children = consoleItems;
-            out.routes = consoleItems;
-            out.path = '/game/functions/catalog';
-          }
-          return out;
-        });
-
-      return inject(menuData as any);
+      return injectWorkspaceMenu(menuData as any, workspaceItems);
     },
     footerRender: () => <Footer />,
 

@@ -452,9 +452,7 @@ export default function ApprovalsPage() {
                   size="small"
                   onClick={() =>
                     window.open(
-                      `/operations/audit?actor=${encodeURIComponent(
-                        current.actor || current.Actor,
-                      )}`,
+                      `/ops/audit?actor=${encodeURIComponent(current.actor || current.Actor)}`,
                       '_blank',
                     )
                   }
@@ -467,7 +465,7 @@ export default function ApprovalsPage() {
                   size="small"
                   onClick={() =>
                     window.open(
-                      `/operations/audit?actor=${encodeURIComponent(
+                      `/ops/audit?actor=${encodeURIComponent(
                         current.actor || current.Actor,
                       )}&kind=approval_approve`,
                       '_blank',
@@ -482,7 +480,7 @@ export default function ApprovalsPage() {
                   size="small"
                   onClick={() =>
                     window.open(
-                      `/operations/audit?actor=${encodeURIComponent(
+                      `/ops/audit?actor=${encodeURIComponent(
                         current.actor || current.Actor,
                       )}&kind=approval_reject`,
                       '_blank',
