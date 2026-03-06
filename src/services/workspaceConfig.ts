@@ -18,8 +18,8 @@ import {
   mockListPublishedWorkspaceConfigs,
 } from './mock/workspaceMock';
 
-// Workspace 配置接口后端尚未实现，暂时走 mock
-const USE_MOCK = true;
+// Workspace 配置接口后端已实现
+const USE_MOCK = false;
 
 /**
  * 配置缓存

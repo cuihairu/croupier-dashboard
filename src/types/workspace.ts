@@ -30,6 +30,18 @@ export interface WorkspaceConfig {
   /** 权限列表 */
   permissions?: string[];
 
+  /** 是否已发布（发布后出现在控制台菜单） */
+  published?: boolean;
+
+  /** 发布时间 */
+  publishedAt?: string;
+
+  /** 发布人 */
+  publishedBy?: string;
+
+  /** 菜单顺序（控制台菜单排序） */
+  menuOrder?: number;
+
   /** 元数据 */
   meta?: WorkspaceMeta;
 }

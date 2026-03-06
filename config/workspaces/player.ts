@@ -81,7 +81,8 @@ export const playerWorkspaceConfig: WorkspaceConfig = {
               label: '封禁',
               function: 'player.ban',
               type: 'popconfirm',
-              buttonType: 'danger',
+              buttonType: 'default',
+              danger: true,
               permissions: ['player.ban'],
             },
             {

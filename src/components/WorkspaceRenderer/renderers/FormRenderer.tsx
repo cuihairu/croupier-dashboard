@@ -88,7 +88,7 @@ export default function FormRenderer({ layout, objectKey, context }: FormRendere
           rules={[
             { required: field.required, message: `请输入${field.label}` },
             ...(field.rules || []).map((rule) => ({
-              type: rule.type,
+              type: rule.type as any,
               pattern: rule.pattern ? new RegExp(rule.pattern) : undefined,
               min: rule.min,
               max: rule.max,
