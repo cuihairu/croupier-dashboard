@@ -7,11 +7,12 @@
  */
 
 import React from 'react';
-import { Card, List, Tag, Typography, Input } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Card, List, Tag, Typography, Input, Button, Tooltip } from 'antd';
+import { SearchOutlined, MenuFoldOutlined } from '@ant-design/icons';
 
 export interface FunctionListProps {
   functions: any[];
+  onCollapse?: () => void;
 }
 
 const OPERATION_COLOR: Record<string, string> = {
@@ -57,7 +58,7 @@ function entityColorIndex(entity?: string): number {
   return hash % ENTITY_BG_COLORS.length;
 }
 
-export default function FunctionList({ functions }: FunctionListProps) {
+export default function FunctionList({ functions, onCollapse }: FunctionListProps) {
   const [searchText, setSearchText] = React.useState('');
 
   const filteredFunctions = functions.filter((func) => {
@@ -82,15 +83,28 @@ export default function FunctionList({ functions }: FunctionListProps) {
       title="可用函数"
       style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
       extra={
-        <Input
-          placeholder="搜索"
-          prefix={<SearchOutlined />}
-          size="small"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          style={{ width: 120 }}
-          allowClear
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Input
+            placeholder="搜索"
+            prefix={<SearchOutlined />}
+            size="small"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 100 }}
+            allowClear
+          />
+          {onCollapse && (
+            <Tooltip title="收起">
+              <Button
+                type="text"
+                size="small"
+                icon={<MenuFoldOutlined />}
+                onClick={onCollapse}
+                style={{ color: '#666', flexShrink: 0 }}
+              />
+            </Tooltip>
+          )}
+        </div>
       }
     >
       <List

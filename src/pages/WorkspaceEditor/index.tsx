@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PageContainer } from '@ant-design/pro-components';
 import { Button, message, Spin, Tooltip } from 'antd';
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  AppstoreOutlined,
-  EyeOutlined,
-  SaveOutlined,
-} from '@ant-design/icons';
+import { MenuUnfoldOutlined, AppstoreOutlined, EyeOutlined, SaveOutlined } from '@ant-design/icons';
 import { useParams } from '@umijs/max';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { loadWorkspaceConfig, saveWorkspaceConfig } from '@/services/workspaceConfig';
@@ -173,17 +167,8 @@ export default function WorkspaceEditor() {
               </div>
             </div>
           ) : (
-            <div style={{ height: '100%', position: 'relative' }}>
-              <FunctionList functions={availableFunctions} />
-              <Tooltip title="收起" placement="right">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<MenuFoldOutlined />}
-                  onClick={() => setCollapsed(true)}
-                  style={{ position: 'absolute', top: 8, right: 8, zIndex: 10, color: '#666' }}
-                />
-              </Tooltip>
+            <div style={{ height: '100%' }}>
+              <FunctionList functions={availableFunctions} onCollapse={() => setCollapsed(true)} />
             </div>
           )}
         </div>
