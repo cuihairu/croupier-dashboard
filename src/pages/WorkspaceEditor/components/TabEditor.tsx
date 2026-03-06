@@ -10,6 +10,7 @@ import React from 'react';
 import { Form, Input, Select, Card, Space, List, Tag, Button, message } from 'antd';
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import type { TabConfig } from '@/types/workspace';
+import IconPicker from './IconPicker';
 
 export interface TabEditorProps {
   /** Tab 配置 */
@@ -126,12 +127,8 @@ export default function TabEditor({ tab, onChange }: TabEditorProps) {
             />
           </Form.Item>
 
-          <Form.Item label="图标" tooltip="Ant Design Icons 图标名称">
-            <Input
-              value={tab.icon}
-              onChange={(e) => handleBasicChange('icon', e.target.value)}
-              placeholder="如: UserOutlined"
-            />
+          <Form.Item label="图标">
+            <IconPicker value={tab.icon} onChange={(val) => handleBasicChange('icon', val)} />
           </Form.Item>
         </Form>
       </Card>
