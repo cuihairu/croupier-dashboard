@@ -18,8 +18,8 @@ import {
   mockListPublishedWorkspaceConfigs,
 } from './mock/workspaceMock';
 
-// 只有明确设置 USE_MOCK=true 才走 mock，默认走真实 API
-const USE_MOCK = process.env.USE_MOCK === 'true';
+// Workspace 配置接口后端尚未实现，暂时走 mock
+const USE_MOCK = true;
 
 /**
  * 配置缓存
