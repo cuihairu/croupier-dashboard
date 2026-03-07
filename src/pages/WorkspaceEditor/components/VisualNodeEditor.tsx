@@ -8,7 +8,7 @@
 
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import {
-  Card,
+  Alert,
   Button,
   Dropdown,
   Modal,
@@ -722,6 +722,14 @@ export default function VisualNodeEditor({
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Alert
+        type="warning"
+        showIcon
+        style={{ margin: '8px 12px 0' }}
+        message="内部实验能力：节点编辑器"
+        description="该能力不属于 Workspace V1 交付范围，不提供生产可执行的条件分支、数据转换与流程执行能力。"
+      />
+
       {/* 工具栏 */}
       <div
         style={{

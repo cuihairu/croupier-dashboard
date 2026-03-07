@@ -44,6 +44,7 @@ import type { MenuProps } from 'antd';
 
 const { Text, Title, Paragraph } = Typography;
 const { Search } = Input;
+const V1_TAB_LAYOUT_TYPES = new Set(['form-detail', 'list', 'form', 'detail']);
 
 // 模板类型
 export type TemplateType = 'workspace' | 'layout' | 'function-set' | 'workflow';
@@ -72,6 +73,14 @@ export interface TemplateMeta {
 // 模板完整数据
 export interface Template extends TemplateMeta {
   config: Record<string, any>;
+}
+
+function isV1TemplateConfig(config: Record<string, any> | undefined): boolean {
+  const layout = config?.layout;
+  if (!layout || layout.type !== 'tabs' || !Array.isArray(layout.tabs)) {
+    return false;
+  }
+  return layout.tabs.every((tab: any) => V1_TAB_LAYOUT_TYPES.has(tab?.layout?.type));
 }
 
 // 内置模板
@@ -150,31 +159,6 @@ const BUILTIN_TEMPLATES: Template[] = [
             icon: 'MailOutlined',
             layout: { type: 'list' },
           },
-        ],
-      },
-    },
-  },
-  {
-    id: 'tpl-analytics-dashboard',
-    name: '数据分析仪表盘',
-    description: '数据分析仪表盘模板，包含图表、统计卡片等组件',
-    type: 'workspace',
-    category: 'analytics',
-    tags: ['分析', '图表', '仪表盘'],
-    version: '1.0.0',
-    author: 'System',
-    createdAt: '2024-01-01',
-    updatedAt: '2024-01-01',
-    isFavorite: false,
-    isBuiltIn: true,
-    usageCount: 0,
-    config: {
-      layout: {
-        type: 'grid',
-        columns: 3,
-        widgets: [
-          { type: 'stat-card', colSpan: 1 },
-          { type: 'chart', colSpan: 2 },
         ],
       },
     },
@@ -282,7 +266,7 @@ export default function TemplateManager({
         }
       }
 
-      setTemplates([...BUILTIN_TEMPLATES, ...userTemplates]);
+      setTemplates([...BUILTIN_TEMPLATES, ...userTemplates].filter((template) => isV1TemplateConfig(template.config)));
     } catch (error: any) {
       message.error(error.message || '加载模板失败');
     } finally {
@@ -382,6 +366,9 @@ export default function TemplateManager({
         if (!template.name || !template.config) {
           throw new Error('无效的模板格式');
         }
+        if (!isV1TemplateConfig(template.config)) {
+          throw new Error('仅支持 V1 模板：tabs + form-detail/list/form/detail');
+        }
 
         // 生成新 ID
         template.id = `tpl_${Date.now()}`;
@@ -415,7 +402,7 @@ export default function TemplateManager({
         id: `tpl_${Date.now()}`,
         name: values.name,
         description: values.description || '',
-        type: values.type,
+        type: 'workspace',
         category: values.category,
         tags: values.tags || [],
         version: '1.0.0',
@@ -502,9 +489,6 @@ export default function TemplateManager({
               options={[
                 { value: 'all', label: '全部' },
                 { value: 'workspace', label: '工作空间' },
-                { value: 'layout', label: '布局' },
-                { value: 'function-set', label: '函数集' },
-                { value: 'workflow', label: '工作流' },
               ]}
             />
           </div>
@@ -745,14 +729,7 @@ export default function TemplateManager({
             rules={[{ required: true, message: '请选择类型' }]}
             initialValue="workspace"
           >
-            <Select
-              options={[
-                { value: 'workspace', label: '工作空间' },
-                { value: 'layout', label: '布局' },
-                { value: 'function-set', label: '函数集' },
-                { value: 'workflow', label: '工作流' },
-              ]}
-            />
+            <Select options={[{ value: 'workspace', label: '工作空间' }]} />
           </Form.Item>
 
           <Form.Item

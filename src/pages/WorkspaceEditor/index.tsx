@@ -21,6 +21,7 @@ import {
   validateWorkspaceConfig,
 } from '@/services/workspaceConfig';
 import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
+import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
 import { listDescriptors } from '@/services/api/functions';
 import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
@@ -92,6 +93,10 @@ export default function WorkspaceEditor() {
   const history = useSimpleHistory<WorkspaceConfig | null>(null, 100);
 
   useEffect(() => {
+    trackWorkspaceEvent('workspace_page_open', {
+      page: 'workspace_editor',
+      objectKey,
+    });
     loadData();
   }, [objectKey]);
 
@@ -122,7 +127,7 @@ export default function WorkspaceEditor() {
         objectKey,
         error: error?.message || String(error),
       });
-      message.error(error.message || '加载失败');
+      message.error(getWorkspaceErrorMessage(error, '加载失败'));
     } finally {
       setLoading(false);
     }
@@ -183,7 +188,7 @@ export default function WorkspaceEditor() {
         objectKey: config.objectKey,
         error: error?.message || String(error),
       });
-      message.error(error.message || '保存失败');
+      message.error(getWorkspaceErrorMessage(error, '保存失败'));
     } finally {
       setSaving(false);
     }
@@ -241,7 +246,7 @@ export default function WorkspaceEditor() {
         objectKey,
         error: error?.message || String(error),
       });
-      message.warning(error?.message || '版本接口暂不可用');
+      message.warning(getWorkspaceErrorMessage(error, '版本接口暂不可用'));
       setVersions([]);
     } finally {
       setVersionsLoading(false);
@@ -288,7 +293,7 @@ export default function WorkspaceEditor() {
               versionId: version.id,
               error: error?.message || String(error),
             });
-            message.error(error?.message || '回滚失败');
+            message.error(getWorkspaceErrorMessage(error, '回滚失败'));
           } finally {
             setRollingVersionId('');
           }
@@ -337,7 +342,7 @@ export default function WorkspaceEditor() {
 
   return (
     <PageContainer
-      title={`编排 Workspace: ${objectKey}`}
+      title={`Workspace 配置: ${objectKey}`}
       extra={[
         // 撤销/重做按钮
         <Button.Group key="history">

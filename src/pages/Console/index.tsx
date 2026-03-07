@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { AppstoreOutlined } from '@ant-design/icons';
 import { listPublishedWorkspaceConfigs } from '@/services/workspaceConfig';
 import type { WorkspaceConfig } from '@/types/workspace';
+import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
+import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
 
 export default function ConsolePage() {
   const [loading, setLoading] = useState(false);
@@ -14,16 +16,27 @@ export default function ConsolePage() {
 
   useEffect(() => {
     let mounted = true;
+    trackWorkspaceEvent('workspace_page_open', {
+      page: 'console_index',
+    });
     const load = async () => {
       setLoading(true);
       setError('');
       try {
         const rows = await listPublishedWorkspaceConfigs();
+        trackWorkspaceEvent('workspace_load', {
+          scope: 'console_index',
+          count: Array.isArray(rows) ? rows.length : 0,
+        });
         if (!mounted) return;
         setConfigs(Array.isArray(rows) ? rows : []);
       } catch (err: any) {
+        trackWorkspaceEvent('workspace_load_error', {
+          scope: 'console_index',
+          error: err?.message || String(err),
+        });
         if (!mounted) return;
-        setError(err?.message || '加载控制台失败');
+        setError(getWorkspaceErrorMessage(err, '加载控制台失败'));
       } finally {
         if (mounted) setLoading(false);
       }

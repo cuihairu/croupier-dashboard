@@ -9,6 +9,12 @@
 import React from 'react';
 import { Spin, Empty, Alert } from 'antd';
 import type { WorkspaceConfig } from '@/types/workspace';
+import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
+import {
+  getWorkspaceErrorMessage,
+  parseWorkspaceError,
+  type WorkspaceErrorCode,
+} from '@/services/workspace/errors';
 import TabsLayout from './TabsLayout';
 
 export interface WorkspaceRendererProps {
@@ -36,6 +42,24 @@ export default function WorkspaceRenderer({
   error,
   context,
 }: WorkspaceRendererProps) {
+  React.useEffect(() => {
+    if (error) {
+      trackWorkspaceEvent('workspace_render_error', {
+        reason: 'load_error',
+        error,
+        objectKey: config?.objectKey,
+      });
+      return;
+    }
+    if (config?.layout?.type && config.layout.type !== 'tabs') {
+      trackWorkspaceEvent('workspace_render_error', {
+        reason: 'unsupported_layout',
+        objectKey: config.objectKey,
+        layoutType: config.layout.type,
+      });
+    }
+  }, [error, config?.objectKey, config?.layout?.type]);
+
   // 渲染加载状态
   if (loading) {
     return (
@@ -99,6 +123,7 @@ export function useWorkspaceConfig(objectKey: string) {
   const [config, setConfig] = React.useState<WorkspaceConfig | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string>();
+  const [errorCode, setErrorCode] = React.useState<WorkspaceErrorCode | undefined>();
 
   React.useEffect(() => {
     loadConfig();
@@ -107,6 +132,7 @@ export function useWorkspaceConfig(objectKey: string) {
   const loadConfig = async () => {
     setLoading(true);
     setError(undefined);
+    setErrorCode(undefined);
 
     try {
       // 动态导入配置服务
@@ -114,7 +140,9 @@ export function useWorkspaceConfig(objectKey: string) {
       const workspaceConfig = await loadWorkspaceConfig(objectKey);
       setConfig(workspaceConfig);
     } catch (err: any) {
-      setError(err.message || '加载配置失败');
+      const parsedError = parseWorkspaceError(err);
+      setErrorCode(parsedError.code);
+      setError(getWorkspaceErrorMessage(err, '加载配置失败'));
     } finally {
       setLoading(false);
     }
@@ -128,6 +156,7 @@ export function useWorkspaceConfig(objectKey: string) {
     config,
     loading,
     error,
+    errorCode,
     reload,
   };
 }

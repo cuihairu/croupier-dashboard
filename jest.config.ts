@@ -1,13 +1,8 @@
-import { createConfig } from '@umijs/max/test';
-
 export default async () => {
-  const config = createConfig({
-    target: 'browser',
-    jsTransformer: 'ts-jest',
-  });
-
   return {
-    ...config,
+    rootDir: '.',
+    testEnvironment: 'jsdom',
+    testMatch: ['**/?(*.)+(spec|test).[jt]s?(x)'],
     transform: {
       '^.+\\.(t|j)sx?$': [
         'ts-jest',
@@ -17,17 +12,16 @@ export default async () => {
       ],
     },
     moduleNameMapper: {
-      ...(config.moduleNameMapper || {}),
       '^@/(.*)$': '<rootDir>/src/$1',
       '^@@/(.*)$': '<rootDir>/tests/umi/$1',
+      '\\.(css|less|scss|sass)$': '<rootDir>/tests/umi/styleMock.js',
     },
     testEnvironmentOptions: {
-      ...(config?.testEnvironmentOptions || {}),
       url: 'http://localhost:8000',
     },
-    setupFiles: [...(config.setupFiles || []), './tests/setupTests.jsx'],
+    setupFiles: ['./tests/setupTests.jsx'],
+    setupFilesAfterEnv: ['@testing-library/jest-dom'],
     globals: {
-      ...config.globals,
       localStorage: null,
     },
   };

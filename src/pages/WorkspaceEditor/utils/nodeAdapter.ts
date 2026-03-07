@@ -14,6 +14,8 @@ import type {
   NodeType,
 } from '../components/VisualNodeEditor';
 
+export const WORKSPACE_NODE_ADAPTER_EXPERIMENTAL = true;
+
 // 生成唯一ID
 const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 

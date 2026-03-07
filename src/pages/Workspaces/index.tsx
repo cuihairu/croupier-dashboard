@@ -21,6 +21,7 @@ import {
 } from '@/services/workspaceConfig';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
+import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
 
 function resolveWorkspaceStatus(config: WorkspaceConfig): 'draft' | 'published' | 'archived' {
   if (config.status) return config.status;
@@ -54,13 +55,16 @@ export default function WorkspacesIndexPage() {
         scope: 'workspaces_page',
         error: err?.message || String(err),
       });
-      setError(err?.message || '加载对象工作台失败');
+      setError(getWorkspaceErrorMessage(err, '加载对象工作台失败'));
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    trackWorkspaceEvent('workspace_page_open', {
+      page: 'workspaces_index',
+    });
     load().catch(() => {});
   }, []);
 
@@ -125,7 +129,7 @@ export default function WorkspacesIndexPage() {
             objectKey,
             error: err?.message || String(err),
           });
-          message.error(err?.message || '发布失败');
+          message.error(getWorkspaceErrorMessage(err, '发布失败'));
         } finally {
           setActionKey('');
         }
@@ -160,7 +164,7 @@ export default function WorkspacesIndexPage() {
             objectKey,
             error: err?.message || String(err),
           });
-          message.error(err?.message || '取消发布失败');
+          message.error(getWorkspaceErrorMessage(err, '取消发布失败'));
         } finally {
           setActionKey('');
         }

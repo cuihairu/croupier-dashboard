@@ -1,6 +1,8 @@
 export type WorkspaceTelemetryEvent =
+  | 'workspace_page_open'
   | 'workspace_load'
   | 'workspace_load_error'
+  | 'workspace_render_error'
   | 'workspace_save'
   | 'workspace_save_error'
   | 'workspace_publish'
