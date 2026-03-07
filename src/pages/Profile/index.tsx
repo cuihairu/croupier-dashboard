@@ -228,7 +228,7 @@ export default function Profile() {
       setGames(gamesRes.status === 'fulfilled' ? gamesRes.value?.games || [] : []);
       if (permsRes.status === 'fulfilled') {
         const payload = permsRes.value || {};
-        const ids = payload.permissionIds || payload.permission_ids || [];
+        const ids = payload.permissionIDs || payload.permissionIds || payload.permission_ids || [];
         setPermissions(payload.permissions || []);
         setPermissionIds(Array.isArray(ids) ? ids : []);
       } else {

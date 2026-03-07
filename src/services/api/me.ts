@@ -51,6 +51,7 @@ export async function getMyPermissions(params?: { game_id?: string; env?: string
     permissions: ProfilePermission[];
     admin?: boolean;
     roles?: string[];
+    permissionIDs?: string[];
     permissionIds?: string[];
     permission_ids?: string[];
   }>('/api/v1/profile/permissions', { params: query });
