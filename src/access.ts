@@ -17,6 +17,22 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     const key = (p || '').toLowerCase();
     return perms.has('*') || perms.has(key);
   };
+  const canWorkspaceRead =
+    has('workspaces:read') || has('workspaces:manage') || has('functions:manage') || has('admin');
+  const canWorkspaceEdit =
+    has('workspaces:edit') || has('workspaces:manage') || has('functions:manage') || has('admin');
+  const canWorkspacePublish =
+    has('workspaces:publish') ||
+    has('workspaces:manage') ||
+    has('functions:manage') ||
+    has('admin');
+  const canWorkspaceRollback =
+    has('workspaces:rollback') ||
+    has('workspaces:manage') ||
+    has('functions:manage') ||
+    has('admin');
+  const canWorkspaceDelete =
+    has('workspaces:delete') || has('workspaces:manage') || has('functions:manage') || has('admin');
   return {
     canAdmin: has('admin'),
     // Game meta management
@@ -32,7 +48,13 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     canFunctionsRead: has('functions:read') || has('functions:manage') || has('admin'),
     canFunctionsManage: has('functions:manage') || has('admin'),
     // Workspace management (design/publish) - admin only
-    canWorkspaceManage: has('workspaces:manage') || has('functions:manage') || has('admin'),
+    canWorkspaceManage:
+      canWorkspaceEdit || canWorkspacePublish || canWorkspaceRollback || canWorkspaceDelete,
+    canWorkspaceRead,
+    canWorkspaceEdit,
+    canWorkspacePublish,
+    canWorkspaceRollback,
+    canWorkspaceDelete,
     canEntitiesRead: has('entities:read') || has('entities:manage') || has('admin'),
     canPacksRead: has('packs:read') || has('packs:manage') || has('admin'),
     // 运维管理（Ops）

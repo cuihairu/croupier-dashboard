@@ -6,7 +6,7 @@
  * @module services/workspaceConfig
  */
 
-import type { WorkspaceConfig } from '@/types/workspace';
+import type { WorkspaceConfig, WorkspaceVersionRecord } from '@/types/workspace';
 import { request } from '@umijs/max';
 import {
   mockLoadWorkspaceConfig,
@@ -36,6 +36,11 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 分钟
 export interface WorkspacePublishResult {
   published: boolean;
   objectKey: string;
+}
+
+export interface WorkspaceRollbackResult {
+  objectKey: string;
+  version: number;
 }
 
 /**
@@ -302,6 +307,7 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
   errors: string[];
 } {
   const errors: string[] = [];
+  const supportedLayoutTypes = new Set(['list', 'form', 'detail', 'form-detail']);
 
   // 验证必填字段
   if (!config.objectKey) {
@@ -322,6 +328,10 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
       errors.push('layout.type 不能为空');
     }
 
+    if (config.layout.type !== 'tabs') {
+      errors.push(`V1 仅支持 tabs 顶层布局，当前为: ${config.layout.type}`);
+    }
+
     if (config.layout.type === 'tabs') {
       if (!config.layout.tabs || config.layout.tabs.length === 0) {
         errors.push('tabs 布局至少需要一个 tab');
@@ -340,6 +350,44 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
         }
         if (!tab.layout?.type) {
           errors.push(`tabs[${index}].layout.type 不能为空`);
+        }
+        if (tab.layout?.type && !supportedLayoutTypes.has(tab.layout.type)) {
+          errors.push(
+            `tabs[${index}].layout.type 不受支持: ${tab.layout.type}，仅支持 list/form/detail/form-detail`,
+          );
+        }
+
+        if (tab.layout?.type === 'list') {
+          if (!tab.layout.listFunction) {
+            errors.push(`tabs[${index}].listFunction 不能为空`);
+          }
+          if (!Array.isArray(tab.layout.columns) || tab.layout.columns.length === 0) {
+            errors.push(`tabs[${index}].columns 至少需要一列`);
+          }
+        }
+
+        if (tab.layout?.type === 'form') {
+          if (!tab.layout.submitFunction) {
+            errors.push(`tabs[${index}].submitFunction 不能为空`);
+          }
+          if (!Array.isArray(tab.layout.fields) || tab.layout.fields.length === 0) {
+            errors.push(`tabs[${index}].fields 至少需要一个字段`);
+          }
+        }
+
+        if (tab.layout?.type === 'detail') {
+          if (!tab.layout.detailFunction) {
+            errors.push(`tabs[${index}].detailFunction 不能为空`);
+          }
+        }
+
+        if (tab.layout?.type === 'form-detail') {
+          if (!tab.layout.queryFunction) {
+            errors.push(`tabs[${index}].queryFunction 不能为空`);
+          }
+          if (!Array.isArray(tab.layout.queryFields) || tab.layout.queryFields.length === 0) {
+            errors.push(`tabs[${index}].queryFields 至少需要一个查询字段`);
+          }
         }
       });
     }
@@ -476,4 +524,37 @@ export async function batchLoadConfigs(
   );
 
   return new Map(results);
+}
+
+/**
+ * 获取配置版本列表（为版本面板预留）
+ */
+export async function listWorkspaceVersions(objectKey: string): Promise<WorkspaceVersionRecord[]> {
+  const response = await request<{ items: WorkspaceVersionRecord[] }>(
+    `/api/v1/workspaces/${objectKey}/versions`,
+    {
+      method: 'GET',
+    },
+  );
+  return Array.isArray(response?.items) ? response.items : [];
+}
+
+/**
+ * 回滚到指定版本（为版本面板预留）
+ */
+export async function rollbackWorkspaceVersion(
+  objectKey: string,
+  versionId: string,
+): Promise<WorkspaceRollbackResult> {
+  const response = await request<WorkspaceRollbackResult>(
+    `/api/v1/workspaces/${objectKey}/rollback`,
+    {
+      method: 'POST',
+      data: {
+        versionId,
+      },
+    },
+  );
+  clearCache(objectKey);
+  return response;
 }

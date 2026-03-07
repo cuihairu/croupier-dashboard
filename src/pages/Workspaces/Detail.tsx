@@ -1,10 +1,11 @@
-import { history, useParams } from '@umijs/max';
-import { Button, Spin, Alert, Empty } from 'antd';
+import { history, useAccess, useParams } from '@umijs/max';
+import { Button, Alert } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import WorkspaceRenderer, { useWorkspaceConfig } from '@/components/WorkspaceRenderer';
 
 export default function WorkspaceDetailPage() {
+  const access = useAccess() as any;
   const params = useParams<{ objectKey: string }>();
   const objectKey = decodeURIComponent(String(params?.objectKey || ''));
 
@@ -21,6 +22,7 @@ export default function WorkspaceDetailPage() {
         <Button
           key="edit"
           icon={<EditOutlined />}
+          disabled={!access?.canWorkspaceEdit}
           onClick={() =>
             history.push(`/system/functions/workspace-editor/${encodeURIComponent(objectKey)}`)
           }
@@ -29,17 +31,7 @@ export default function WorkspaceDetailPage() {
         </Button>,
       ]}
     >
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '100px 0' }}>
-          <Spin size="large" />
-        </div>
-      ) : error ? (
-        <Alert type="error" message={error} showIcon />
-      ) : !config ? (
-        <Empty description="对象不存在或暂无配置" />
-      ) : (
-        <WorkspaceRenderer config={config} />
-      )}
+      <WorkspaceRenderer config={config} loading={loading} error={error} />
     </PageContainer>
   );
 }

@@ -6,7 +6,7 @@
  * @module components/WorkspaceRenderer
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Spin, Empty, Alert } from 'antd';
 import type { WorkspaceConfig } from '@/types/workspace';
 import TabsLayout from './TabsLayout';

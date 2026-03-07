@@ -54,6 +54,16 @@ export interface WorkspaceConfig {
 
 export type WorkspaceStatus = 'draft' | 'published' | 'archived';
 
+export interface WorkspaceVersionRecord {
+  id: string;
+  objectKey: string;
+  version: number;
+  config: WorkspaceConfig;
+  createdAt?: string;
+  createdBy?: string;
+  comment?: string;
+}
+
 /**
  * Workspace 布局
  *

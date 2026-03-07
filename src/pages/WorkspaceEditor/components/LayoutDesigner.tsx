@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { Card, Tabs, Button, Empty, Modal, Form, Input, Alert } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, UpOutlined, DownOutlined } from '@ant-design/icons';
 import type { WorkspaceConfig, TabConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
 import TabEditor from './TabEditor';
@@ -57,6 +57,7 @@ export default function LayoutDesigner({
         title: values.title,
         icon: values.icon,
         functions: [],
+        defaultActive: tabs.length === 0,
         layout: {
           type: 'list',
           listFunction: '',
@@ -90,7 +91,12 @@ export default function LayoutDesigner({
           ...config,
           layout: {
             ...config.layout,
-            tabs: tabs.filter((t) => t.key !== tabKey),
+            tabs: (() => {
+              const remainingTabs = tabs.filter((t) => t.key !== tabKey);
+              if (remainingTabs.length === 0) return [];
+              if (remainingTabs.some((tab) => tab.defaultActive)) return remainingTabs;
+              return remainingTabs.map((tab, index) => ({ ...tab, defaultActive: index === 0 }));
+            })(),
           },
         });
 
@@ -105,21 +111,59 @@ export default function LayoutDesigner({
 
   // 更新 Tab
   const handleUpdateTab = (tabKey: string, updatedTab: TabConfig) => {
+    const nextTabs = tabs.map((t) => (t.key === tabKey ? updatedTab : t));
+    const normalizedTabs = updatedTab.defaultActive
+      ? nextTabs.map((tab) => ({ ...tab, defaultActive: tab.key === tabKey }))
+      : nextTabs;
+
     onChange({
       ...config,
       layout: {
         ...config.layout,
-        tabs: tabs.map((t) => (t.key === tabKey ? updatedTab : t)),
+        tabs: normalizedTabs,
+      },
+    });
+  };
+
+  const moveTab = (tabKey: string, direction: 'up' | 'down') => {
+    const index = tabs.findIndex((tab) => tab.key === tabKey);
+    if (index < 0) return;
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target < 0 || target >= tabs.length) return;
+
+    const reordered = [...tabs];
+    const [current] = reordered.splice(index, 1);
+    reordered.splice(target, 0, current);
+
+    onChange({
+      ...config,
+      layout: {
+        ...config.layout,
+        tabs: reordered,
       },
     });
   };
 
   // 生成 Tabs 配置
-  const tabItems = tabs.map((tab) => ({
+  const tabItems = tabs.map((tab, index) => ({
     key: tab.key,
     label: (
       <span>
         {tab.title}
+        <UpOutlined
+          style={{ marginLeft: 8, color: index > 0 ? '#1677ff' : '#ccc' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveTab(tab.key, 'up');
+          }}
+        />
+        <DownOutlined
+          style={{ marginLeft: 8, color: index < tabs.length - 1 ? '#1677ff' : '#ccc' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            moveTab(tab.key, 'down');
+          }}
+        />
         <DeleteOutlined
           style={{ marginLeft: 8, color: '#ff4d4f' }}
           onClick={(e) => {

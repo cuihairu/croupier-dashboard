@@ -13,6 +13,34 @@
 - [x] `TabEditor` 布局类型下拉限制为 `form-detail/list/form/detail`（TASK-011 部分完成）
 - [x] `WorkspaceRenderer` 顶层运行时收敛为 `tabs`，其他类型统一报不在 V1 支持范围（TASK-016）
 - [x] `LayoutDesigner` 增加顶层非 `tabs` 的转换提示与一键修正（TASK-011 部分完成）
+- [x] `TabEditor` 移除 `grid/kanban/timeline/split` 配置分支，避免编辑器继续产出非 V1 布局（TASK-013 部分完成）
+- [x] `WorkspaceEditor` 保存动作接入 `validateWorkspaceConfig`，保存前阻断非法配置（TASK-015 部分完成）
+- [x] `validateWorkspaceConfig` 增强为布局级字段校验（tabs 顶层约束 + 各布局关键字段必填）（TASK-015 部分完成）
+- [x] `LayoutDesigner` 增加 Tab 上下移动能力（TASK-012 部分完成）
+- [x] `TabEditor` 增加 `defaultActive` 开关，`LayoutDesigner` 保证唯一默认页（TASK-012 部分完成）
+- [x] `TabContentRenderer` 运行时分发收敛为 `form-detail/list/form/detail`，其余类型统一报 V1 不支持（TASK-018 部分完成）
+- [x] `WorkspaceEditor` 模板应用增加 V1 范围校验，拦截非 `tabs + form-detail/list/form/detail` 模板（TASK-013/TASK-015 关联完成）
+- [x] `Console/Detail` 与 `Workspaces/Detail` 统一为 `WorkspaceRenderer(config, loading, error)` 调用方式，收平运行时行为（TASK-019 部分完成）
+- [x] 修正 `validateWorkspaceConfig` 与当前编辑器能力不一致的问题（detail/form-detail 校验调整），避免可选布局无法保存（TASK-015 一致性修复）
+- [x] `Workspaces/index` 增加搜索、状态筛选、排序与无结果提示，提升列表可运营性（TASK-008 部分完成）
+- [x] `Console/index` 增加搜索、排序与无结果提示，提升已发布工作台入口可用性（TASK-009 部分完成）
+- [x] `TabEditor` 移除函数时联动清理 `listFunction/queryFunction/submitFunction/detailFunction`，避免悬空引用（TASK-013 部分完成）
+- [x] `WorkspaceEditor` 保存校验失败改为错误列表弹窗，降低配置调试成本（TASK-015 部分完成）
+- [x] `LayoutDesigner` 新增 Tab 默认页合法性保障（新增首个 Tab 自动默认、删除后自动补默认）(TASK-012 部分完成)
+- [x] 工作台/控制台列表接入 `status/version` 展示，提升版本治理可见性（TASK-008/TASK-009 部分完成）
+- [x] `TabEditor` 切换布局类型时自动基于已选函数生成初始字段/分区，降低空壳配置概率（TASK-013 部分完成）
+- [x] `workspaceConfig` 增加版本列表/回滚 service 基础能力（前端预留，待后端接口联调）（TASK-021/TASK-022 前置完成）
+- [x] `WorkspaceEditor` 增加版本历史 Drawer（列表、刷新、回滚操作、失败降级提示）（TASK-023 部分完成）
+- [x] `services/api/workspace` 兼容层补齐 `listWorkspaceVersions/rollbackWorkspaceVersion` 转发（TASK-004 一致性补齐）
+- [x] `access.ts` 增加 `workspace read/edit/publish/rollback/delete` 权限位，`canWorkspaceManage` 基于颗粒权限聚合（TASK-024 前置完成）
+- [x] `Workspaces/index`、`WorkspaceEditor` 关键操作按钮接入权限控制（编辑/发布/回滚）（TASK-026 部分完成）
+- [x] `Workspaces/Detail` 的“编辑配置”按钮接入 `canWorkspaceEdit`（TASK-026 部分完成）
+- [x] 版本回滚确认增强（目标版本摘要 + 当前版本提示 + 覆盖风险提示），版本列表补结构摘要（TASK-023 部分完成）
+- [x] 版本面板增加“与当前草稿差异摘要”（状态/布局/标签页数），支持回滚前快速评估影响（TASK-036/TASK-037 前置完成）
+- [x] `Workspaces/index` 支持 `archived` 筛选，归档状态禁用编辑/发布操作（TASK-024/TASK-026 细化完成）
+- [x] `Workspaces/index` 的发布/取消发布增加确认弹窗与摘要信息（对象/标题/标签页数），降低误操作风险（TASK-037/TASK-038 前置完成）
+- [x] 重整 `README.md`：统一为当前 V1 能力说明，新增 Mermaid graph（系统关系、模块关系、配置流转、版本回滚链路）
+- [x] 新增 `workspace` 埋点骨架（`services/workspace/telemetry.ts`），并接入保存/发布/取消发布/模板应用/版本加载/回滚关键动作（TASK-027 前端骨架完成）
 
 ## 1. 目标定义
 

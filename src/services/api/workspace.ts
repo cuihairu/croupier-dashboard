@@ -11,7 +11,9 @@ import {
   exportWorkspaceConfig as exportConfig,
   importWorkspaceConfig as importConfig,
   listWorkspaceConfigs as listConfigs,
+  listWorkspaceVersions as listVersions,
   loadWorkspaceConfig,
+  rollbackWorkspaceVersion as rollbackVersion,
   saveWorkspaceConfig as saveConfig,
 } from '@/services/workspaceConfig';
 
@@ -82,4 +84,15 @@ export async function importWorkspaceConfig(
   _overwrite = false,
 ): Promise<WorkspaceConfig> {
   return importConfig(configJson);
+}
+
+export async function listWorkspaceVersions(objectKey: string): Promise<any[]> {
+  return listVersions(objectKey);
+}
+
+export async function rollbackWorkspaceVersion(
+  objectKey: string,
+  versionId: string,
+): Promise<{ objectKey: string; version: number }> {
+  return rollbackVersion(objectKey, versionId);
 }

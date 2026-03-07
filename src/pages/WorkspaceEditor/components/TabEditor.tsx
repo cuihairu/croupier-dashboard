@@ -18,7 +18,12 @@ import { DeleteOutlined, PlusOutlined, EditOutlined, ThunderboltOutlined } from 
 import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
 import IconPicker from './IconPicker';
-import { descriptorToLayout, schemaToColumns, schemaToFields } from '../utils/schemaToLayout';
+import {
+  descriptorToLayout,
+  schemaToColumns,
+  schemaToDetailSections,
+  schemaToFields,
+} from '../utils/schemaToLayout';
 
 export interface TabEditorProps {
   tab: TabConfig;
@@ -47,25 +52,43 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   };
 
   const handleLayoutTypeChange = (type: string) => {
+    const primaryFunctionId = safeTab.functions[0];
+    const primaryDescriptor = descriptors.find((d) => d.id === primaryFunctionId);
+    const autoColumns = primaryDescriptor ? schemaToColumns(primaryDescriptor) : [];
+    const autoFields = primaryDescriptor ? schemaToFields(primaryDescriptor) : [];
+    const autoSections = primaryDescriptor ? schemaToDetailSections(primaryDescriptor) : [];
+
     let defaultLayout: any = { type };
     switch (type) {
       case 'form-detail':
         defaultLayout = {
           type: 'form-detail',
-          queryFunction: '',
-          queryFields: [],
-          detailSections: [],
+          queryFunction: primaryFunctionId || '',
+          queryFields: autoFields.slice(0, 3),
+          detailSections: autoSections,
           actions: [],
         };
         break;
       case 'list':
-        defaultLayout = { type: 'list', listFunction: '', columns: [] };
+        defaultLayout = {
+          type: 'list',
+          listFunction: primaryFunctionId || '',
+          columns: autoColumns,
+        };
         break;
       case 'form':
-        defaultLayout = { type: 'form', submitFunction: '', fields: [] };
+        defaultLayout = {
+          type: 'form',
+          submitFunction: primaryFunctionId || '',
+          fields: autoFields,
+        };
         break;
       case 'detail':
-        defaultLayout = { type: 'detail', detailFunction: '', sections: [] };
+        defaultLayout = {
+          type: 'detail',
+          detailFunction: primaryFunctionId || '',
+          sections: autoSections,
+        };
         break;
       default:
         defaultLayout = { type: 'list', listFunction: '', columns: [] };
@@ -101,7 +124,13 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   };
 
   const handleRemoveFunction = (functionId: string) => {
-    onChange({ ...safeTab, functions: safeTab.functions.filter((f) => f !== functionId) });
+    const nextFunctions = safeTab.functions.filter((f) => f !== functionId);
+    const nextLayout = { ...(safeTab.layout as any) };
+    if (nextLayout.listFunction === functionId) nextLayout.listFunction = '';
+    if (nextLayout.submitFunction === functionId) nextLayout.submitFunction = '';
+    if (nextLayout.detailFunction === functionId) nextLayout.detailFunction = '';
+    if (nextLayout.queryFunction === functionId) nextLayout.queryFunction = '';
+    onChange({ ...safeTab, functions: nextFunctions, layout: nextLayout });
   };
 
   // 自动推导布局（手动触发）
@@ -134,6 +163,12 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
           </Form.Item>
           <Form.Item label="图标">
             <IconPicker value={safeTab.icon} onChange={(val) => handleBasicChange('icon', val)} />
+          </Form.Item>
+          <Form.Item label="设为默认页">
+            <Switch
+              checked={Boolean(safeTab.defaultActive)}
+              onChange={(checked) => handleBasicChange('defaultActive', checked)}
+            />
           </Form.Item>
         </Form>
       </Card>
@@ -352,14 +387,6 @@ function renderLayoutConfig(
       return renderFormConfig(layout, tab, onTabChange, descriptors, fieldCtx);
     case 'detail':
       return renderDetailConfig(layout, tab, onTabChange, descriptors);
-    case 'grid':
-      return renderGridConfig(layout, tab, onTabChange);
-    case 'kanban':
-      return renderKanbanConfig(layout, tab, onTabChange);
-    case 'timeline':
-      return renderTimelineConfig(layout, tab, onTabChange);
-    case 'split':
-      return renderSplitConfig(layout, tab, onTabChange);
     default:
       return <div style={{ color: '#999' }}>请选择布局类型</div>;
   }
@@ -730,234 +757,5 @@ function renderDetailConfig(
         </Select>
       </Form.Item>
     </Form>
-  );
-}
-
-function renderGridConfig(
-  layout: any,
-  tab: TabConfig,
-  onChange: (tab: TabConfig) => void,
-): React.ReactNode {
-  return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Form layout="vertical">
-        <Form.Item label="列数">
-          <Select
-            value={layout.columns || 3}
-            onChange={(v) => onChange({ ...tab, layout: { ...layout, columns: v } })}
-          >
-            {[1, 2, 3, 4, 6].map((n) => (
-              <Select.Option key={n} value={n}>
-                {n} 列
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item label="响应式">
-          <Switch
-            checked={layout.responsive !== false}
-            onChange={(v) => onChange({ ...tab, layout: { ...layout, responsive: v } })}
-          />
-        </Form.Item>
-      </Form>
-      <div style={{ color: '#999', fontSize: 12 }}>
-        网格布局用于展示数据卡片或仪表盘。可在预览中配置具体的网格项。
-      </div>
-    </Space>
-  );
-}
-
-function renderKanbanConfig(
-  layout: any,
-  tab: TabConfig,
-  onChange: (tab: TabConfig) => void,
-): React.ReactNode {
-  const columns = layout.columns || [];
-
-  const addColumn = () => {
-    const newColumn = {
-      id: `col_${Date.now()}`,
-      title: '新列',
-      color: '#1677ff',
-    };
-    onChange({ ...tab, layout: { ...layout, columns: [...columns, newColumn] } });
-  };
-
-  const removeColumn = (id: string) => {
-    onChange({ ...tab, layout: { ...layout, columns: columns.filter((c: any) => c.id !== id) } });
-  };
-
-  return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Form layout="vertical">
-        <Form.Item label="数据函数">
-          <Input
-            value={layout.dataFunction}
-            onChange={(e) =>
-              onChange({ ...tab, layout: { ...layout, dataFunction: e.target.value } })
-            }
-            placeholder="输入数据函数 ID"
-          />
-        </Form.Item>
-      </Form>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 8,
-        }}
-      >
-        <span style={{ fontWeight: 500 }}>看板列 ({columns.length})</span>
-        <Button size="small" icon={<PlusOutlined />} onClick={addColumn}>
-          添加列
-        </Button>
-      </div>
-      <List
-        size="small"
-        dataSource={columns}
-        renderItem={(col: any) => (
-          <List.Item
-            actions={[
-              <Button
-                key="delete"
-                type="link"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => removeColumn(col.id)}
-              />,
-            ]}
-          >
-            <Tag color={col.color}>{col.title}</Tag>
-          </List.Item>
-        )}
-        locale={{ emptyText: '暂无看板列' }}
-      />
-    </Space>
-  );
-}
-
-function renderTimelineConfig(
-  layout: any,
-  tab: TabConfig,
-  onChange: (tab: TabConfig) => void,
-): React.ReactNode {
-  return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Form layout="vertical">
-        <Form.Item label="数据函数">
-          <Input
-            value={layout.dataFunction}
-            onChange={(e) =>
-              onChange({ ...tab, layout: { ...layout, dataFunction: e.target.value } })
-            }
-            placeholder="输入数据函数 ID"
-          />
-        </Form.Item>
-        <Form.Item label="显示筛选">
-          <Switch
-            checked={layout.showFilter !== false}
-            onChange={(v) => onChange({ ...tab, layout: { ...layout, showFilter: v } })}
-          />
-        </Form.Item>
-        <Form.Item label="逆序显示">
-          <Switch
-            checked={layout.reverse}
-            onChange={(v) => onChange({ ...tab, layout: { ...layout, reverse: v } })}
-          />
-        </Form.Item>
-      </Form>
-      <div style={{ color: '#999', fontSize: 12 }}>
-        时间线布局用于展示事件流，如操作日志、审批记录等。
-      </div>
-    </Space>
-  );
-}
-
-function renderSplitConfig(
-  layout: any,
-  tab: TabConfig,
-  onChange: (tab: TabConfig) => void,
-): React.ReactNode {
-  const panels = layout.panels || [];
-  const sizes = layout.sizes || [];
-
-  const addPanel = () => {
-    const newPanel = {
-      key: `panel_${Date.now()}`,
-      title: '新面板',
-    };
-    const newSizes = [...sizes, `${100 / (panels.length + 1)}%`];
-    onChange({
-      ...tab,
-      layout: { ...layout, panels: [...panels, newPanel], sizes: newSizes },
-    });
-  };
-
-  const removePanel = (key: string) => {
-    const index = panels.findIndex((p: any) => p.key === key);
-    const newSizes = sizes.filter((_: any, i: number) => i !== index);
-    onChange({
-      ...tab,
-      layout: {
-        ...layout,
-        panels: panels.filter((p: any) => p.key !== key),
-        sizes: newSizes,
-      },
-    });
-  };
-
-  return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      <Form layout="vertical">
-        <Form.Item label="分栏方向">
-          <Select
-            value={layout.direction || 'horizontal'}
-            onChange={(v) => onChange({ ...tab, layout: { ...layout, direction: v } })}
-          >
-            <Select.Option value="horizontal">水平分栏</Select.Option>
-            <Select.Option value="vertical">垂直分栏</Select.Option>
-          </Select>
-        </Form.Item>
-      </Form>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 8,
-        }}
-      >
-        <span style={{ fontWeight: 500 }}>面板 ({panels.length})</span>
-        <Button size="small" icon={<PlusOutlined />} onClick={addPanel}>
-          添加面板
-        </Button>
-      </div>
-      <List
-        size="small"
-        dataSource={panels}
-        renderItem={(panel: any, index: number) => (
-          <List.Item
-            actions={[
-              <Button
-                key="delete"
-                type="link"
-                danger
-                size="small"
-                icon={<DeleteOutlined />}
-                onClick={() => removePanel(panel.key)}
-              />,
-            ]}
-          >
-            <Tag color="blue">{panel.title || `面板 ${index + 1}`}</Tag>
-            <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>
-              {sizes[index] || '自动'}
-            </span>
-          </List.Item>
-        )}
-        locale={{ emptyText: '暂无面板' }}
-      />
-    </Space>
   );
 }
