@@ -77,27 +77,11 @@ function renderLayout(config: WorkspaceConfig, context?: Record<string, any>): R
     case 'tabs':
       return <TabsLayout config={config} context={context} />;
 
-    case 'sections':
-      // TODO: 实现 SectionsLayout
-      return (
-        <Alert message="暂不支持" description="sections 布局暂未实现" type="warning" showIcon />
-      );
-
-    case 'wizard':
-      // TODO: 实现 WizardLayout
-      return <Alert message="暂不支持" description="wizard 布局暂未实现" type="warning" showIcon />;
-
-    case 'dashboard':
-      // TODO: 实现 DashboardLayout
-      return (
-        <Alert message="暂不支持" description="dashboard 布局暂未实现" type="warning" showIcon />
-      );
-
     default:
       return (
         <Alert
-          message="未知布局类型"
-          description={`不支持的布局类型: ${(layout as any).type}`}
+          message="当前配置不在 V1 支持范围"
+          description={`仅支持 tabs 顶层布局，当前类型: ${(layout as any).type}`}
           type="error"
           showIcon
         />

@@ -33,6 +33,9 @@ export interface WorkspaceConfig {
   /** 是否已发布（发布后出现在控制台菜单） */
   published?: boolean;
 
+  /** 配置状态 */
+  status?: WorkspaceStatus;
+
   /** 发布时间 */
   publishedAt?: string;
 
@@ -42,9 +45,14 @@ export interface WorkspaceConfig {
   /** 菜单顺序（控制台菜单排序） */
   menuOrder?: number;
 
+  /** 配置版本号 */
+  version?: number;
+
   /** 元数据 */
   meta?: WorkspaceMeta;
 }
+
+export type WorkspaceStatus = 'draft' | 'published' | 'archived';
 
 /**
  * Workspace 布局

@@ -67,17 +67,8 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       case 'detail':
         defaultLayout = { type: 'detail', detailFunction: '', sections: [] };
         break;
-      case 'grid':
-        defaultLayout = { type: 'grid', columns: 3, items: [], gutter: [16, 16] };
-        break;
-      case 'kanban':
-        defaultLayout = { type: 'kanban', columns: [], dataFunction: '' };
-        break;
-      case 'timeline':
-        defaultLayout = { type: 'timeline', dataFunction: '', showFilter: true };
-        break;
-      case 'split':
-        defaultLayout = { type: 'split', direction: 'horizontal', panels: [], sizes: [] };
+      default:
+        defaultLayout = { type: 'list', listFunction: '', columns: [] };
         break;
     }
     onChange({ ...safeTab, layout: defaultLayout });
@@ -218,10 +209,6 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
           <Select.Option value="list">列表</Select.Option>
           <Select.Option value="form">表单（提交操作）</Select.Option>
           <Select.Option value="detail">详情（只读）</Select.Option>
-          <Select.Option value="grid">网格布局</Select.Option>
-          <Select.Option value="kanban">看板布局</Select.Option>
-          <Select.Option value="timeline">时间线布局</Select.Option>
-          <Select.Option value="split">分栏布局</Select.Option>
         </Select>
       </Card>
 

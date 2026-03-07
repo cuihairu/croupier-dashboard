@@ -33,6 +33,11 @@ const configCache = new Map<string, WorkspaceConfig>();
  */
 const CACHE_TTL = 5 * 60 * 1000; // 5 分钟
 
+export interface WorkspacePublishResult {
+  published: boolean;
+  objectKey: string;
+}
+
 /**
  * 缓存时间戳
  */
@@ -236,15 +241,13 @@ export async function deleteWorkspaceConfig(objectKey: string): Promise<void> {
 /**
  * 发布 Workspace 配置
  */
-export async function publishWorkspaceConfig(
-  objectKey: string,
-): Promise<{ published: boolean; objectKey: string }> {
+export async function publishWorkspaceConfig(objectKey: string): Promise<WorkspacePublishResult> {
   if (USE_MOCK) {
     const config = await mockPublishWorkspaceConfig(objectKey);
     setCache(objectKey, config);
     return { published: true, objectKey };
   }
-  const response = await request<{ published: boolean; objectKey: string }>(
+  const response = await request<WorkspacePublishResult>(
     `/api/v1/workspaces/${objectKey}/publish`,
     {
       method: 'POST',
@@ -258,15 +261,13 @@ export async function publishWorkspaceConfig(
 /**
  * 取消发布 Workspace 配置
  */
-export async function unpublishWorkspaceConfig(
-  objectKey: string,
-): Promise<{ published: boolean; objectKey: string }> {
+export async function unpublishWorkspaceConfig(objectKey: string): Promise<WorkspacePublishResult> {
   if (USE_MOCK) {
     const config = await mockUnpublishWorkspaceConfig(objectKey);
     setCache(objectKey, config);
     return { published: false, objectKey };
   }
-  const response = await request<{ published: boolean; objectKey: string }>(
+  const response = await request<WorkspacePublishResult>(
     `/api/v1/workspaces/${objectKey}/unpublish`,
     {
       method: 'POST',

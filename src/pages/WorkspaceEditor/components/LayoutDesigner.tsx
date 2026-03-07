@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { Card, Tabs, Button, Empty, Modal, Form, Input } from 'antd';
+import { Card, Tabs, Button, Empty, Modal, Form, Input, Alert } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { WorkspaceConfig, TabConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
@@ -40,7 +40,8 @@ export default function LayoutDesigner({
     );
   }
 
-  const tabs = config.layout.tabs || [];
+  const isTabsLayout = config.layout.type === 'tabs';
+  const tabs = isTabsLayout ? config.layout.tabs || [] : [];
 
   // 添加 Tab
   const handleAddTab = () => {
@@ -143,11 +144,42 @@ export default function LayoutDesigner({
         title="布局设计"
         style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddTab}>
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={handleAddTab}
+            disabled={!isTabsLayout}
+          >
             添加 Tab
           </Button>
         }
       >
+        {!isTabsLayout && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="当前配置不是 tabs 布局"
+            description="V1 仅支持 tabs 顶层布局，请先转换后再编辑。"
+            action={
+              <Button
+                size="small"
+                type="primary"
+                onClick={() =>
+                  onChange({
+                    ...config,
+                    layout: {
+                      type: 'tabs',
+                      tabs: [],
+                    },
+                  })
+                }
+              >
+                转换为 tabs
+              </Button>
+            }
+          />
+        )}
         {tabs.length > 0 ? (
           <Tabs activeKey={activeKey} onChange={setActiveKey} items={tabItems} type="card" />
         ) : (

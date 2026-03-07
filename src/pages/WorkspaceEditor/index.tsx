@@ -6,7 +6,6 @@ import {
   AppstoreOutlined,
   EyeOutlined,
   SaveOutlined,
-  ApartmentOutlined,
   FileOutlined,
   UndoOutlined,
   RedoOutlined,
@@ -18,13 +17,11 @@ import { listDescriptors } from '@/services/api/functions';
 import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
 import ConfigPreview from './components/ConfigPreview';
-import VisualNodeEditor, { type EditorState } from './components/VisualNodeEditor';
 import TemplateManager, { type Template } from './components/TemplateManager';
 import { useSimpleHistory } from './hooks/useHistory';
-import { configToNodes, nodesToConfig } from './utils/nodeAdapter';
 
-/** 四种模式：2=函数+设计器（默认），3=函数+设计器+预览，4=节点编辑器 */
-type ViewMode = 2 | 3 | 4;
+/** 两种模式：2=函数+设计器（默认），3=函数+设计器+预览 */
+type ViewMode = 2 | 3;
 
 export default function WorkspaceEditor() {
   const params = useParams<{ objectKey: string }>();
@@ -39,9 +36,6 @@ export default function WorkspaceEditor() {
 
   // 模板管理
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
-
-  // 节点编辑器状态
-  const [nodeEditorState, setNodeEditorState] = useState<EditorState | null>(null);
 
   // 使用历史记录 Hook
   const history = useSimpleHistory<WorkspaceConfig | null>(null, 100);
@@ -131,42 +125,6 @@ export default function WorkspaceEditor() {
     [config, handleConfigChange],
   );
 
-  // 节点编辑器变更处理
-  const handleNodeEditorChange = useCallback(
-    (state: EditorState) => {
-      setNodeEditorState(state);
-
-      // 将节点状态转换回配置
-      if (config) {
-        const newConfig = nodesToConfig(state.nodes, state.connections, config);
-        // 只更新，不记录历史（节点编辑器内部已有历史）
-        setConfig(newConfig);
-      }
-    },
-    [config],
-  );
-
-  // 切换到节点编辑器时，转换配置到节点
-  const handleViewModeChange = useCallback(
-    (mode: ViewMode) => {
-      if (mode === 4 && config) {
-        const { nodes, connections } = configToNodes(config);
-        setNodeEditorState({
-          nodes,
-          connections,
-          selectedNodes: [],
-          selectedConnection: null,
-          zoom: 1,
-          offset: { x: 0, y: 0 },
-          history: [],
-          historyIndex: -1,
-        });
-      }
-      setViewMode(mode);
-    },
-    [config],
-  );
-
   // 键盘快捷键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -175,17 +133,13 @@ export default function WorkspaceEditor() {
         e.preventDefault();
         handleSave();
       }
-      // Ctrl/Cmd + Z: 撤销（仅在非节点编辑模式下）
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && viewMode !== 4) {
+      // Ctrl/Cmd + Z: 撤销
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         handleUndo();
       }
-      // Ctrl/Cmd + Y 或 Ctrl/Cmd + Shift + Z: 重做（仅在非节点编辑模式下）
-      if (
-        (e.ctrlKey || e.metaKey) &&
-        (e.key === 'y' || (e.key === 'z' && e.shiftKey)) &&
-        viewMode !== 4
-      ) {
+      // Ctrl/Cmd + Y 或 Ctrl/Cmd + Shift + Z: 重做
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
         e.preventDefault();
         handleRedo();
       }
@@ -215,18 +169,10 @@ export default function WorkspaceEditor() {
         // 撤销/重做按钮
         <Button.Group key="history">
           <Tooltip title="撤销 (Ctrl+Z)">
-            <Button
-              icon={<UndoOutlined />}
-              disabled={!history.canUndo || viewMode === 4}
-              onClick={handleUndo}
-            />
+            <Button icon={<UndoOutlined />} disabled={!history.canUndo} onClick={handleUndo} />
           </Tooltip>
           <Tooltip title="重做 (Ctrl+Y)">
-            <Button
-              icon={<RedoOutlined />}
-              disabled={!history.canRedo || viewMode === 4}
-              onClick={handleRedo}
-            />
+            <Button icon={<RedoOutlined />} disabled={!history.canRedo} onClick={handleRedo} />
           </Tooltip>
         </Button.Group>,
         // 模板按钮
@@ -267,15 +213,6 @@ export default function WorkspaceEditor() {
               onClick={() => setViewMode(3)}
             />
           </Tooltip>
-          <Tooltip title="节点编辑器">
-            <Button
-              type={viewMode === 4 ? 'primary' : 'text'}
-              icon={<ApartmentOutlined />}
-              size="small"
-              style={{ borderRadius: 0, border: 'none', borderLeft: '1px solid #d9d9d9' }}
-              onClick={() => handleViewModeChange(4)}
-            />
-          </Tooltip>
         </div>,
         // 保存按钮
         <Button
@@ -291,94 +228,59 @@ export default function WorkspaceEditor() {
       ]}
     >
       <div style={{ display: 'flex', gap: 8, height: 'calc(100vh - 180px)', overflow: 'hidden' }}>
-        {/* 函数面板 - 节点编辑模式下隐藏 */}
-        {viewMode !== 4 && (
-          <div
-            style={{
-              width: functionWidth,
-              flexShrink: 0,
-              transition: 'width 0.2s',
-              overflow: 'hidden',
-            }}
-          >
-            {collapsed ? (
+        <div
+          style={{
+            width: functionWidth,
+            flexShrink: 0,
+            transition: 'width 0.2s',
+            overflow: 'hidden',
+          }}
+        >
+          {collapsed ? (
+            <div
+              style={{
+                width: 40,
+                height: '100%',
+                border: '1px solid #f0f0f0',
+                borderRadius: 6,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                paddingTop: 12,
+                backgroundColor: '#fafafa',
+                cursor: 'pointer',
+              }}
+              onClick={() => setCollapsed(false)}
+            >
+              <Tooltip title="展开函数面板" placement="right">
+                <MenuUnfoldOutlined style={{ color: '#666' }} />
+              </Tooltip>
               <div
                 style={{
-                  width: 40,
-                  height: '100%',
-                  border: '1px solid #f0f0f0',
-                  borderRadius: 6,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  paddingTop: 12,
-                  backgroundColor: '#fafafa',
-                  cursor: 'pointer',
+                  marginTop: 16,
+                  writingMode: 'vertical-rl',
+                  fontSize: 12,
+                  color: '#999',
+                  letterSpacing: 2,
                 }}
-                onClick={() => setCollapsed(false)}
               >
-                <Tooltip title="展开函数面板" placement="right">
-                  <MenuUnfoldOutlined style={{ color: '#666' }} />
-                </Tooltip>
-                <div
-                  style={{
-                    marginTop: 16,
-                    writingMode: 'vertical-rl',
-                    fontSize: 12,
-                    color: '#999',
-                    letterSpacing: 2,
-                  }}
-                >
-                  可用函数
-                </div>
+                可用函数
               </div>
-            ) : (
-              <div style={{ height: '100%' }}>
-                <FunctionList
-                  functions={availableFunctions}
-                  onCollapse={() => setCollapsed(true)}
-                />
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div style={{ height: '100%' }}>
+              <FunctionList functions={availableFunctions} onCollapse={() => setCollapsed(true)} />
+            </div>
+          )}
+        </div>
 
-        {/* 布局设计器 */}
-        {viewMode !== 4 && (
-          <div style={{ width: designerWidth, flexShrink: 0, overflow: 'auto' }}>
-            <LayoutDesigner
-              config={config}
-              onChange={(newConfig) => handleConfigChange(newConfig, '更新布局')}
-              descriptors={availableFunctions}
-            />
-          </div>
-        )}
-
-        {/* 节点编辑器 */}
-        {viewMode === 4 && nodeEditorState && (
-          <div style={{ width: '100%', height: '100%' }}>
-            <VisualNodeEditor
-              initialState={nodeEditorState}
-              onChange={handleNodeEditorChange}
-              availableFunctions={availableFunctions}
-            />
-          </div>
-        )}
-
-        {/* 节点编辑器空状态 */}
-        {viewMode === 4 && !nodeEditorState && (
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Spin size="large" tip="正在初始化节点编辑器..." />
-          </div>
-        )}
+        <div style={{ width: designerWidth, flexShrink: 0, overflow: 'auto' }}>
+          <LayoutDesigner
+            config={config}
+            onChange={(newConfig) => handleConfigChange(newConfig, '更新布局')}
+            descriptors={availableFunctions}
+          />
+        </div>
 
         {/* 预览面板 */}
         {viewMode === 3 && (

@@ -35,8 +35,8 @@ export default function WorkspacesIndexPage() {
   const handlePublish = async (objectKey: string) => {
     setActionKey(objectKey);
     try {
-      const updated = await publishWorkspaceConfig(objectKey);
-      setConfigs((prev) => prev.map((c) => (c.objectKey === objectKey ? updated : c)));
+      await publishWorkspaceConfig(objectKey);
+      await load();
       message.success('发布成功，已出现在控制台菜单');
     } catch (err: any) {
       message.error(err?.message || '发布失败');
@@ -48,8 +48,8 @@ export default function WorkspacesIndexPage() {
   const handleUnpublish = async (objectKey: string) => {
     setActionKey(objectKey);
     try {
-      const updated = await unpublishWorkspaceConfig(objectKey);
-      setConfigs((prev) => prev.map((c) => (c.objectKey === objectKey ? updated : c)));
+      await unpublishWorkspaceConfig(objectKey);
+      await load();
       message.success('已取消发布');
     } catch (err: any) {
       message.error(err?.message || '取消发布失败');
