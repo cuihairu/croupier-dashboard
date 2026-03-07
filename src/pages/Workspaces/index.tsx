@@ -128,7 +128,7 @@ export default function WorkspacesIndexPage() {
                     <Typography.Text type="secondary">{config.description}</Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {config.objectKey}
-                      {config.layout.tabs ? ` · ${config.layout.tabs.length} 个标签页` : ''}
+                      {config.layout?.tabs ? ` · ${config.layout.tabs.length} 个标签页` : ''}
                     </Typography.Text>
                   </Space>
                 }

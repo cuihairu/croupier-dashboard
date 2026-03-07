@@ -116,8 +116,8 @@ export async function loadWorkspaceConfig(
       return config;
     }
 
-    // 调用 API 加载配置
-    const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/config`, {
+    // 调用 API 加载配置（后端直接返回 WorkspaceConfig，因为 response embeds WorkspaceConfig）
+    const config = await request<WorkspaceConfig | null>(`/api/v1/workspaces/${objectKey}/config`, {
       method: 'GET',
     });
 
@@ -152,7 +152,7 @@ export async function saveWorkspaceConfig(config: WorkspaceConfig): Promise<Work
       return savedConfig;
     }
 
-    // 调用 API 保存配置
+    // 调用 API 保存配置（后端直接返回 WorkspaceConfig，因为 response embeds WorkspaceConfig）
     const savedConfig = await request<WorkspaceConfig>(
       `/api/v1/workspaces/${config.objectKey}/config`,
       {
@@ -160,6 +160,10 @@ export async function saveWorkspaceConfig(config: WorkspaceConfig): Promise<Work
         data: config,
       },
     );
+
+    if (!savedConfig) {
+      throw new Error('Failed to save workspace config');
+    }
 
     // 更新缓存
     setCache(config.objectKey, savedConfig);
@@ -186,9 +190,12 @@ export async function listWorkspaceConfigs(): Promise<WorkspaceConfig[]> {
       return configs;
     }
 
-    const configs = await request<WorkspaceConfig[]>('/api/v1/workspaces/configs', {
+    const response = await request<{ items: WorkspaceConfig[] }>('/api/v1/workspaces/configs', {
       method: 'GET',
     });
+
+    // 后端返回 { items: [...] } 结构，提取数组
+    const configs = Array.isArray(response?.items) ? response.items : [];
 
     // 更新缓存
     configs.forEach((config) => {
@@ -229,33 +236,45 @@ export async function deleteWorkspaceConfig(objectKey: string): Promise<void> {
 /**
  * 发布 Workspace 配置
  */
-export async function publishWorkspaceConfig(objectKey: string): Promise<WorkspaceConfig> {
+export async function publishWorkspaceConfig(
+  objectKey: string,
+): Promise<{ published: boolean; objectKey: string }> {
   if (USE_MOCK) {
     const config = await mockPublishWorkspaceConfig(objectKey);
     setCache(objectKey, config);
-    return config;
+    return { published: true, objectKey };
   }
-  const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/publish`, {
-    method: 'POST',
-  });
-  setCache(objectKey, config);
-  return config;
+  const response = await request<{ published: boolean; objectKey: string }>(
+    `/api/v1/workspaces/${objectKey}/publish`,
+    {
+      method: 'POST',
+    },
+  );
+  // 清除缓存以便下次加载时获取最新状态
+  clearCache(objectKey);
+  return response;
 }
 
 /**
  * 取消发布 Workspace 配置
  */
-export async function unpublishWorkspaceConfig(objectKey: string): Promise<WorkspaceConfig> {
+export async function unpublishWorkspaceConfig(
+  objectKey: string,
+): Promise<{ published: boolean; objectKey: string }> {
   if (USE_MOCK) {
     const config = await mockUnpublishWorkspaceConfig(objectKey);
     setCache(objectKey, config);
-    return config;
+    return { published: false, objectKey };
   }
-  const config = await request<WorkspaceConfig>(`/api/v1/workspaces/${objectKey}/unpublish`, {
-    method: 'POST',
-  });
-  setCache(objectKey, config);
-  return config;
+  const response = await request<{ published: boolean; objectKey: string }>(
+    `/api/v1/workspaces/${objectKey}/unpublish`,
+    {
+      method: 'POST',
+    },
+  );
+  // 清除缓存以便下次加载时获取最新状态
+  clearCache(objectKey);
+  return response;
 }
 
 /**
@@ -265,7 +284,10 @@ export async function listPublishedWorkspaceConfigs(): Promise<WorkspaceConfig[]
   if (USE_MOCK) {
     return mockListPublishedWorkspaceConfigs();
   }
-  return request<WorkspaceConfig[]>('/api/v1/workspaces/published', { method: 'GET' });
+  const response = await request<{ items: WorkspaceConfig[] }>('/api/v1/workspaces/published', {
+    method: 'GET',
+  });
+  return Array.isArray(response?.items) ? response.items : [];
 }
 
 /**

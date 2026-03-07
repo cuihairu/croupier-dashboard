@@ -120,7 +120,16 @@ export interface SectionConfig {
  *
  * 定义 Tab 内的具体布局方式。
  */
-export type TabLayout = FormDetailLayout | ListLayout | FormLayout | DetailLayout | CustomLayout;
+export type TabLayout =
+  | FormDetailLayout
+  | ListLayout
+  | FormLayout
+  | DetailLayout
+  | GridLayout
+  | KanbanLayout
+  | TimelineLayout
+  | SplitLayout
+  | CustomLayout;
 
 /**
  * 表单-详情布局
@@ -235,6 +244,151 @@ export interface CustomLayout {
 
   /** 传递给组件的 props */
   props?: Record<string, any>;
+}
+
+/**
+ * 网格布局
+ *
+ * 使用网格展示内容，支持响应式布局。
+ * 适用场景：仪表盘、数据卡片展示等。
+ */
+export interface GridLayout {
+  type: 'grid';
+
+  /** 列数 */
+  columns?: number;
+
+  /** 间距 */
+  gutter?: number | [number, number];
+
+  /** 网格项配置 */
+  items: GridItem[];
+
+  /** 是否响应式 */
+  responsive?: boolean;
+}
+
+/**
+ * 网格项配置
+ */
+export interface GridItem {
+  /** 唯一标识 */
+  key: string;
+
+  /** 占据列数 */
+  colSpan?: number;
+
+  /** 占据行数 */
+  rowSpan?: number;
+
+  /** 最小宽度 */
+  minWidth?: number;
+
+  /** 最大宽度 */
+  maxWidth?: number;
+
+  /** 是否可见 */
+  visible?: boolean;
+
+  /** 组件配置 */
+  component?: {
+    type: 'list' | 'form' | 'detail' | 'form-detail' | 'chart' | 'stat' | 'custom';
+    config: Record<string, any>;
+  };
+}
+
+/**
+ * 看板布局
+ *
+ * 支持看板视图，可拖拽卡片。
+ * 适用场景：任务管理、项目跟踪等。
+ */
+export interface KanbanLayout {
+  type: 'kanban';
+
+  /** 看板列配置 */
+  columns?: KanbanColumn[];
+
+  /** 数据函数 ID */
+  dataFunction?: string;
+}
+
+/**
+ * 看板列配置
+ */
+export interface KanbanColumn {
+  /** 列唯一标识 */
+  id: string;
+
+  /** 列标题 */
+  title: string;
+
+  /** 列颜色 */
+  color?: string;
+
+  /** 卡片数量限制 */
+  limit?: number;
+}
+
+/**
+ * 时间线布局
+ *
+ * 支持时间线视图，展示事件流。
+ * 适用场景：操作日志、审批记录等。
+ */
+export interface TimelineLayout {
+  type: 'timeline';
+
+  /** 数据函数 ID */
+  dataFunction?: string;
+
+  /** 事件类型过滤 */
+  filterTypes?: string[];
+
+  /** 是否显示筛选 */
+  showFilter?: boolean;
+
+  /** 是否逆序显示 */
+  reverse?: boolean;
+}
+
+/**
+ * 分栏布局
+ *
+ * 支持水平或垂直分栏。
+ * 适用场景：主从结构、对比视图等。
+ */
+export interface SplitLayout {
+  type: 'split';
+
+  /** 分栏方向 */
+  direction?: 'horizontal' | 'vertical';
+
+  /** 面板配置 */
+  panels: SplitPanel[];
+
+  /** 各面板尺寸（百分比或像素） */
+  sizes?: string[];
+}
+
+/**
+ * 分栏面板配置
+ */
+export interface SplitPanel {
+  /** 面板唯一标识 */
+  key: string;
+
+  /** 面板标题 */
+  title?: string;
+
+  /** 面板内容 */
+  content?: React.ReactNode;
+
+  /** 最小尺寸 */
+  minSize?: string;
+
+  /** 是否可折叠 */
+  collapsible?: boolean;
 }
 
 /**
