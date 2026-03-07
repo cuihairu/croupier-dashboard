@@ -13,8 +13,15 @@ import {
   Popconfirm,
   Modal,
   Switch,
+  Typography,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, EditOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  PlusOutlined,
+  EditOutlined,
+  ThunderboltOutlined,
+  EyeOutlined,
+} from '@ant-design/icons';
 import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
 import IconPicker from './IconPicker';
@@ -37,8 +44,11 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   const [editingField, setEditingField] = useState<FieldConfig | null>(null);
   const [columnModalOpen, setColumnModalOpen] = useState(false);
   const [fieldModalOpen, setFieldModalOpen] = useState(false);
+  const [descriptorPreviewOpen, setDescriptorPreviewOpen] = useState(false);
+  const [previewDescriptor, setPreviewDescriptor] = useState<FunctionDescriptor | null>(null);
   const [columnForm] = Form.useForm();
   const [fieldForm] = Form.useForm();
+  const { Text } = Typography;
 
   // 确保 tab.functions 和 tab.layout 存在
   const safeTab = {
@@ -133,6 +143,16 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
     onChange({ ...safeTab, functions: nextFunctions, layout: nextLayout });
   };
 
+  const handlePreviewFunctionJson = (functionId: string) => {
+    const descriptor = descriptors.find((d) => d.id === functionId);
+    if (!descriptor) {
+      message.warning('未找到函数描述符');
+      return;
+    }
+    setPreviewDescriptor(descriptor);
+    setDescriptorPreviewOpen(true);
+  };
+
   // 自动推导布局（手动触发）
   const handleAutoLayout = () => {
     if (safeTab.functions.length === 0) {
@@ -200,6 +220,14 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
                     actions={[
                       <Button
                         type="link"
+                        size="small"
+                        icon={<EyeOutlined />}
+                        onClick={() => handlePreviewFunctionJson(funcId)}
+                      >
+                        查看 JSON
+                      </Button>,
+                      <Button
+                        type="link"
                         danger
                         size="small"
                         icon={<DeleteOutlined />}
@@ -220,6 +248,45 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
           )}
         </div>
       </Card>
+
+      <Modal
+        title="函数 JSON 预览"
+        open={descriptorPreviewOpen}
+        footer={null}
+        width={860}
+        onCancel={() => {
+          setDescriptorPreviewOpen(false);
+          setPreviewDescriptor(null);
+        }}
+      >
+        {previewDescriptor ? (
+          <Space direction="vertical" style={{ width: '100%' }} size="small">
+            <Text strong>{previewDescriptor.id}</Text>
+            <Text type="secondary">
+              {previewDescriptor.display_name?.zh ||
+                previewDescriptor.display_name?.en ||
+                previewDescriptor.id}
+            </Text>
+            <pre
+              style={{
+                margin: 0,
+                padding: 12,
+                border: '1px solid #f0f0f0',
+                borderRadius: 6,
+                background: '#fafafa',
+                maxHeight: 480,
+                overflow: 'auto',
+                fontSize: 12,
+                lineHeight: 1.6,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+              }}
+            >
+              {JSON.stringify(previewDescriptor, null, 2)}
+            </pre>
+          </Space>
+        ) : null}
+      </Modal>
 
       <Card
         title="布局类型"

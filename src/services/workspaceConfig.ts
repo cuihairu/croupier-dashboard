@@ -421,8 +421,8 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
           if (!tab.layout.queryFunction) {
             errors.push(`tabs[${index}].queryFunction 不能为空`);
           }
-          if (!Array.isArray(tab.layout.queryFields) || tab.layout.queryFields.length === 0) {
-            errors.push(`tabs[${index}].queryFields 至少需要一个查询字段`);
+          if (tab.layout.queryFields !== undefined && !Array.isArray(tab.layout.queryFields)) {
+            errors.push(`tabs[${index}].queryFields 必须为数组`);
           }
         }
       });
