@@ -70,51 +70,56 @@ type PermissionApplyItem = {
   category?: string;
 };
 
-const FALLBACK_APPLY_PERMISSIONS: PermissionApplyItem[] = [
+type PermissionApplyTemplate = Omit<PermissionApplyItem, 'name' | 'description'> & {
+  nameId: string;
+  descriptionId: string;
+};
+
+const FALLBACK_APPLY_PERMISSION_TEMPLATES: PermissionApplyTemplate[] = [
   {
     id: 'workspaces:edit',
-    name: '工作台编辑权限',
-    description: '允许编辑和保存对象工作台草稿',
+    nameId: 'profile.permissions.fallback.workspaces.edit.name',
+    descriptionId: 'profile.permissions.fallback.workspaces.edit.description',
     resource: 'workspaces',
     action: 'edit',
     category: 'workspace',
   },
   {
     id: 'workspaces:publish',
-    name: '工作台发布权限',
-    description: '允许发布/取消发布对象工作台',
+    nameId: 'profile.permissions.fallback.workspaces.publish.name',
+    descriptionId: 'profile.permissions.fallback.workspaces.publish.description',
     resource: 'workspaces',
     action: 'publish',
     category: 'workspace',
   },
   {
     id: 'workspaces:rollback',
-    name: '工作台回滚权限',
-    description: '允许版本回滚操作',
+    nameId: 'profile.permissions.fallback.workspaces.rollback.name',
+    descriptionId: 'profile.permissions.fallback.workspaces.rollback.description',
     resource: 'workspaces',
     action: 'rollback',
     category: 'workspace',
   },
   {
     id: 'functions:manage',
-    name: '函数管理权限',
-    description: '允许函数管理与配置调整',
+    nameId: 'profile.permissions.fallback.functions.manage.name',
+    descriptionId: 'profile.permissions.fallback.functions.manage.description',
     resource: 'functions',
     action: 'manage',
     category: 'functions',
   },
   {
     id: 'audit:read',
-    name: '审计读取权限',
-    description: '允许查看审计日志与操作历史',
+    nameId: 'profile.permissions.fallback.audit.read.name',
+    descriptionId: 'profile.permissions.fallback.audit.read.description',
     resource: 'audit',
     action: 'read',
     category: 'audit',
   },
   {
     id: 'ops:manage',
-    name: '运维管理权限',
-    description: '允许运维策略配置与变更',
+    nameId: 'profile.permissions.fallback.ops.manage.name',
+    descriptionId: 'profile.permissions.fallback.ops.manage.description',
     resource: 'ops',
     action: 'manage',
     category: 'ops',
@@ -165,6 +170,18 @@ export default function Profile() {
     [location.search],
   );
   const [activeTab, setActiveTab] = useState(initialTab);
+  const fallbackApplyPermissions = useMemo<PermissionApplyItem[]>(
+    () =>
+      FALLBACK_APPLY_PERMISSION_TEMPLATES.map((item) => ({
+        id: item.id,
+        name: formatMessage(item.nameId),
+        description: formatMessage(item.descriptionId),
+        resource: item.resource,
+        action: item.action,
+        category: item.category,
+      })),
+    [formatMessage],
+  );
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -365,7 +382,7 @@ export default function Profile() {
             action: item.action,
             category: item.category,
           }))
-        : FALLBACK_APPLY_PERMISSIONS;
+        : fallbackApplyPermissions;
 
     return source
       .filter((item) => {
@@ -376,7 +393,7 @@ export default function Profile() {
         );
       })
       .slice(0, 20);
-  }, [permissionCatalog, ownedPermissionKeySet]);
+  }, [fallbackApplyPermissions, permissionCatalog, ownedPermissionKeySet]);
 
   const loginSessionRows = useMemo(() => {
     return (loginRecords || []).map((item, idx) => {
@@ -414,11 +431,19 @@ export default function Profile() {
   const buildApplyPermissionContent = (reason: string) => {
     if (!selectedApplyPermission) return '';
     return [
-      `申请人: ${profile?.username || '-'}`,
-      `权限: ${selectedApplyPermission.name}`,
-      `权限标识: ${selectedApplyPermission.resource}:${selectedApplyPermission.action}`,
-      `权限ID: ${selectedApplyPermission.id}`,
-      `申请理由: ${reason || '-'}`,
+      `${formatMessage('profile.permissions.apply.content.applicant')}: ${
+        profile?.username || '-'
+      }`,
+      `${formatMessage('profile.permissions.apply.content.permission')}: ${
+        selectedApplyPermission.name
+      }`,
+      `${formatMessage('profile.permissions.apply.content.permission.key')}: ${
+        selectedApplyPermission.resource
+      }:${selectedApplyPermission.action}`,
+      `${formatMessage('profile.permissions.apply.content.permission.id')}: ${
+        selectedApplyPermission.id
+      }`,
+      `${formatMessage('profile.permissions.apply.content.reason')}: ${reason || '-'}`,
     ].join('\n');
   };
 
@@ -426,7 +451,7 @@ export default function Profile() {
     const values = await applyForm.validateFields();
     const content = buildApplyPermissionContent(values.reason);
     await navigator.clipboard.writeText(content);
-    message.success('申请文案已复制');
+    message.success(formatMessage('profile.permissions.apply.copy.success'));
   };
 
   const handleSubmitPermissionApply = async () => {
@@ -440,12 +465,12 @@ export default function Profile() {
         priority: 'normal',
         source: 'profile_permission_apply',
       });
-      message.success('权限申请已提交');
+      message.success(formatMessage('profile.permissions.apply.submit.success'));
       setApplyPermissionModalVisible(false);
     } catch (error) {
       // 部分环境可能未开放反馈写入，降级为复制文案+人工提交流程
       await navigator.clipboard.writeText(content);
-      message.warning('自动提交失败，申请文案已复制，请提交给管理员审批');
+      message.warning(formatMessage('profile.permissions.apply.submit.fallback'));
     } finally {
       setApplySubmitting(false);
     }
@@ -453,7 +478,7 @@ export default function Profile() {
 
   const infoItems = [
     {
-      title: '用户ID',
+      title: formatMessage('profile.info.user.id'),
       value: profile?.id ?? 'N/A',
       icon: <UserOutlined />,
     },
@@ -491,7 +516,7 @@ export default function Profile() {
       icon: <HistoryOutlined />,
     },
     {
-      title: '最近登录IP',
+      title: formatMessage('profile.info.last.login.ip'),
       value: latestLoginIP,
       icon: <HistoryOutlined />,
     },
@@ -573,23 +598,23 @@ export default function Profile() {
         />
       </Card>
       <Card
-        title="可申请权限"
+        title={formatMessage('profile.permissions.apply.title')}
         extra={
           !permissionCatalogAvailable ? (
-            <Tag color="gold">权限目录受限，展示推荐清单</Tag>
+            <Tag color="gold">{formatMessage('profile.permissions.apply.catalog.fallback')}</Tag>
           ) : (
-            <Tag color="green">基于系统权限目录</Tag>
+            <Tag color="green">{formatMessage('profile.permissions.apply.catalog.live')}</Tag>
           )
         }
       >
         <List
           dataSource={applyPermissionCandidates}
-          locale={{ emptyText: '暂无可申请权限，当前权限已覆盖主要能力' }}
+          locale={{ emptyText: formatMessage('profile.permissions.apply.empty') }}
           renderItem={(item) => (
             <List.Item
               actions={[
                 <Button key="apply" type="link" onClick={() => handleOpenApplyPermission(item)}>
-                  申请
+                  {formatMessage('profile.permissions.apply.action')}
                 </Button>,
               ]}
             >
@@ -603,7 +628,9 @@ export default function Profile() {
                     {item.category && <Tag color="blue">{item.category}</Tag>}
                   </Space>
                 }
-                description={item.description || '无描述'}
+                description={
+                  item.description || formatMessage('profile.permissions.apply.no.description')
+                }
               />
             </List.Item>
           )}
@@ -694,17 +721,21 @@ export default function Profile() {
         locale={{ emptyText: formatMessage('profile.sessions.empty') }}
         columns={[
           {
-            title: '时间',
+            title: formatMessage('profile.sessions.col.time'),
             dataIndex: 'time',
             width: 180,
             render: (value: string) => (value ? new Date(value).toLocaleString() : '-'),
           },
           {
-            title: '结果',
+            title: formatMessage('profile.sessions.col.result'),
             dataIndex: 'success',
             width: 100,
             render: (success: boolean) =>
-              success ? <Tag color="green">成功</Tag> : <Tag color="red">失败</Tag>,
+              success ? (
+                <Tag color="green">{formatMessage('profile.sessions.result.success')}</Tag>
+              ) : (
+                <Tag color="red">{formatMessage('profile.sessions.result.failed')}</Tag>
+              ),
           },
           {
             title: 'IP',
@@ -713,19 +744,19 @@ export default function Profile() {
             render: (value: string) => value || '-',
           },
           {
-            title: '属地',
+            title: formatMessage('profile.sessions.col.region'),
             dataIndex: 'region',
             width: 160,
             render: (value: string) => value || '-',
           },
           {
-            title: '类型',
+            title: formatMessage('profile.sessions.col.kind'),
             dataIndex: 'kind',
             width: 140,
             render: (value: string) => <Tag>{value || '-'}</Tag>,
           },
           {
-            title: '客户端',
+            title: formatMessage('profile.sessions.col.ua'),
             dataIndex: 'userAgent',
             ellipsis: true,
             render: (value: string) => value || '-',
@@ -733,9 +764,7 @@ export default function Profile() {
         ]}
       />
       <Divider style={{ margin: '12px 0' }} />
-      <Text type="secondary">
-        登录记录来源于审计日志（`login/auth_login/login_fail/login_rate_limited`）。
-      </Text>
+      <Text type="secondary">{formatMessage('profile.sessions.hint')}</Text>
     </Card>
   );
 
@@ -799,21 +828,21 @@ export default function Profile() {
   const avatarModal = (
     <Modal
       open={avatarModalVisible}
-      title="设置头像 URL"
+      title={formatMessage('profile.avatar.modal.title')}
       onCancel={() => setAvatarModalVisible(false)}
       onOk={() => handleAvatarSubmit().catch(() => {})}
-      okText="保存头像"
+      okText={formatMessage('profile.avatar.modal.submit')}
     >
       <Form form={avatarForm} layout="vertical" initialValues={{ avatar: profile?.avatar }}>
         <Form.Item
           name="avatar"
-          label="头像 URL"
+          label={formatMessage('profile.avatar.modal.label')}
           rules={[
-            { required: true, message: '请输入头像 URL' },
-            { type: 'url', message: '请输入合法 URL' },
+            { required: true, message: formatMessage('profile.avatar.modal.required') },
+            { type: 'url', message: formatMessage('profile.avatar.modal.invalid') },
           ]}
         >
-          <Input placeholder="https://example.com/avatar.png" />
+          <Input placeholder={formatMessage('profile.avatar.modal.placeholder')} />
         </Form.Item>
       </Form>
     </Modal>
@@ -822,13 +851,13 @@ export default function Profile() {
   const permissionApplyModal = (
     <Modal
       open={applyPermissionModalVisible}
-      title="申请权限"
+      title={formatMessage('profile.permissions.apply.modal.title')}
       onCancel={() => {
         setApplyPermissionModalVisible(false);
         applyForm.resetFields();
       }}
       onOk={() => handleSubmitPermissionApply().catch(() => {})}
-      okText="提交申请"
+      okText={formatMessage('profile.permissions.apply.modal.submit')}
       confirmLoading={applySubmitting}
     >
       <Space direction="vertical" style={{ width: '100%' }} size={12}>
@@ -843,10 +872,18 @@ export default function Profile() {
         <Form form={applyForm} layout="vertical">
           <Form.Item
             name="reason"
-            label="申请理由"
-            rules={[{ required: true, message: '请填写申请理由' }]}
+            label={formatMessage('profile.permissions.apply.reason')}
+            rules={[
+              {
+                required: true,
+                message: formatMessage('profile.permissions.apply.reason.required'),
+              },
+            ]}
           >
-            <Input.TextArea rows={4} placeholder="请说明业务场景、影响范围、预计使用时长等信息" />
+            <Input.TextArea
+              rows={4}
+              placeholder={formatMessage('profile.permissions.apply.reason.placeholder')}
+            />
           </Form.Item>
         </Form>
         <Space>
@@ -854,14 +891,14 @@ export default function Profile() {
             icon={<CopyOutlined />}
             onClick={() => handleCopyPermissionApplyContent().catch(() => {})}
           >
-            复制申请文案
+            {formatMessage('profile.permissions.apply.copy')}
           </Button>
           <Button
             onClick={() => {
               navigate('/support/feedback');
             }}
           >
-            前往反馈中心
+            {formatMessage('profile.permissions.apply.goto.feedback')}
           </Button>
         </Space>
       </Space>
@@ -958,7 +995,7 @@ export default function Profile() {
                           setAvatarModalVisible(true);
                         }}
                       >
-                        设置头像
+                        {formatMessage('profile.avatar.change')}
                       </Button>
                     </Space>
                   </div>

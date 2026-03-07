@@ -64,7 +64,7 @@ export default {
   'pages.searchTable.tenThousand': '万',
   'pages.searchTable.batchDeletion': '批量删除',
   'pages.searchTable.batchApproval': '批量审批',
-  
+
   // Assignments page
   'pages.assignments.title': '功能分配',
   'pages.assignments.hint': '提示',
@@ -77,12 +77,12 @@ export default {
   'pages.assignments.select.game': '请先选择游戏/环境',
   'pages.assignments.no.permission': '无权限',
   'pages.assignments.select.placeholder': '选择要分配的功能函数（留空表示允许全部）',
-  
+
   // Scope related
   'pages.scope': '范围',
   'pages.scope.select': '请选择范围',
   'pages.scope.description': '如果留空，表示为选定范围允许所有功能。',
-  
+
   // Permissions page
   'pages.permissions.title': '权限管理',
   'pages.permissions.function.id': '函数ID',
@@ -100,7 +100,7 @@ export default {
   'pages.permissions.chinese.text': '中文文案（逐动词）',
   'pages.permissions.verb.chinese.text': '{verb} 的中文文案',
   'pages.permissions.verb.chinese.placeholder': '例如：调用函数（{verb}）',
-  
+
   // Rate Limits page
   'pages.rate.limits.management': '限速管理',
   'pages.rate.limits.new.rule': '新建规则',
@@ -115,7 +115,7 @@ export default {
   'pages.rate.limits.services': '服务',
   'pages.rate.limits.key.function': 'Key（函数ID）',
   'pages.rate.limits.key.agent': 'Key（Agent ID）',
-  
+
   // Component Management page
   'pages.component.management.title': '组件管理',
   'pages.component.management.quick.actions': '快速操作',
@@ -125,7 +125,7 @@ export default {
   'pages.component.management.available.packages': '可用包数',
   'pages.component.management.connected.agents': '在线代理',
   'pages.component.management.virtual.objects': '虚拟对象',
-  
+
   // Analytics Overview page
   'pages.analytics.overview.title': '概览 KPI',
 
@@ -150,7 +150,7 @@ export default {
   'pages.analytics.realtime.revenue.5m': '5分钟订单额(元)',
   'pages.analytics.realtime.pay.success.rate': '支付成功率',
   'pages.analytics.realtime.today.revenue': '今日充值(元)',
-  
+
   // Account Center page
   'pages.account.center.profile.title': '个人资料',
   'pages.account.center.display.name': '显示名称',
@@ -242,7 +242,57 @@ export default {
   'profile.notifications.title': '消息通知',
   'profile.notifications.empty': '暂无消息',
   'profile.notifications.untitled': '系统通知',
-  
+  'profile.info.user.id': '用户ID',
+  'profile.info.last.login.ip': '最近登录IP',
+  'profile.permissions.apply.title': '可申请权限',
+  'profile.permissions.apply.catalog.fallback': '权限目录受限，展示推荐清单',
+  'profile.permissions.apply.catalog.live': '基于系统权限目录',
+  'profile.permissions.apply.empty': '暂无可申请权限，当前权限已覆盖主要能力',
+  'profile.permissions.apply.action': '申请',
+  'profile.permissions.apply.no.description': '无描述',
+  'profile.permissions.apply.modal.title': '申请权限',
+  'profile.permissions.apply.modal.submit': '提交申请',
+  'profile.permissions.apply.reason': '申请理由',
+  'profile.permissions.apply.reason.required': '请填写申请理由',
+  'profile.permissions.apply.reason.placeholder': '请说明业务场景、影响范围、预计使用时长等信息',
+  'profile.permissions.apply.copy': '复制申请文案',
+  'profile.permissions.apply.copy.success': '申请文案已复制',
+  'profile.permissions.apply.submit.success': '权限申请已提交',
+  'profile.permissions.apply.submit.fallback': '自动提交失败，申请文案已复制，请提交给管理员审批',
+  'profile.permissions.apply.goto.feedback': '前往反馈中心',
+  'profile.permissions.apply.content.applicant': '申请人',
+  'profile.permissions.apply.content.permission': '权限',
+  'profile.permissions.apply.content.permission.key': '权限标识',
+  'profile.permissions.apply.content.permission.id': '权限ID',
+  'profile.permissions.apply.content.reason': '申请理由',
+  'profile.permissions.fallback.workspaces.edit.name': '工作台编辑权限',
+  'profile.permissions.fallback.workspaces.edit.description': '允许编辑和保存对象工作台草稿',
+  'profile.permissions.fallback.workspaces.publish.name': '工作台发布权限',
+  'profile.permissions.fallback.workspaces.publish.description': '允许发布/取消发布对象工作台',
+  'profile.permissions.fallback.workspaces.rollback.name': '工作台回滚权限',
+  'profile.permissions.fallback.workspaces.rollback.description': '允许版本回滚操作',
+  'profile.permissions.fallback.functions.manage.name': '函数管理权限',
+  'profile.permissions.fallback.functions.manage.description': '允许函数管理与配置调整',
+  'profile.permissions.fallback.audit.read.name': '审计读取权限',
+  'profile.permissions.fallback.audit.read.description': '允许查看审计日志与操作历史',
+  'profile.permissions.fallback.ops.manage.name': '运维管理权限',
+  'profile.permissions.fallback.ops.manage.description': '允许运维策略配置与变更',
+  'profile.sessions.col.time': '时间',
+  'profile.sessions.col.result': '结果',
+  'profile.sessions.col.region': '属地',
+  'profile.sessions.col.kind': '类型',
+  'profile.sessions.col.ua': '客户端',
+  'profile.sessions.result.success': '成功',
+  'profile.sessions.result.failed': '失败',
+  'profile.sessions.hint':
+    '登录记录来源于审计日志（login/auth_login/login_fail/login_rate_limited）。',
+  'profile.avatar.modal.title': '设置头像 URL',
+  'profile.avatar.modal.submit': '保存头像',
+  'profile.avatar.modal.label': '头像 URL',
+  'profile.avatar.modal.required': '请输入头像 URL',
+  'profile.avatar.modal.invalid': '请输入合法 URL',
+  'profile.avatar.modal.placeholder': 'https://example.com/avatar.png',
+
   // Account Settings page
   'pages.account.settings.password': '密码',
   'pages.account.settings.security': '安全',
@@ -265,7 +315,7 @@ export default {
   'pages.account.settings.security.content': '安全设置功能正在开发中...',
   'pages.account.settings.application.title': '应用设置',
   'pages.account.settings.application.content': '应用设置功能正在开发中...',
-  
+
   // Account Messages page
   'pages.account.messages.time': '时间',
   'pages.account.messages.type': '类型',

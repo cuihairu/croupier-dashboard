@@ -67,11 +67,12 @@ export default {
   'pages.searchTable.tenThousand': '0000',
   'pages.searchTable.batchDeletion': 'Batch Deletion',
   'pages.searchTable.batchApproval': 'Batch Approval',
-  
+
   // Assignments page
   'pages.assignments.title': 'Function Assignments',
   'pages.assignments.hint': 'Hint',
-  'pages.assignments.hint.description': 'If you leave this empty, all functions are allowed for the selected scope.',
+  'pages.assignments.hint.description':
+    'If you leave this empty, all functions are allowed for the selected scope.',
   'pages.assignments.functions.label': 'Functions:',
   'pages.assignments.save.button': 'Save',
   'pages.assignments.reload.button': 'Reload',
@@ -80,12 +81,13 @@ export default {
   'pages.assignments.select.game': 'Select game/env first',
   'pages.assignments.no.permission': 'no permission',
   'pages.assignments.select.placeholder': 'Select functions to assign (empty means allow all)',
-  
+
   // Scope related
   'pages.scope': 'Scope',
   'pages.scope.select': 'Please select scope',
-  'pages.scope.description': 'If you leave this empty, all functions are allowed for the selected scope.',
-  
+  'pages.scope.description':
+    'If you leave this empty, all functions are allowed for the selected scope.',
+
   // Permissions page
   'pages.permissions.title': 'Permission Management',
   'pages.permissions.function.id': 'Function ID',
@@ -103,7 +105,7 @@ export default {
   'pages.permissions.chinese.text': 'Chinese Text (per verb)',
   'pages.permissions.verb.chinese.text': 'Chinese text for {verb}',
   'pages.permissions.verb.chinese.placeholder': 'e.g. Invoke function ({verb})',
-  
+
   // Rate Limits page
   'pages.rate.limits.management': 'Rate Limit Management',
   'pages.rate.limits.new.rule': 'New Rule',
@@ -118,7 +120,7 @@ export default {
   'pages.rate.limits.services': 'Services',
   'pages.rate.limits.key.function': 'Key (Function ID)',
   'pages.rate.limits.key.agent': 'Key (Agent ID)',
-  
+
   // Component Management page
   'pages.component.management.title': 'Component Management',
   'pages.component.management.quick.actions': 'Quick Actions',
@@ -128,7 +130,7 @@ export default {
   'pages.component.management.available.packages': 'Available Packages',
   'pages.component.management.connected.agents': 'Connected Agents',
   'pages.component.management.virtual.objects': 'Virtual Objects',
-  
+
   // Analytics Overview page
   'pages.analytics.overview.title': 'Analytics Overview',
 
@@ -145,15 +147,15 @@ export default {
   'pages.analytics.realtime.active.1m': '1min Active',
   'pages.analytics.realtime.active.5m': '5min Active',
   'pages.analytics.realtime.active.15m': '15min Active',
-  'pages.analytics.realtime.today.peak.online': 'Today\'s Peak Online',
+  'pages.analytics.realtime.today.peak.online': "Today's Peak Online",
   'pages.analytics.realtime.history.peak.online': 'Historical Peak Online',
-  'pages.analytics.realtime.today.dau': 'Today\'s DAU',
-  'pages.analytics.realtime.today.new': 'Today\'s New Users',
+  'pages.analytics.realtime.today.dau': "Today's DAU",
+  'pages.analytics.realtime.today.new': "Today's New Users",
   'pages.analytics.realtime.total.registered.users': 'Total Registered Users',
   'pages.analytics.realtime.revenue.5m': '5min Revenue (Yuan)',
   'pages.analytics.realtime.pay.success.rate': 'Payment Success Rate',
-  'pages.analytics.realtime.today.revenue': 'Today\'s Revenue (Yuan)',
-  
+  'pages.analytics.realtime.today.revenue': "Today's Revenue (Yuan)",
+
   // Account Center page
   'pages.account.center.profile.title': 'Profile',
   'pages.account.center.display.name': 'Display Name',
@@ -202,7 +204,8 @@ export default {
   'profile.password.mismatch': 'The two passwords you entered do not match',
   'profile.password.modal.submit': 'Confirm Change',
   'profile.password.modal.title': 'Change Password',
-  'profile.password.modal.warning': 'Please confirm you remember the new password before proceeding.',
+  'profile.password.modal.warning':
+    'Please confirm you remember the new password before proceeding.',
   'profile.password.new': 'New Password',
   'profile.password.new.placeholder': 'Enter new password',
   'profile.password.success': 'Password updated successfully',
@@ -231,7 +234,8 @@ export default {
   'profile.stats.activities': 'Activity',
   'profile.section.profileForm': 'Profile Settings',
   'profile.security.center': 'Security Center',
-  'profile.security.description': 'Protect your account with strong passwords and multi-step review.',
+  'profile.security.description':
+    'Protect your account with strong passwords and multi-step review.',
   'profile.security.phone.helper': 'Used for verification and login alerts',
   'profile.games.title': 'Game Access',
   'profile.games.empty': 'No authorized games yet',
@@ -245,7 +249,67 @@ export default {
   'profile.notifications.title': 'Message Notifications',
   'profile.notifications.empty': 'No message notifications',
   'profile.notifications.untitled': 'System notification',
-  
+  'profile.info.user.id': 'User ID',
+  'profile.info.last.login.ip': 'Latest Login IP',
+  'profile.permissions.apply.title': 'Requestable Permissions',
+  'profile.permissions.apply.catalog.fallback':
+    'Permission catalog unavailable, showing recommended list',
+  'profile.permissions.apply.catalog.live': 'Based on system permission catalog',
+  'profile.permissions.apply.empty':
+    'No requestable permissions. Current access already covers major capabilities.',
+  'profile.permissions.apply.action': 'Request',
+  'profile.permissions.apply.no.description': 'No description',
+  'profile.permissions.apply.modal.title': 'Request Permission',
+  'profile.permissions.apply.modal.submit': 'Submit Request',
+  'profile.permissions.apply.reason': 'Reason',
+  'profile.permissions.apply.reason.required': 'Please provide the reason',
+  'profile.permissions.apply.reason.placeholder':
+    'Describe business context, scope of impact, and expected duration.',
+  'profile.permissions.apply.copy': 'Copy Request Template',
+  'profile.permissions.apply.copy.success': 'Request template copied',
+  'profile.permissions.apply.submit.success': 'Permission request submitted',
+  'profile.permissions.apply.submit.fallback':
+    'Auto submit failed, template copied. Please submit to admin manually.',
+  'profile.permissions.apply.goto.feedback': 'Go To Feedback Center',
+  'profile.permissions.apply.content.applicant': 'Applicant',
+  'profile.permissions.apply.content.permission': 'Permission',
+  'profile.permissions.apply.content.permission.key': 'Permission Key',
+  'profile.permissions.apply.content.permission.id': 'Permission ID',
+  'profile.permissions.apply.content.reason': 'Reason',
+  'profile.permissions.fallback.workspaces.edit.name': 'Workspace Edit Permission',
+  'profile.permissions.fallback.workspaces.edit.description':
+    'Allows editing and saving workspace drafts.',
+  'profile.permissions.fallback.workspaces.publish.name': 'Workspace Publish Permission',
+  'profile.permissions.fallback.workspaces.publish.description':
+    'Allows publishing and unpublishing workspaces.',
+  'profile.permissions.fallback.workspaces.rollback.name': 'Workspace Rollback Permission',
+  'profile.permissions.fallback.workspaces.rollback.description':
+    'Allows workspace version rollback operations.',
+  'profile.permissions.fallback.functions.manage.name': 'Function Management Permission',
+  'profile.permissions.fallback.functions.manage.description':
+    'Allows function management and configuration changes.',
+  'profile.permissions.fallback.audit.read.name': 'Audit Read Permission',
+  'profile.permissions.fallback.audit.read.description':
+    'Allows viewing audit logs and operation history.',
+  'profile.permissions.fallback.ops.manage.name': 'Ops Management Permission',
+  'profile.permissions.fallback.ops.manage.description':
+    'Allows ops strategy configuration and change operations.',
+  'profile.sessions.col.time': 'Time',
+  'profile.sessions.col.result': 'Result',
+  'profile.sessions.col.region': 'Region',
+  'profile.sessions.col.kind': 'Type',
+  'profile.sessions.col.ua': 'Client',
+  'profile.sessions.result.success': 'Success',
+  'profile.sessions.result.failed': 'Failed',
+  'profile.sessions.hint':
+    'Login records come from audit logs (login/auth_login/login_fail/login_rate_limited).',
+  'profile.avatar.modal.title': 'Set Avatar URL',
+  'profile.avatar.modal.submit': 'Save Avatar',
+  'profile.avatar.modal.label': 'Avatar URL',
+  'profile.avatar.modal.required': 'Please enter avatar URL',
+  'profile.avatar.modal.invalid': 'Please enter a valid URL',
+  'profile.avatar.modal.placeholder': 'https://example.com/avatar.png',
+
   // Account Settings page
   'pages.account.settings.password': 'Password',
   'pages.account.settings.security': 'Security',
@@ -268,7 +332,7 @@ export default {
   'pages.account.settings.security.content': 'Security settings are under development...',
   'pages.account.settings.application.title': 'Application Settings',
   'pages.account.settings.application.content': 'Application settings are under development...',
-  
+
   // Account Messages page
   'pages.account.messages.time': 'Time',
   'pages.account.messages.type': 'Type',
