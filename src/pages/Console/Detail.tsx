@@ -40,11 +40,7 @@ export default function ConsoleDetailPage() {
   if (!loading && errorCode === 'workspace_not_found') {
     return (
       <PageContainer title={objectKey}>
-        <Result
-          status="404"
-          title="配置不存在"
-          subTitle="当前对象没有可用的已发布工作台配置。"
-        />
+        <Result status="404" title="配置不存在" subTitle="当前对象没有可用的已发布工作台配置。" />
       </PageContainer>
     );
   }
@@ -52,11 +48,7 @@ export default function ConsoleDetailPage() {
   if (!loading && errorCode === 'forbidden') {
     return (
       <PageContainer title={objectKey}>
-        <Result
-          status="403"
-          title="无访问权限"
-          subTitle="你没有查看该工作台配置的权限。"
-        />
+        <Result status="403" title="无访问权限" subTitle="你没有查看该工作台配置的权限。" />
       </PageContainer>
     );
   }

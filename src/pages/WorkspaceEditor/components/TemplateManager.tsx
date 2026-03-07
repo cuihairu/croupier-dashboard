@@ -266,7 +266,11 @@ export default function TemplateManager({
         }
       }
 
-      setTemplates([...BUILTIN_TEMPLATES, ...userTemplates].filter((template) => isV1TemplateConfig(template.config)));
+      setTemplates(
+        [...BUILTIN_TEMPLATES, ...userTemplates].filter((template) =>
+          isV1TemplateConfig(template.config),
+        ),
+      );
     } catch (error: any) {
       message.error(error.message || '加载模板失败');
     } finally {
