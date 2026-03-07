@@ -24,6 +24,7 @@ import {
 } from '@ant-design/icons';
 import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
+import { CodeEditor } from '@/components/MonacoDynamic';
 import IconPicker from './IconPicker';
 import {
   descriptorToLayout,
@@ -153,6 +154,25 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
     setDescriptorPreviewOpen(true);
   };
 
+  const beforeMountJsonEditor = (monaco: any) => {
+    if (!monaco?.editor || monaco.editor.getTheme?.() === 'sublime-monokai') return;
+    monaco.editor.defineTheme('sublime-monokai', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'string.key.json', foreground: '66D9EF' },
+        { token: 'string.value.json', foreground: 'A6E22E' },
+        { token: 'number', foreground: 'E6DB74' },
+        { token: 'keyword', foreground: 'F92672' },
+      ],
+      colors: {
+        'editor.background': '#272822',
+        'editorLineNumber.foreground': '#75715E',
+        'editorLineNumber.activeForeground': '#F8F8F2',
+      },
+    });
+  };
+
   // 自动推导布局（手动触发）
   const handleAutoLayout = () => {
     if (safeTab.functions.length === 0) {
@@ -267,23 +287,23 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
                 previewDescriptor.display_name?.en ||
                 previewDescriptor.id}
             </Text>
-            <pre
-              style={{
-                margin: 0,
-                padding: 12,
-                border: '1px solid #f0f0f0',
-                borderRadius: 6,
-                background: '#fafafa',
-                maxHeight: 480,
-                overflow: 'auto',
-                fontSize: 12,
-                lineHeight: 1.6,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {JSON.stringify(previewDescriptor, null, 2)}
-            </pre>
+            <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, overflow: 'hidden' }}>
+              <CodeEditor
+                value={JSON.stringify(previewDescriptor, null, 2)}
+                language="json"
+                height={500}
+                readOnly
+                theme="sublime-monokai"
+                beforeMount={beforeMountJsonEditor}
+                options={{
+                  lineNumbers: 'on',
+                  renderLineHighlight: 'line',
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  minimap: { enabled: false },
+                }}
+              />
+            </div>
           </Space>
         ) : null}
       </Modal>
