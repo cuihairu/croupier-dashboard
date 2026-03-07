@@ -6,26 +6,61 @@ import {
   Card,
   List,
   Space,
+  Tooltip,
   Typography,
   message,
   Input,
   Select,
   Modal,
+  Result,
 } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
-import { EditOutlined, GlobalOutlined, StopOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, GlobalOutlined, StopOutlined } from '@ant-design/icons';
 import {
+  deleteWorkspaceConfig,
+  listWorkspaceVersions,
   listWorkspaceConfigs,
   publishWorkspaceConfig,
   unpublishWorkspaceConfig,
 } from '@/services/workspaceConfig';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
-import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
+import {
+  getWorkspaceErrorMessage,
+  parseWorkspaceError,
+  type WorkspaceErrorCode,
+} from '@/services/workspace/errors';
 
 function resolveWorkspaceStatus(config: WorkspaceConfig): 'draft' | 'published' | 'archived' {
   if (config.status) return config.status;
   return config.published ? 'published' : 'draft';
+}
+
+function buildPublishChangeSummary(
+  draftConfig?: WorkspaceConfig,
+  publishedConfig?: WorkspaceConfig,
+): string {
+  if (!draftConfig) return '缺少当前草稿配置';
+  if (!publishedConfig) return '当前无已发布版本，本次发布将作为首个发布版本';
+
+  const changes: string[] = [];
+  if ((draftConfig.title || '') !== (publishedConfig.title || '')) {
+    changes.push('标题已变更');
+  }
+  if ((draftConfig.description || '') !== (publishedConfig.description || '')) {
+    changes.push('描述已变更');
+  }
+  if ((draftConfig.layout?.type || '-') !== (publishedConfig.layout?.type || '-')) {
+    changes.push(
+      `布局 ${publishedConfig.layout?.type || '-'} -> ${draftConfig.layout?.type || '-'}`,
+    );
+  }
+  const draftTabs = draftConfig.layout?.tabs?.length || 0;
+  const publishedTabs = publishedConfig.layout?.tabs?.length || 0;
+  if (draftTabs !== publishedTabs) {
+    changes.push(`标签页数 ${publishedTabs} -> ${draftTabs}`);
+  }
+  return changes.length > 0 ? changes.join('；') : '与当前发布版本结构一致';
 }
 
 export default function WorkspacesIndexPage() {
@@ -33,6 +68,7 @@ export default function WorkspacesIndexPage() {
   const [loading, setLoading] = useState(false);
   const [configs, setConfigs] = useState<WorkspaceConfig[]>([]);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<WorkspaceErrorCode | undefined>();
   const [actionKey, setActionKey] = useState('');
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft' | 'archived'>(
@@ -43,6 +79,7 @@ export default function WorkspacesIndexPage() {
   const load = async () => {
     setLoading(true);
     setError('');
+    setErrorCode(undefined);
     try {
       const rows = await listWorkspaceConfigs();
       trackWorkspaceEvent('workspace_load', {
@@ -51,10 +88,13 @@ export default function WorkspacesIndexPage() {
       });
       setConfigs(Array.isArray(rows) ? rows : []);
     } catch (err: any) {
+      const parsedError = parseWorkspaceError(err);
       trackWorkspaceEvent('workspace_load_error', {
         scope: 'workspaces_page',
         error: err?.message || String(err),
+        code: parsedError.code,
       });
+      setErrorCode(parsedError.code);
       setError(getWorkspaceErrorMessage(err, '加载对象工作台失败'));
     } finally {
       setLoading(false);
@@ -107,6 +147,14 @@ export default function WorkspacesIndexPage() {
       return;
     }
     const target = configs.find((item) => item.objectKey === objectKey);
+    let publishChangeSummary = '发布后会在控制台向有权限用户可见。';
+    try {
+      const versions = await listWorkspaceVersions(objectKey);
+      const currentPublished = versions.find((item) => item.isCurrentPublished)?.config;
+      publishChangeSummary = buildPublishChangeSummary(target, currentPublished);
+    } catch {
+      publishChangeSummary = '版本差异摘要暂不可用，本次将按当前草稿发布。';
+    }
     Modal.confirm({
       title: '确认发布',
       content: (
@@ -114,6 +162,7 @@ export default function WorkspacesIndexPage() {
           <div>{`对象: ${target?.objectKey || objectKey}`}</div>
           <div>{`标题: ${target?.title || '-'}`}</div>
           <div>{`标签页数: ${target?.layout?.tabs?.length || 0}`}</div>
+          <div>{`变更摘要: ${publishChangeSummary}`}</div>
           <div style={{ marginTop: 8, color: '#cf1322' }}>发布后会在控制台向有权限用户可见。</div>
         </div>
       ),
@@ -172,7 +221,53 @@ export default function WorkspacesIndexPage() {
     });
   };
 
+  const handleDelete = async (objectKey: string) => {
+    if (!access?.canWorkspaceDelete) {
+      message.error('无删除权限');
+      return;
+    }
+    const target = configs.find((item) => item.objectKey === objectKey);
+    const targetStatus = target ? resolveWorkspaceStatus(target) : '-';
+    Modal.confirm({
+      title: '确认删除',
+      content: (
+        <div>
+          <div>{`对象: ${target?.objectKey || objectKey}`}</div>
+          <div>{`标题: ${target?.title || '-'}`}</div>
+          <div>{`状态: ${targetStatus}`}</div>
+          <div style={{ marginTop: 8, color: '#cf1322' }}>删除后不可恢复，请谨慎操作。</div>
+        </div>
+      ),
+      okButtonProps: { danger: true },
+      okText: '确认删除',
+      cancelText: '取消',
+      onOk: async () => {
+        setActionKey(objectKey);
+        try {
+          await deleteWorkspaceConfig(objectKey);
+          trackWorkspaceEvent('workspace_delete', { objectKey });
+          await load();
+          message.success('删除成功');
+        } catch (err: any) {
+          trackWorkspaceEvent('workspace_delete_error', {
+            objectKey,
+            error: err?.message || String(err),
+          });
+          message.error(getWorkspaceErrorMessage(err, '删除失败'));
+        } finally {
+          setActionKey('');
+        }
+      },
+    });
+  };
+
+  if (!access?.canWorkspaceRead) {
+    return <Result status="403" title="无访问权限" subTitle="你没有查看对象工作台的权限。" />;
+  }
   if (loading) return <Card loading />;
+  if (errorCode === 'forbidden') {
+    return <Result status="403" title="无访问权限" subTitle="你没有查看对象工作台的权限。" />;
+  }
   if (error) return <Alert type="error" message={error} showIcon />;
   if (configs.length === 0) return <Alert type="info" message="暂无对象工作台配置" showIcon />;
 
@@ -224,6 +319,17 @@ export default function WorkspacesIndexPage() {
         renderItem={(config) => {
           const status = resolveWorkspaceStatus(config);
           const isArchived = status === 'archived';
+          const editDisabledReason = !access?.canWorkspaceEdit
+            ? '无编辑权限'
+            : isArchived
+            ? '归档状态不允许编辑'
+            : '';
+          const publishDisabledReason = !access?.canWorkspacePublish
+            ? '无发布权限'
+            : isArchived
+            ? '归档状态不允许发布操作'
+            : '';
+          const deleteDisabledReason = !access?.canWorkspaceDelete ? '无删除权限' : '';
           const statusBadge =
             status === 'published'
               ? { status: 'success' as const, text: '已发布' }
@@ -235,45 +341,68 @@ export default function WorkspacesIndexPage() {
               <Card
                 hoverable
                 actions={[
-                  <Button
-                    key="edit"
-                    type="link"
-                    icon={<EditOutlined />}
-                    disabled={!access?.canWorkspaceEdit || isArchived}
-                    onClick={() =>
-                      history.push(
-                        `/system/functions/workspace-editor/${encodeURIComponent(
-                          config.objectKey,
-                        )}`,
-                      )
-                    }
-                  >
-                    编辑
-                  </Button>,
+                  <Tooltip key="edit" title={editDisabledReason}>
+                    <span>
+                      <Button
+                        type="link"
+                        icon={<EditOutlined />}
+                        disabled={Boolean(editDisabledReason)}
+                        onClick={() =>
+                          history.push(
+                            `/system/functions/workspace-editor/${encodeURIComponent(
+                              config.objectKey,
+                            )}`,
+                          )
+                        }
+                      >
+                        编辑
+                      </Button>
+                    </span>
+                  </Tooltip>,
                   config.published ? (
-                    <Button
-                      key="unpublish"
-                      type="link"
-                      danger
-                      icon={<StopOutlined />}
-                      disabled={!access?.canWorkspacePublish || isArchived}
-                      loading={actionKey === config.objectKey}
-                      onClick={() => handleUnpublish(config.objectKey)}
-                    >
-                      取消发布
-                    </Button>
+                    <Tooltip key="unpublish" title={publishDisabledReason}>
+                      <span>
+                        <Button
+                          type="link"
+                          danger
+                          icon={<StopOutlined />}
+                          disabled={Boolean(publishDisabledReason)}
+                          loading={actionKey === config.objectKey}
+                          onClick={() => handleUnpublish(config.objectKey)}
+                        >
+                          取消发布
+                        </Button>
+                      </span>
+                    </Tooltip>
                   ) : (
-                    <Button
-                      key="publish"
-                      type="link"
-                      icon={<GlobalOutlined />}
-                      disabled={!access?.canWorkspacePublish || isArchived}
-                      loading={actionKey === config.objectKey}
-                      onClick={() => handlePublish(config.objectKey)}
-                    >
-                      发布
-                    </Button>
+                    <Tooltip key="publish" title={publishDisabledReason}>
+                      <span>
+                        <Button
+                          type="link"
+                          icon={<GlobalOutlined />}
+                          disabled={Boolean(publishDisabledReason)}
+                          loading={actionKey === config.objectKey}
+                          onClick={() => handlePublish(config.objectKey)}
+                        >
+                          发布
+                        </Button>
+                      </span>
+                    </Tooltip>
                   ),
+                  <Tooltip key="delete" title={deleteDisabledReason}>
+                    <span>
+                      <Button
+                        type="link"
+                        danger
+                        icon={<DeleteOutlined />}
+                        disabled={Boolean(deleteDisabledReason)}
+                        loading={actionKey === config.objectKey}
+                        onClick={() => handleDelete(config.objectKey)}
+                      >
+                        删除
+                      </Button>
+                    </span>
+                  </Tooltip>,
                 ]}
               >
                 <Card.Meta

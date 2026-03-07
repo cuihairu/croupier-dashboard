@@ -43,6 +43,42 @@ export interface WorkspaceRollbackResult {
   version: number;
 }
 
+export interface ListWorkspaceVersionsParams {
+  from?: string;
+  to?: string;
+}
+
+export interface WorkspaceExportMetadata {
+  objectKey: string;
+  title?: string;
+  description?: string;
+  status: string;
+  version?: number;
+  published: boolean;
+  publishedAt?: string;
+  publishedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  currentDraftVersion?: number;
+  currentPublishedVersion?: number;
+  versionCount: number;
+  exportedAt: string;
+}
+
+export interface ImportWorkspaceConfigOptions {
+  targetObjectKey?: string;
+  forceDraft?: boolean;
+}
+
+export interface WorkspaceBackupBundle {
+  objectKey: string;
+  exportedAt: string;
+  metadata: WorkspaceExportMetadata;
+  currentDraft: WorkspaceConfig | null;
+  currentPublished: WorkspaceConfig | null;
+  versions: WorkspaceVersionRecord[];
+}
+
 /**
  * 缓存时间戳
  */
@@ -450,23 +486,145 @@ export async function exportWorkspaceConfig(objectKey: string): Promise<string> 
 }
 
 /**
+ * 导出当前已发布版本配置
+ *
+ * @param objectKey - 对象标识
+ * @returns 已发布版本配置 JSON 字符串
+ */
+export async function exportPublishedWorkspaceConfig(objectKey: string): Promise<string> {
+  const versions = await listWorkspaceVersions(objectKey);
+  const currentPublished =
+    versions.find((item) => item.isCurrentPublished) ||
+    versions.find((item) => item.config?.published || item.config?.status === 'published');
+
+  if (!currentPublished?.config) {
+    throw new Error(`对象 ${objectKey} 不存在可导出的已发布版本`);
+  }
+
+  return JSON.stringify(currentPublished.config, null, 2);
+}
+
+/**
+ * 导出 Workspace 元信息
+ *
+ * @param objectKey - 对象标识
+ * @returns 元信息 JSON 字符串
+ */
+export async function exportWorkspaceMetadata(objectKey: string): Promise<string> {
+  const config = await loadWorkspaceConfig(objectKey, { forceRefresh: true, useCache: false });
+  if (!config) {
+    throw new Error(`配置不存在: ${objectKey}`);
+  }
+
+  let versions: WorkspaceVersionRecord[] = [];
+  try {
+    versions = await listWorkspaceVersions(objectKey);
+  } catch (error) {
+    // 版本接口不可用时降级导出基础元信息
+    versions = [];
+  }
+
+  const currentDraftVersion = versions.find((item) => item.isCurrentDraft)?.version;
+  const currentPublishedVersion = versions.find((item) => item.isCurrentPublished)?.version;
+  const status = config.status || (config.published ? 'published' : 'draft');
+  const metadata: WorkspaceExportMetadata = {
+    objectKey: config.objectKey,
+    title: config.title,
+    description: config.description,
+    status,
+    version: config.version,
+    published: Boolean(config.published),
+    publishedAt: config.publishedAt,
+    publishedBy: config.publishedBy,
+    createdAt: config.meta?.createdAt,
+    updatedAt: config.meta?.updatedAt,
+    currentDraftVersion,
+    currentPublishedVersion,
+    versionCount: versions.length,
+    exportedAt: new Date().toISOString(),
+  };
+
+  return JSON.stringify(metadata, null, 2);
+}
+
+/**
+ * 导出 Workspace 备份包（草稿/发布版/历史版本/元信息）
+ *
+ * @param objectKey - 对象标识
+ * @returns 备份包 JSON 字符串
+ */
+export async function exportWorkspaceBackupBundle(objectKey: string): Promise<string> {
+  const config = await loadWorkspaceConfig(objectKey, { forceRefresh: true, useCache: false });
+  const versions = await listWorkspaceVersions(objectKey).catch(() => []);
+  const currentPublished =
+    versions.find((item) => item.isCurrentPublished)?.config ||
+    versions.find((item) => item.config?.published || item.config?.status === 'published')
+      ?.config ||
+    null;
+  const metadata: WorkspaceExportMetadata = {
+    objectKey,
+    title: config?.title,
+    description: config?.description,
+    status: config?.status || (config?.published ? 'published' : 'draft'),
+    version: config?.version,
+    published: Boolean(config?.published),
+    publishedAt: config?.publishedAt,
+    publishedBy: config?.publishedBy,
+    createdAt: config?.meta?.createdAt,
+    updatedAt: config?.meta?.updatedAt,
+    currentDraftVersion: versions.find((item) => item.isCurrentDraft)?.version,
+    currentPublishedVersion: versions.find((item) => item.isCurrentPublished)?.version,
+    versionCount: versions.length,
+    exportedAt: new Date().toISOString(),
+  };
+  const bundle: WorkspaceBackupBundle = {
+    objectKey,
+    exportedAt: new Date().toISOString(),
+    metadata,
+    currentDraft: config,
+    currentPublished,
+    versions,
+  };
+  return JSON.stringify(bundle, null, 2);
+}
+
+/**
  * 导入 Workspace 配置
  *
  * @param configJson - 配置 JSON 字符串
  * @returns 导入后的配置
  */
-export async function importWorkspaceConfig(configJson: string): Promise<WorkspaceConfig> {
+export async function importWorkspaceConfig(
+  configJson: string,
+  options?: ImportWorkspaceConfigOptions,
+): Promise<WorkspaceConfig> {
   try {
     const config = JSON.parse(configJson) as WorkspaceConfig;
+    const normalizedConfig: WorkspaceConfig = {
+      ...config,
+      objectKey: options?.targetObjectKey || config.objectKey,
+    };
+
+    if (options?.forceDraft) {
+      normalizedConfig.published = false;
+      normalizedConfig.status = 'draft';
+      normalizedConfig.publishedAt = undefined;
+      normalizedConfig.publishedBy = undefined;
+    }
+
+    normalizedConfig.meta = {
+      ...normalizedConfig.meta,
+      updatedAt: new Date().toISOString(),
+    };
 
     // 验证配置
-    const validation = validateWorkspaceConfig(config);
+    const validation = validateWorkspaceConfig(normalizedConfig);
     if (!validation.valid) {
       throw new Error(`配置验证失败: ${validation.errors.join(', ')}`);
     }
 
     // 保存配置
-    return saveWorkspaceConfig(config);
+    return saveWorkspaceConfig(normalizedConfig);
   } catch (error: any) {
     if (error instanceof SyntaxError) {
       throw new Error('配置 JSON 格式错误');
@@ -529,14 +687,30 @@ export async function batchLoadConfigs(
 /**
  * 获取配置版本列表（为版本面板预留）
  */
-export async function listWorkspaceVersions(objectKey: string): Promise<WorkspaceVersionRecord[]> {
+export async function listWorkspaceVersions(
+  objectKey: string,
+  params?: ListWorkspaceVersionsParams,
+): Promise<WorkspaceVersionRecord[]> {
   const response = await request<{ items: WorkspaceVersionRecord[] }>(
     `/api/v1/workspaces/${objectKey}/versions`,
     {
       method: 'GET',
+      params,
     },
   );
   return Array.isArray(response?.items) ? response.items : [];
+}
+
+/**
+ * 获取指定版本详情（后端若未启用该接口，调用方可自行降级）
+ */
+export async function getWorkspaceVersionDetail(
+  objectKey: string,
+  versionId: string,
+): Promise<WorkspaceVersionRecord> {
+  return request<WorkspaceVersionRecord>(`/api/v1/workspaces/${objectKey}/versions/${versionId}`, {
+    method: 'GET',
+  });
 }
 
 /**

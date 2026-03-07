@@ -1,5 +1,4 @@
 import { request } from '@umijs/max';
-import { apiUrl } from '@/utils/api';
 
 export type MeProfile = {
   id?: number;
@@ -42,26 +41,45 @@ export async function getMyGames() {
 }
 
 export async function getMyPermissions(params?: { game_id?: string; env?: string }) {
+  const query = params
+    ? {
+        gameId: (params as any).gameId || params.game_id,
+        env: params.env,
+      }
+    : undefined;
   return request<{
     permissions: ProfilePermission[];
     admin?: boolean;
     roles?: string[];
     permissionIds?: string[];
     permission_ids?: string[];
-  }>(
-    '/api/v1/profile/permissions',
-    { params },
-  );
+  }>('/api/v1/profile/permissions', { params: query });
 }
 
-export async function updateMyProfile(body: { display_name?: string; email?: string; phone?: string }) {
-  return request<void>('/api/v1/profile', { method: 'PUT', data: body });
+export async function updateMyProfile(body: {
+  display_name?: string;
+  nickname?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+}) {
+  return request<void>('/api/v1/profile', {
+    method: 'PUT',
+    data: {
+      nickname: body.nickname || body.display_name,
+      email: body.email,
+      phone: body.phone,
+      avatar: body.avatar,
+    },
+  });
 }
 
 export async function changeMyPassword(body: { current: string; password: string }) {
-  return request<void>('/api/v1/profile/password', { method: 'PUT', data: body });
-}
-
-export function getMyAvatarUploadUrl() {
-  return apiUrl('/api/v1/me/avatar');
+  return request<void>('/api/v1/profile/password', {
+    method: 'PUT',
+    data: {
+      oldPassword: body.current,
+      newPassword: body.password,
+    },
+  });
 }

@@ -1,6 +1,8 @@
 import { request } from '@umijs/max';
 import {
   clearAllCache,
+  exportWorkspaceBackupBundle,
+  importWorkspaceConfig,
   listWorkspaceVersions,
   loadWorkspaceConfig,
   publishWorkspaceConfig,
@@ -80,6 +82,24 @@ describe('workspace service api branches', () => {
     expect(empty).toEqual([]);
   });
 
+  it('listWorkspaceVersions 透传时间过滤参数', async () => {
+    requestMock.mockResolvedValueOnce({ items: [] });
+    await listWorkspaceVersions('player', {
+      from: '2026-03-01T00:00:00.000Z',
+      to: '2026-03-07T00:00:00.000Z',
+    });
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/v1/workspaces/player/versions',
+      expect.objectContaining({
+        method: 'GET',
+        params: {
+          from: '2026-03-01T00:00:00.000Z',
+          to: '2026-03-07T00:00:00.000Z',
+        },
+      }),
+    );
+  });
+
   it('rollbackWorkspaceVersion 成功并触发缓存清理', async () => {
     requestMock
       .mockResolvedValueOnce(baseConfig)
@@ -100,5 +120,68 @@ describe('workspace service api branches', () => {
   it('publish 失败分支透传错误', async () => {
     requestMock.mockRejectedValueOnce(new Error('publish failed'));
     await expect(publishWorkspaceConfig('player')).rejects.toThrow('publish failed');
+  });
+
+  it('importWorkspaceConfig 支持冲突 key 重写并强制生成草稿', async () => {
+    requestMock.mockResolvedValueOnce({
+      ...baseConfig,
+      objectKey: 'player',
+      status: 'draft',
+      published: false,
+    });
+    const raw = JSON.stringify({
+      ...baseConfig,
+      objectKey: 'order',
+      status: 'published',
+      published: true,
+      publishedAt: '2026-03-07T12:00:00.000Z',
+      publishedBy: 'tester',
+    });
+    const result = await importWorkspaceConfig(raw, {
+      targetObjectKey: 'player',
+      forceDraft: true,
+    });
+    expect(result.objectKey).toBe('player');
+    expect(requestMock).toHaveBeenCalledWith(
+      '/api/v1/workspaces/player/config',
+      expect.objectContaining({
+        method: 'PUT',
+        data: expect.objectContaining({
+          objectKey: 'player',
+          status: 'draft',
+          published: false,
+          publishedAt: undefined,
+          publishedBy: undefined,
+        }),
+      }),
+    );
+  });
+
+  it('exportWorkspaceBackupBundle 返回草稿/发布版/版本快照', async () => {
+    requestMock
+      .mockResolvedValueOnce({
+        ...baseConfig,
+        objectKey: 'player',
+        status: 'draft',
+        published: false,
+      })
+      .mockResolvedValueOnce({
+        items: [
+          {
+            id: '1',
+            objectKey: 'player',
+            version: 1,
+            isCurrentPublished: true,
+            config: { ...baseConfig, published: true, status: 'published' },
+          },
+        ],
+      });
+    const content = await exportWorkspaceBackupBundle('player');
+    const bundle = JSON.parse(content);
+    expect(bundle.objectKey).toBe('player');
+    expect(bundle.currentDraft?.objectKey).toBe('player');
+    expect(bundle.currentPublished?.published).toBe(true);
+    expect(Array.isArray(bundle.versions)).toBe(true);
+    expect(bundle.versions).toHaveLength(1);
   });
 });

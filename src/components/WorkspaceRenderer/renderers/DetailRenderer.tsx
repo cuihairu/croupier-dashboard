@@ -7,21 +7,14 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Card, Descriptions, Spin, message, Badge, Tag, Button, Space } from 'antd';
+import { Card, Descriptions, message, Badge, Tag, Button, Space } from 'antd';
 import type { DetailLayout } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
 import * as Icons from '@ant-design/icons';
+import type { RendererProps } from './types';
+import { RendererEmpty, RendererError, RendererLoading } from './state';
 
-export interface DetailRendererProps {
-  /** 详情布局配置 */
-  layout: DetailLayout;
-
-  /** 对象标识 */
-  objectKey: string;
-
-  /** 额外的上下文数据 */
-  context?: Record<string, any>;
-}
+export type DetailRendererProps = RendererProps<DetailLayout>;
 
 /**
  * 详情布局渲染器组件
@@ -29,6 +22,7 @@ export interface DetailRendererProps {
 export default function DetailRenderer({ layout, objectKey, context }: DetailRendererProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
 
   // 加载数据
   const loadData = async () => {
@@ -36,6 +30,7 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
       return;
     }
 
+    setLoadError('');
     setLoading(true);
     try {
       // 使用函数调用服务
@@ -43,7 +38,7 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
 
       setData(result);
     } catch (error: any) {
-      message.error(error.message || '加载详情失败');
+      setLoadError(error?.message || '加载详情失败');
       setData(null);
     } finally {
       setLoading(false);
@@ -73,17 +68,20 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
     }
   };
 
-  if (loading) {
+  if (!layout.detailFunction) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
-        <Spin size="large" tip="加载中..." />
-      </div>
+      <RendererError
+        message="配置不完整"
+        description="当前详情布局缺少 detailFunction，无法加载详情数据。"
+      />
     );
   }
 
-  if (!data) {
-    return <div style={{ textAlign: 'center', padding: '100px 0', color: '#999' }}>暂无数据</div>;
-  }
+  if (loading) return <RendererLoading tip="加载详情中..." />;
+
+  if (loadError) return <RendererError description={loadError} />;
+
+  if (!data) return <RendererEmpty description="暂无详情数据" />;
 
   return (
     <div>

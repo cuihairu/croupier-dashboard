@@ -25,19 +25,11 @@ import {
 } from 'antd';
 import type { FormDetailLayout, ActionConfig } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
-import { useAnyPermission } from '@/services/permission';
 import * as Icons from '@ant-design/icons';
+import type { RendererProps } from './types';
+import { RendererEmpty, RendererError } from './state';
 
-export interface FormDetailRendererProps {
-  /** 表单-详情布局配置 */
-  layout: FormDetailLayout;
-
-  /** 对象标识 */
-  objectKey: string;
-
-  /** 额外的上下文数据 */
-  context?: Record<string, any>;
-}
+export type FormDetailRendererProps = RendererProps<FormDetailLayout>;
 
 /**
  * 表单-详情布局渲染器组件
@@ -55,6 +47,7 @@ export default function FormDetailRenderer({
   const [modalVisible, setModalVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [currentAction, setCurrentAction] = useState<ActionConfig | null>(null);
+  const [hasQueried, setHasQueried] = useState(false);
 
   // 处理查询
   const handleQuery = async (values: any) => {
@@ -63,6 +56,7 @@ export default function FormDetailRenderer({
       return;
     }
 
+    setHasQueried(true);
     setLoading(true);
     try {
       const result = await invokeFunction(layout.queryFunction, values);
@@ -134,9 +128,19 @@ export default function FormDetailRenderer({
   // 自动查询
   React.useEffect(() => {
     if (layout.autoQuery) {
+      setHasQueried(true);
       form.submit();
     }
   }, [layout.autoQuery]);
+
+  if (!layout.queryFunction) {
+    return (
+      <RendererError
+        message="配置不完整"
+        description="当前 form-detail 布局缺少 queryFunction，无法执行查询。"
+      />
+    );
+  }
 
   return (
     <div>
@@ -218,6 +222,7 @@ export default function FormDetailRenderer({
           )}
         </>
       )}
+      {hasQueried && !loading && !detailData && <RendererEmpty description="未查询到数据" />}
 
       <Modal
         title={currentAction?.label}

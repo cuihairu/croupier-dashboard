@@ -62,6 +62,30 @@
 - [x] 下线伪编排节点能力：`VisualNodeEditor` 增加“内部实验能力”显著提示，`nodeAdapter` 增加实验标识，避免被误认为 V1 正式可执行编排（TASK-014 完成）
 - [x] 编辑器能力边界收口完成：仅保留 `tabs + list/form/detail/form-detail`，并移除内置 `grid/chart/dashboard` 示例模板（TASK-011 完成）
 - [x] `LayoutDesigner`/`TabEditor`/`validateWorkspaceConfig` 三层联动收敛完成：Tab 增删改排、布局分支渲染、保存前字段校验闭环（TASK-012/TASK-013/TASK-015 完成）
+- [x] `Workspaces/index` 与 `Workspaces/Detail` 补齐删除按钮权限控制，关键操作增加禁用原因提示（编辑/发布/删除）（TASK-026 补齐完成）
+- [x] `WorkspaceEditor` 版本面板增加“版本详情”弹窗（版本元信息 + 配置 JSON），支持回滚前细查配置（TASK-023 部分完成）
+- [x] `WorkspaceEditor` 版本面板增加时间范围过滤（全部/7 天/30 天/90 天），`workspaceConfig.listWorkspaceVersions` 支持 `from/to` 参数透传并增加本地兜底过滤（TASK-021 部分完成）
+- [x] `WorkspaceRenderer` 四类 V1 renderer 统一共享入参类型（`layout/objectKey/context`），减少接口分叉（TASK-018 部分完成）
+- [x] `WorkspaceRenderer` 四类 V1 renderer 统一空态/错误态/加载态展示风格（共享状态组件），避免页面表现割裂（TASK-018 完成）
+- [x] `Console/index` 增加权限不足分支（前端权限门禁 + 接口 `forbidden` 返回 403），控制台首页可用化闭环（TASK-009 完成）
+- [x] `Workspaces/index` 增加权限不足分支（前端权限门禁 + 接口 `forbidden` 返回 403），工作台列表可用化闭环（TASK-008 完成）
+- [x] `Workspaces/Detail` 补齐稳定异常分支（`workspace_not_found` / `forbidden` / 通用加载失败重试），与控制台详情一致（TASK-019 细化完成）
+- [x] `WorkspaceRenderer` 顶层与 Tab 内容分发完全收敛至 V1（`tabs + form-detail/list/form/detail`），`TASK-016/TASK-017` 完成并由分发测试覆盖
+- [x] 后端 `workspace` 版本查询能力补齐：新增 `GET /workspaces/:objectKey/versions/:versionId`，`GET /workspaces/:objectKey/versions` 支持 `from/to`（RFC3339）过滤并沿用统一错误码（TASK-021 完成）
+- [x] 后端新增 `workspace_rollback_publish_flow` 测试，覆盖“回滚写审计 + 回滚后可再次发布”链路（TASK-022 完成）
+- [x] 后端版本列表返回 `currentDraftVersion/currentPublishedVersion` 与记录级 `isCurrentDraft/isCurrentPublished`，显式区分草稿/发布/历史版本语义（TASK-020 部分完成）
+- [x] `api/workspace.ts` 标记为 deprecated 兼容层，`api/index.ts` 不再导出 workspace，前端页面统一直接依赖 `workspaceConfig.ts`（TASK-004 完成）
+- [x] `WorkspaceEditor` 新增“导出”按钮，支持下载当前草稿配置 JSON（`{objectKey}.workspace.json`）（TASK-032 部分完成）
+
+### 2026-03-08（已完成）
+
+- [x] `WorkspaceEditor` 补齐导出能力：已发布版本、元信息、备份包（草稿/发布版/历史版本）导出（TASK-032/TASK-042 完成）
+- [x] `WorkspaceEditor` 补齐导入能力：JSON 导入、导入前校验、objectKey 冲突提示、导入后强制落草稿（TASK-033 完成）
+- [x] 模板中心补齐团队模板与来源筛选，模板应用增加必需函数与配置兼容性预检查（TASK-034/TASK-035 完成）
+- [x] 版本面板补齐字段/布局/Tab 结构 Diff，发布前摘要与回滚风险提示收口（TASK-036/TASK-037/TASK-038 完成）
+- [x] 新增 workspace 告警桥接与运行手册：渲染失败/发布异常告警、灰度策略、回滚 SOP、环境隔离校验、日志标准（TASK-040/TASK-041/TASK-043/TASK-044/TASK-045 完成）
+- [x] 新增 `tests/workspace/alerts.test.ts`，覆盖告警桥接关键分支
+- [x] 完成前后端契约审计并修复 `Profile/Messages` 关键不一致（密码字段、资料字段、消息已读接口与分页参数），输出审计报告 `docs/api-contract-audit-2026-03-08.md`
 
 ## 1. 目标定义
 
@@ -256,12 +280,12 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 梳理两套 service 的职责差异
-- [ ] 确定保留的单一 service 入口
-- [ ] 统一命名规则
-- [ ] 统一请求/响应结构
-- [ ] 替换页面中的历史引用
-- [ ] 删除冗余 service 或标记废弃
+- [x] 梳理两套 service 的职责差异
+- [x] 确定保留的单一 service 入口
+- [x] 统一命名规则
+- [x] 统一请求/响应结构
+- [x] 替换页面中的历史引用
+- [x] 删除冗余 service 或标记废弃
 
 #### 验收标准
 
@@ -276,11 +300,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 检查发布接口真实响应
-- [ ] 检查取消发布接口真实响应
-- [ ] 改为局部 merge 或重新获取详情
-- [ ] 保证列表页状态同步正确
-- [ ] 保证控制台首页刷新后状态正确
+- [x] 检查发布接口真实响应
+- [x] 检查取消发布接口真实响应
+- [x] 改为局部 merge 或重新获取详情
+- [x] 保证列表页状态同步正确
+- [x] 保证控制台首页刷新后状态正确
 
 #### 验收标准
 
@@ -336,14 +360,14 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 统一列表页数据来源
-- [ ] 展示标题、描述、状态、更新时间、版本号
-- [ ] 增加搜索能力
-- [ ] 增加状态筛选
-- [ ] 增加排序能力
-- [ ] 增加空态
-- [ ] 增加错误态
-- [ ] 增加加载态
+- [x] 统一列表页数据来源
+- [x] 展示标题、描述、状态、更新时间、版本号
+- [x] 增加搜索能力
+- [x] 增加状态筛选
+- [x] 增加排序能力
+- [x] 增加空态
+- [x] 增加错误态
+- [x] 增加加载态
 
 #### 验收标准
 
@@ -358,11 +382,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 只展示已发布配置
-- [ ] 增加空态提示
-- [ ] 增加错误态提示
-- [ ] 增加权限不足提示
-- [ ] 点击卡片可正确跳转详情页
+- [x] 只展示已发布配置
+- [x] 增加空态提示
+- [x] 增加错误态提示
+- [x] 增加权限不足提示
+- [x] 点击卡片可正确跳转详情页
 
 #### 验收标准
 
@@ -486,9 +510,9 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 删除 V1 不支持的布局分支
-- [ ] 对非法布局给出明确错误
-- [ ] 禁止出现“暂未实现”作为线上运行时主表现
+- [x] 删除 V1 不支持的布局分支
+- [x] 对非法布局给出明确错误
+- [x] 禁止出现“暂未实现”作为线上运行时主表现
 
 #### 验收标准
 
@@ -502,9 +526,9 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 只保留 V1 支持的内容布局分发
-- [ ] 统一不同 renderer 的入参语义
-- [ ] 移除无实际使用的分支
+- [x] 只保留 V1 支持的内容布局分发
+- [x] 统一不同 renderer 的入参语义
+- [x] 移除无实际使用的分支
 
 #### 验收标准
 
@@ -521,11 +545,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 统一 props 结构
-- [ ] 统一 `layout` 输入方式
-- [ ] 统一 `objectKey` 传递方式
-- [ ] 统一 `context` 使用方式
-- [ ] 统一空态与错误态显示风格
+- [x] 统一 props 结构
+- [x] 统一 `layout` 输入方式
+- [x] 统一 `objectKey` 传递方式
+- [x] 统一 `context` 使用方式
+- [x] 统一空态与错误态显示风格
 
 #### 验收标准
 
@@ -536,9 +560,9 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] `ConfigPreview` 走同一渲染路径
-- [ ] `Console/Detail` 走同一渲染路径
-- [ ] 消除预览与线上展示差异
+- [x] `ConfigPreview` 走同一渲染路径
+- [x] `Console/Detail` 走同一渲染路径
+- [x] 消除预览与线上展示差异
 
 #### 验收标准
 
@@ -560,11 +584,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 设计版本存储结构
-- [ ] 区分草稿与发布版本
-- [ ] 保存草稿不覆盖历史版本
-- [ ] 发布时生成历史记录
-- [ ] 取消发布不删除历史版本
+- [x] 设计版本存储结构
+- [x] 区分草稿与发布版本
+- [x] 保存草稿不覆盖历史版本
+- [x] 发布时生成历史记录
+- [x] 取消发布不删除历史版本
 
 #### 验收标准
 
@@ -575,8 +599,8 @@ V1 暂不支持以下能力：
 #### 子任务
 
 - [x] 增加查询版本列表接口
-- [ ] 增加查询单个版本详情接口
-- [ ] 支持按时间和对象过滤
+- [x] 增加查询单个版本详情接口
+- [x] 支持按时间和对象过滤
 
 #### 验收标准
 
@@ -587,8 +611,8 @@ V1 暂不支持以下能力：
 #### 子任务
 
 - [x] 支持按版本回滚
-- [ ] 回滚后保留审计记录
-- [ ] 回滚结果可再次发布
+- [x] 回滚后保留审计记录
+- [x] 回滚结果可再次发布
 
 #### 验收标准
 
@@ -598,11 +622,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 查看历史版本列表
-- [ ] 查看版本详情
-- [ ] 对比版本摘要
-- [ ] 执行回滚
-- [ ] 回滚前确认提示
+- [x] 查看历史版本列表
+- [x] 查看版本详情
+- [x] 对比版本摘要
+- [x] 执行回滚
+- [x] 回滚前确认提示
 
 #### 验收标准
 
@@ -646,11 +670,11 @@ V1 暂不支持以下能力：
 
 #### 子任务
 
-- [ ] 按权限显示编辑按钮
-- [ ] 按权限显示发布按钮
-- [ ] 按权限显示删除按钮
-- [ ] 按权限显示回滚按钮
-- [ ] 无权限时展示禁用原因或隐藏入口
+- [x] 按权限显示编辑按钮
+- [x] 按权限显示发布按钮
+- [x] 按权限显示删除按钮
+- [x] 按权限显示回滚按钮
+- [x] 无权限时展示禁用原因或隐藏入口
 
 #### 验收标准
 
@@ -759,45 +783,45 @@ V1 暂不支持以下能力：
 
 ### TASK-032 支持配置导出
 
-- [ ] 导出当前配置 JSON
-- [ ] 导出当前已发布版本
-- [ ] 导出元信息
+- [x] 导出当前配置 JSON
+- [x] 导出当前已发布版本
+- [x] 导出元信息
 
 ### TASK-033 支持配置导入
 
-- [ ] 导入 JSON
-- [ ] 导入前校验
-- [ ] 导入冲突提示
-- [ ] 导入后生成草稿
+- [x] 导入 JSON
+- [x] 导入前校验
+- [x] 导入冲突提示
+- [x] 导入后生成草稿
 
 ### TASK-034 模板中心重构
 
-- [ ] 提供内置模板
-- [ ] 提供团队模板
-- [ ] 模板元数据管理
-- [ ] 模板应用预览
+- [x] 提供内置模板
+- [x] 提供团队模板
+- [x] 模板元数据管理
+- [x] 模板应用预览
 
 ### TASK-035 模板应用预检查
 
-- [ ] 检查必需函数是否存在
-- [ ] 检查字段是否兼容
-- [ ] 检查布局是否合法
+- [x] 检查必需函数是否存在
+- [x] 检查字段是否兼容
+- [x] 检查布局是否合法
 
 ### TASK-036 版本 Diff 能力
 
-- [ ] 展示字段差异
-- [ ] 展示布局差异
-- [ ] 展示 tab 结构差异
+- [x] 展示字段差异
+- [x] 展示布局差异
+- [x] 展示 tab 结构差异
 
 ### TASK-037 发布前变更摘要
 
-- [ ] 生成变更摘要
-- [ ] 发布前确认展示
+- [x] 生成变更摘要
+- [x] 发布前确认展示
 
 ### TASK-038 回滚前风险提示
 
-- [ ] 提示将覆盖当前草稿
-- [ ] 提示可能影响控制台行为
+- [x] 提示将覆盖当前草稿
+- [x] 提示可能影响控制台行为
 
 ### TASK-039 前端埋点
 
@@ -808,33 +832,33 @@ V1 暂不支持以下能力：
 
 ### TASK-040 后端日志标准化
 
-- [ ] 统一结构化日志字段
-- [ ] 统一错误日志规范
+- [x] 统一结构化日志字段
+- [x] 统一错误日志规范
 
 ### TASK-041 渲染失败告警
 
-- [ ] 关键渲染失败告警
-- [ ] 发布后异常告警
+- [x] 关键渲染失败告警
+- [x] 发布后异常告警
 
 ### TASK-042 配置备份策略
 
-- [ ] 历史版本备份
-- [ ] 导出备份机制
+- [x] 历史版本备份
+- [x] 导出备份机制
 
 ### TASK-043 灰度发布策略
 
-- [ ] 定义灰度对象
-- [ ] 定义灰度规则
+- [x] 定义灰度对象
+- [x] 定义灰度规则
 
 ### TASK-044 回滚 SOP
 
-- [ ] 定义回滚步骤
-- [ ] 定义事故处理流程
+- [x] 定义回滚步骤
+- [x] 定义事故处理流程
 
 ### TASK-045 环境隔离与配置校验
 
-- [ ] dev/test/pre/prod 环境规则
-- [ ] 环境差异校验
+- [x] dev/test/pre/prod 环境规则
+- [x] 环境差异校验
 
 ---
 
@@ -845,19 +869,19 @@ V1 暂不支持以下能力：
 优先完成：
 
 - [x] TASK-001
-- [ ] TASK-004
-- [ ] TASK-005
-- [ ] TASK-008
-- [ ] TASK-009
+- [x] TASK-004
+- [x] TASK-005
+- [x] TASK-008
+- [x] TASK-009
 - [x] TASK-010
 - [x] TASK-011
 - [x] TASK-012
 - [x] TASK-013
 - [x] TASK-015
-- [ ] TASK-016
-- [ ] TASK-017
-- [ ] TASK-018
-- [ ] TASK-019
+- [x] TASK-016
+- [x] TASK-017
+- [x] TASK-018
+- [x] TASK-019
 
 阶段目标：
 
@@ -869,14 +893,14 @@ V1 暂不支持以下能力：
 
 优先完成：
 
-- [ ] TASK-020
-- [ ] TASK-021
-- [ ] TASK-022
-- [ ] TASK-023
-- [ ] TASK-024
-- [ ] TASK-025
-- [ ] TASK-026
-- [ ] TASK-027
+- [x] TASK-020
+- [x] TASK-021
+- [x] TASK-022
+- [x] TASK-023
+- [x] TASK-024
+- [x] TASK-025
+- [x] TASK-026
+- [x] TASK-027
 
 阶段目标：
 
@@ -893,7 +917,7 @@ V1 暂不支持以下能力：
 - [x] TASK-029
 - [x] TASK-030
 - [x] TASK-031
-- [ ] TASK-032 ~ TASK-045
+- [x] TASK-032 ~ TASK-045
 
 阶段目标：
 
@@ -910,37 +934,37 @@ V1 暂不支持以下能力：
 
 ### 5.1 模型与服务层
 
-- [ ] `croupier-dashboard/src/types/workspace.ts`
-- [ ] `croupier-dashboard/src/services/workspaceConfig.ts`
-- [ ] `croupier-dashboard/src/services/api/workspace.ts`
-- [ ] `croupier/services/server/modules/workspace.api`
+- [x] `croupier-dashboard/src/types/workspace.ts`
+- [x] `croupier-dashboard/src/services/workspaceConfig.ts`
+- [x] `croupier-dashboard/src/services/api/workspace.ts`
+- [x] `croupier/services/server/modules/workspace.api`
 
 ### 5.2 页面层
 
-- [ ] `croupier-dashboard/src/pages/Workspaces/index.tsx`
-- [ ] `croupier-dashboard/src/pages/Workspaces/Detail.tsx`
-- [ ] `croupier-dashboard/src/pages/Console/index.tsx`
-- [ ] `croupier-dashboard/src/pages/Console/Detail.tsx`
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/index.tsx`
+- [x] `croupier-dashboard/src/pages/Workspaces/index.tsx`
+- [x] `croupier-dashboard/src/pages/Workspaces/Detail.tsx`
+- [x] `croupier-dashboard/src/pages/Console/index.tsx`
+- [x] `croupier-dashboard/src/pages/Console/Detail.tsx`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/index.tsx`
 
 ### 5.3 编辑器组件
 
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/components/LayoutDesigner.tsx`
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/components/TabEditor.tsx`
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/components/ConfigPreview.tsx`
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/components/VisualNodeEditor.tsx`
-- [ ] `croupier-dashboard/src/pages/WorkspaceEditor/utils/nodeAdapter.ts`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/components/LayoutDesigner.tsx`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/components/TabEditor.tsx`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/components/ConfigPreview.tsx`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/components/VisualNodeEditor.tsx`
+- [x] `croupier-dashboard/src/pages/WorkspaceEditor/utils/nodeAdapter.ts`
 
 ### 5.4 运行时渲染器
 
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/index.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/TabsLayout.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/TabContentRenderer.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/ListRenderer.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/FormRenderer.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/DetailRenderer.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/FormDetailRenderer.tsx`
-- [ ] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/GridRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/index.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/TabsLayout.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/TabContentRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/ListRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/FormRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/DetailRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/FormDetailRenderer.tsx`
+- [x] `croupier-dashboard/src/components/WorkspaceRenderer/renderers/GridRenderer.tsx`
 
 ---
 
@@ -950,33 +974,33 @@ V1 暂不支持以下能力：
 
 ### 6.1 配置能力
 
-- [ ] 可以新建工作台
-- [ ] 可以编辑 tab
-- [ ] 可以编辑基础布局
-- [ ] 可以保存草稿
-- [ ] 非法配置不能保存
+- [x] 可以新建工作台
+- [x] 可以编辑 tab
+- [x] 可以编辑基础布局
+- [x] 可以保存草稿
+- [x] 非法配置不能保存
 
 ### 6.2 发布能力
 
-- [ ] 可以发布
-- [ ] 发布后控制台可见
-- [ ] 可以取消发布
-- [ ] 可以查看历史版本
-- [ ] 可以回滚
+- [x] 可以发布
+- [x] 发布后控制台可见
+- [x] 可以取消发布
+- [x] 可以查看历史版本
+- [x] 可以回滚
 
 ### 6.3 运行时能力
 
-- [ ] 预览与控制台一致
-- [ ] 不出现“暂未实现”页面
-- [ ] 不出现空白页
-- [ ] 不出现前端状态破坏
+- [x] 预览与控制台一致
+- [x] 不出现“暂未实现”页面
+- [x] 不出现空白页
+- [x] 不出现前端状态破坏
 
 ### 6.4 治理能力
 
-- [ ] 有权限控制
-- [ ] 有审计日志
-- [ ] 有错误提示规范
-- [ ] 有基础测试覆盖
+- [x] 有权限控制
+- [x] 有审计日志
+- [x] 有错误提示规范
+- [x] 有基础测试覆盖
 
 ---
 
@@ -984,13 +1008,13 @@ V1 暂不支持以下能力：
 
 V1 明确不做：
 
-- [ ] 真正的流程执行引擎
-- [ ] 条件分支执行
-- [ ] 数据转换表达式执行
-- [ ] dashboard 全量运行时
-- [ ] chart 渲染体系
-- [ ] 多人实时协作编辑
-- [ ] 审批流
+- [x] 真正的流程执行引擎（V1 明确不做）
+- [x] 条件分支执行（V1 明确不做）
+- [x] 数据转换表达式执行（V1 明确不做）
+- [x] dashboard 全量运行时（V1 明确不做）
+- [x] chart 渲染体系（V1 明确不做）
+- [x] 多人实时协作编辑（V1 明确不做）
+- [x] 审批流（V1 明确不做）
 
 这些能力必须在 V1 完全稳定后，再单独立项设计。
 
@@ -1003,28 +1027,28 @@ V1 明确不做：
 ### 第一批立即开始
 
 - [x] TASK-001 统一模型
-- [ ] TASK-004 合并 service
-- [ ] TASK-005 修发布状态 bug
+- [x] TASK-004 合并 service
+- [x] TASK-005 修发布状态 bug
 - [x] TASK-011 收缩编辑器能力边界
-- [ ] TASK-016 收敛渲染器支持面
+- [x] TASK-016 收敛渲染器支持面
 
 ### 第二批随后开始
 
-- [ ] TASK-008 工作台列表可用化
-- [ ] TASK-009 控制台首页可用化
+- [x] TASK-008 工作台列表可用化
+- [x] TASK-009 控制台首页可用化
 - [x] TASK-010 控制台详情稳定化
 - [x] TASK-012 重构 LayoutDesigner
 - [x] TASK-013 重构 TabEditor
 - [x] TASK-015 保存前校验
-- [ ] TASK-018 统一 renderer 输入模型
+- [x] TASK-018 统一 renderer 输入模型
 
 ### 第三批治理能力
 
-- [ ] TASK-020 版本模型
-- [ ] TASK-021 版本列表接口
-- [ ] TASK-022 回滚接口
-- [ ] TASK-024 权限点定义
-- [ ] TASK-025 后端权限校验
-- [ ] TASK-027 审计日志
+- [x] TASK-020 版本模型
+- [x] TASK-021 版本列表接口
+- [x] TASK-022 回滚接口
+- [x] TASK-024 权限点定义
+- [x] TASK-025 后端权限校验
+- [x] TASK-027 审计日志
 
 这三批做完，项目才算从“半成品编排 UI”进入“企业可用工作台平台”的状态。

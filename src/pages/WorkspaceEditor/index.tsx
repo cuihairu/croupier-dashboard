@@ -1,12 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PageContainer } from '@ant-design/pro-components';
-import { Button, message, Spin, Tooltip, Modal, Drawer, List, Tag, Space } from 'antd';
+import {
+  Button,
+  message,
+  Spin,
+  Tooltip,
+  Modal,
+  Drawer,
+  List,
+  Tag,
+  Space,
+  Descriptions,
+  Select,
+  Input,
+} from 'antd';
 import {
   MenuUnfoldOutlined,
   AppstoreOutlined,
   EyeOutlined,
   SaveOutlined,
   FileOutlined,
+  DownloadOutlined,
+  UploadOutlined,
   UndoOutlined,
   RedoOutlined,
   HistoryOutlined,
@@ -14,6 +29,12 @@ import {
 import { useAccess, useParams } from '@umijs/max';
 import type { WorkspaceConfig, WorkspaceVersionRecord } from '@/types/workspace';
 import {
+  getWorkspaceVersionDetail,
+  exportWorkspaceBackupBundle,
+  exportPublishedWorkspaceConfig,
+  exportWorkspaceMetadata,
+  exportWorkspaceConfig,
+  importWorkspaceConfig,
   loadWorkspaceConfig,
   listWorkspaceVersions,
   rollbackWorkspaceVersion,
@@ -32,6 +53,7 @@ import { useSimpleHistory } from './hooks/useHistory';
 /** 两种模式：2=函数+设计器（默认），3=函数+设计器+预览 */
 type ViewMode = 2 | 3;
 const V1_TAB_LAYOUT_TYPES = new Set(['form-detail', 'list', 'form', 'detail']);
+type VersionTimeRange = 'all' | '7d' | '30d' | '90d';
 
 function resolveWorkspaceStatus(config?: WorkspaceConfig | null): string {
   if (!config) return 'unknown';
@@ -70,6 +92,135 @@ function summarizeDiff(
   return changed.length > 0 ? changed.join(' · ') : '与当前草稿结构一致';
 }
 
+function buildVersionDiff(
+  currentConfig: WorkspaceConfig | null,
+  targetConfig?: WorkspaceConfig | null,
+): {
+  fieldChanges: string[];
+  layoutChanges: string[];
+  tabChanges: string[];
+} {
+  if (!currentConfig || !targetConfig) {
+    return {
+      fieldChanges: ['缺少可对比的配置快照'],
+      layoutChanges: [],
+      tabChanges: [],
+    };
+  }
+
+  const fieldChanges: string[] = [];
+  const layoutChanges: string[] = [];
+  const tabChanges: string[] = [];
+
+  const currentStatus = resolveWorkspaceStatus(currentConfig);
+  const targetStatus = resolveWorkspaceStatus(targetConfig);
+  if (currentStatus !== targetStatus) {
+    fieldChanges.push(`状态: ${currentStatus} -> ${targetStatus}`);
+  }
+  if ((currentConfig.title || '') !== (targetConfig.title || '')) {
+    fieldChanges.push(`标题: ${currentConfig.title || '-'} -> ${targetConfig.title || '-'}`);
+  }
+  if ((currentConfig.description || '') !== (targetConfig.description || '')) {
+    fieldChanges.push('描述: 已变更');
+  }
+  if (Boolean(currentConfig.published) !== Boolean(targetConfig.published)) {
+    fieldChanges.push(
+      `发布标记: ${Boolean(currentConfig.published)} -> ${Boolean(targetConfig.published)}`,
+    );
+  }
+
+  const currentLayout = currentConfig.layout?.type || '-';
+  const targetLayout = targetConfig.layout?.type || '-';
+  if (currentLayout !== targetLayout) {
+    layoutChanges.push(`顶层布局: ${currentLayout} -> ${targetLayout}`);
+  }
+
+  const currentTabs = currentConfig.layout?.type === 'tabs' ? currentConfig.layout.tabs || [] : [];
+  const targetTabs = targetConfig.layout?.type === 'tabs' ? targetConfig.layout.tabs || [] : [];
+  const currentMap = new Map(currentTabs.map((tab) => [tab.key, tab]));
+  const targetMap = new Map(targetTabs.map((tab) => [tab.key, tab]));
+
+  targetTabs.forEach((tab) => {
+    if (!currentMap.has(tab.key)) {
+      tabChanges.push(`新增 Tab: ${tab.key}`);
+    }
+  });
+  currentTabs.forEach((tab) => {
+    if (!targetMap.has(tab.key)) {
+      tabChanges.push(`删除 Tab: ${tab.key}`);
+    }
+  });
+  targetTabs.forEach((tab) => {
+    const currentTab = currentMap.get(tab.key);
+    if (!currentTab) return;
+    if ((currentTab.title || '') !== (tab.title || '')) {
+      tabChanges.push(`Tab ${tab.key} 标题变更`);
+    }
+    if (currentTab.layout?.type !== tab.layout?.type) {
+      tabChanges.push(`Tab ${tab.key} 布局: ${currentTab.layout?.type} -> ${tab.layout?.type}`);
+    }
+    const currentFns = new Set(currentTab.functions || []);
+    const targetFns = new Set(tab.functions || []);
+    const addedFns = Array.from(targetFns).filter((fn) => !currentFns.has(fn));
+    const removedFns = Array.from(currentFns).filter((fn) => !targetFns.has(fn));
+    if (addedFns.length > 0) {
+      tabChanges.push(`Tab ${tab.key} 新增函数: ${addedFns.join(', ')}`);
+    }
+    if (removedFns.length > 0) {
+      tabChanges.push(`Tab ${tab.key} 删除函数: ${removedFns.join(', ')}`);
+    }
+  });
+
+  if (fieldChanges.length === 0) fieldChanges.push('字段未变化');
+  if (layoutChanges.length === 0) layoutChanges.push('布局未变化');
+  if (tabChanges.length === 0) tabChanges.push('Tab 结构未变化');
+
+  return { fieldChanges, layoutChanges, tabChanges };
+}
+
+function getVersionTimeWindow(range: VersionTimeRange): { from?: string; to?: string } | undefined {
+  if (range === 'all') return undefined;
+  const now = Date.now();
+  const durationMap: Record<Exclude<VersionTimeRange, 'all'>, number> = {
+    '7d': 7,
+    '30d': 30,
+    '90d': 90,
+  };
+  const days = durationMap[range as Exclude<VersionTimeRange, 'all'>];
+  return {
+    from: new Date(now - days * 24 * 60 * 60 * 1000).toISOString(),
+    to: new Date(now).toISOString(),
+  };
+}
+
+function filterVersionsByTime(
+  versions: WorkspaceVersionRecord[],
+  range: VersionTimeRange,
+): WorkspaceVersionRecord[] {
+  if (range === 'all') return versions;
+  const window = getVersionTimeWindow(range);
+  if (!window?.from) return versions;
+  const fromTs = new Date(window.from).getTime();
+  return versions.filter((item) => {
+    if (!item.createdAt) return true;
+    return new Date(item.createdAt).getTime() >= fromTs;
+  });
+}
+
+function collectRequiredFunctions(candidate: WorkspaceConfig): string[] {
+  if (candidate.layout?.type !== 'tabs' || !Array.isArray(candidate.layout.tabs)) return [];
+  const result = new Set<string>();
+  candidate.layout.tabs.forEach((tab) => {
+    tab.functions?.forEach((fn) => fn && result.add(fn));
+    const layout = tab.layout as any;
+    if (layout?.listFunction) result.add(layout.listFunction);
+    if (layout?.queryFunction) result.add(layout.queryFunction);
+    if (layout?.submitFunction) result.add(layout.submitFunction);
+    if (layout?.detailFunction) result.add(layout.detailFunction);
+  });
+  return Array.from(result);
+}
+
 export default function WorkspaceEditor() {
   const access = useAccess() as any;
   const params = useParams<{ objectKey: string }>();
@@ -85,6 +236,14 @@ export default function WorkspaceEditor() {
   const [versionsLoading, setVersionsLoading] = useState(false);
   const [rollingVersionId, setRollingVersionId] = useState('');
   const [versions, setVersions] = useState<WorkspaceVersionRecord[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState<WorkspaceVersionRecord | null>(null);
+  const [versionDetailLoading, setVersionDetailLoading] = useState(false);
+  const [versionDetailId, setVersionDetailId] = useState('');
+  const [versionTimeRange, setVersionTimeRange] = useState<VersionTimeRange>('all');
+  const [importVisible, setImportVisible] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importContent, setImportContent] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 模板管理
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
@@ -194,6 +353,210 @@ export default function WorkspaceEditor() {
     }
   };
 
+  const handleExport = useCallback(async () => {
+    if (!objectKey) return;
+    if (!access?.canWorkspaceRead) {
+      message.error('无导出权限');
+      return;
+    }
+    try {
+      const content = await exportWorkspaceConfig(objectKey);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${objectKey}.workspace.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('配置已导出');
+    } catch (error: any) {
+      message.error(getWorkspaceErrorMessage(error, '导出失败'));
+    }
+  }, [objectKey, access?.canWorkspaceRead]);
+
+  const handleExportPublished = useCallback(async () => {
+    if (!objectKey) return;
+    if (!access?.canWorkspaceRead) {
+      message.error('无导出权限');
+      return;
+    }
+    try {
+      const content = await exportPublishedWorkspaceConfig(objectKey);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${objectKey}.workspace.published.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('已发布配置已导出');
+    } catch (error: any) {
+      message.error(getWorkspaceErrorMessage(error, '导出已发布版本失败'));
+    }
+  }, [objectKey, access?.canWorkspaceRead]);
+
+  const handleExportMetadata = useCallback(async () => {
+    if (!objectKey) return;
+    if (!access?.canWorkspaceRead) {
+      message.error('无导出权限');
+      return;
+    }
+    try {
+      const content = await exportWorkspaceMetadata(objectKey);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${objectKey}.workspace.metadata.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      message.success('元信息已导出');
+    } catch (error: any) {
+      message.error(getWorkspaceErrorMessage(error, '导出元信息失败'));
+    }
+  }, [objectKey, access?.canWorkspaceRead]);
+
+  const handleExportBackupBundle = useCallback(async () => {
+    if (!objectKey) return;
+    if (!access?.canWorkspaceRead) {
+      message.error('无导出权限');
+      return;
+    }
+    try {
+      const content = await exportWorkspaceBackupBundle(objectKey);
+      const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${objectKey}.workspace.backup.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      trackWorkspaceEvent('workspace_backup_export', { objectKey });
+      message.success('备份包已导出');
+    } catch (error: any) {
+      trackWorkspaceEvent('workspace_backup_export_error', {
+        objectKey,
+        error: error?.message || String(error),
+      });
+      message.error(getWorkspaceErrorMessage(error, '导出备份包失败'));
+    }
+  }, [objectKey, access?.canWorkspaceRead]);
+
+  const applyImportedConfig = useCallback(
+    async (content: string) => {
+      if (!objectKey) return;
+      setImporting(true);
+      try {
+        const saved = await importWorkspaceConfig(content, {
+          targetObjectKey: objectKey,
+          forceDraft: true,
+        });
+        setConfig(saved);
+        history.reset(saved);
+        trackWorkspaceEvent('workspace_import', {
+          objectKey,
+          importedObjectKey: saved.objectKey,
+        });
+        setImportVisible(false);
+        setImportContent('');
+        message.success('导入成功，已保存为当前对象草稿');
+      } catch (error: any) {
+        trackWorkspaceEvent('workspace_import_error', {
+          objectKey,
+          error: error?.message || String(error),
+        });
+        message.error(getWorkspaceErrorMessage(error, '导入失败'));
+      } finally {
+        setImporting(false);
+      }
+    },
+    [objectKey, history],
+  );
+
+  const handleImport = useCallback(async () => {
+    if (!objectKey) return;
+    if (!access?.canWorkspaceEdit) {
+      message.error('无导入权限');
+      return;
+    }
+    const content = importContent.trim();
+    if (!content) {
+      message.error('请先粘贴或选择配置 JSON');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(content) as WorkspaceConfig;
+      const normalizedConfig: WorkspaceConfig = {
+        ...parsed,
+        objectKey,
+        status: 'draft',
+        published: false,
+        publishedAt: undefined,
+        publishedBy: undefined,
+      };
+      const validation = validateWorkspaceConfig(normalizedConfig);
+      if (!validation.valid) {
+        Modal.error({
+          title: '导入前校验失败',
+          content: (
+            <div>
+              {(validation.errors || []).slice(0, 8).map((error, index) => (
+                <div key={`${index}-${error}`}>{`${index + 1}. ${error}`}</div>
+              ))}
+            </div>
+          ),
+        });
+        return;
+      }
+
+      const sourceKey = parsed.objectKey || '';
+      if (sourceKey && sourceKey !== objectKey) {
+        Modal.confirm({
+          title: '检测到对象冲突',
+          content: `导入文件 objectKey 为 ${sourceKey}，当前页面对象为 ${objectKey}。将按当前对象覆盖保存为草稿，是否继续？`,
+          onOk: async () => {
+            await applyImportedConfig(content);
+          },
+        });
+        return;
+      }
+
+      await applyImportedConfig(content);
+    } catch (error) {
+      message.error('导入内容不是合法 JSON');
+    }
+  }, [objectKey, importContent, access?.canWorkspaceEdit, applyImportedConfig]);
+
+  const handleSelectImportFile = useCallback(() => {
+    if (!access?.canWorkspaceEdit) {
+      message.error('无导入权限');
+      return;
+    }
+    fileInputRef.current?.click();
+  }, [access?.canWorkspaceEdit]);
+
+  const handleImportFileChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setImportContent(text);
+      message.success(`已读取文件: ${file.name}`);
+    } catch {
+      message.error('读取文件失败');
+    } finally {
+      event.target.value = '';
+    }
+  }, []);
+
   // 模板选择处理
   const handleTemplateSelect = useCallback(
     (template: Template) => {
@@ -220,6 +583,39 @@ export default function WorkspaceEditor() {
         objectKey: config.objectKey, // 保持原始 objectKey
       };
 
+      const availableFunctionIds = new Set(
+        (availableFunctions || []).map((fn: any) => String(fn?.id || '')).filter(Boolean),
+      );
+      const requiredFunctions = collectRequiredFunctions(newConfig);
+      const missingFunctions = requiredFunctions.filter((id) => !availableFunctionIds.has(id));
+      if (missingFunctions.length > 0) {
+        trackWorkspaceEvent('workspace_template_apply_error', {
+          objectKey: config.objectKey,
+          template: template.name,
+          reason: 'missing_functions',
+          missingCount: missingFunctions.length,
+        });
+        Modal.warning({
+          title: '模板预检查未通过',
+          content: `以下函数未找到: ${missingFunctions.slice(0, 8).join(', ')}`,
+        });
+        return;
+      }
+
+      const validation = validateWorkspaceConfig(newConfig);
+      if (!validation.valid) {
+        trackWorkspaceEvent('workspace_template_apply_error', {
+          objectKey: config.objectKey,
+          template: template.name,
+          reason: 'config_validation_failed',
+        });
+        Modal.warning({
+          title: '模板预检查未通过',
+          content: `配置不兼容: ${(validation.errors || []).slice(0, 6).join('；')}`,
+        });
+        return;
+      }
+
       handleConfigChange(newConfig, `应用模板: ${template.name}`);
       setTemplateModalVisible(false);
       trackWorkspaceEvent('workspace_template_apply', {
@@ -228,30 +624,35 @@ export default function WorkspaceEditor() {
       });
       message.success(`已应用模板: ${template.name}`);
     },
-    [config, handleConfigChange],
+    [config, availableFunctions, handleConfigChange],
   );
 
   const loadVersions = useCallback(async () => {
     if (!objectKey) return;
     setVersionsLoading(true);
     try {
-      const rows = await listWorkspaceVersions(objectKey);
+      const timeWindow = getVersionTimeWindow(versionTimeRange);
+      const rows = await listWorkspaceVersions(objectKey, timeWindow);
+      const normalizedRows = Array.isArray(rows) ? rows : [];
+      const visibleRows = filterVersionsByTime(normalizedRows, versionTimeRange);
       trackWorkspaceEvent('workspace_versions_load', {
         objectKey,
-        count: Array.isArray(rows) ? rows.length : 0,
+        count: visibleRows.length,
+        range: versionTimeRange,
       });
-      setVersions(Array.isArray(rows) ? rows : []);
+      setVersions(visibleRows);
     } catch (error: any) {
       trackWorkspaceEvent('workspace_versions_load_error', {
         objectKey,
         error: error?.message || String(error),
+        range: versionTimeRange,
       });
       message.warning(getWorkspaceErrorMessage(error, '版本接口暂不可用'));
       setVersions([]);
     } finally {
       setVersionsLoading(false);
     }
-  }, [objectKey]);
+  }, [objectKey, versionTimeRange]);
 
   const handleRollback = useCallback(
     (version: WorkspaceVersionRecord) => {
@@ -272,6 +673,9 @@ export default function WorkspaceEditor() {
             <div>{`差异摘要: ${summarizeDiff(config, version)}`}</div>
             <div style={{ marginTop: 8, color: '#cf1322' }}>
               此操作会覆盖当前草稿，请确认后执行。
+            </div>
+            <div style={{ marginTop: 4, color: '#cf1322' }}>
+              回滚后若重新发布，控制台展示行为可能随目标版本发生变化。
             </div>
           </div>
         ),
@@ -302,6 +706,35 @@ export default function WorkspaceEditor() {
     },
     [objectKey, loadVersions, access?.canWorkspaceRollback, config?.version],
   );
+
+  const handleOpenVersionDetail = useCallback(
+    async (version: WorkspaceVersionRecord) => {
+      if (!objectKey) return;
+      if (!access?.canWorkspaceRead) {
+        message.error('无查看版本权限');
+        return;
+      }
+      setVersionDetailId(version.id);
+      setVersionDetailLoading(true);
+      try {
+        const detail = await getWorkspaceVersionDetail(objectKey, version.id);
+        setSelectedVersion(detail || version);
+      } catch (error: any) {
+        // 兼容后端未启用详情接口的场景：降级使用列表中的快照
+        message.warning(getWorkspaceErrorMessage(error, '版本详情接口暂不可用，已展示列表快照'));
+        setSelectedVersion(version);
+      } finally {
+        setVersionDetailLoading(false);
+        setVersionDetailId('');
+      }
+    },
+    [objectKey, access?.canWorkspaceRead],
+  );
+
+  useEffect(() => {
+    if (!versionsVisible) return;
+    loadVersions().catch(() => {});
+  }, [versionsVisible, versionTimeRange, loadVersions]);
 
   // 键盘快捷键
   useEffect(() => {
@@ -363,12 +796,54 @@ export default function WorkspaceEditor() {
           模板
         </Button>,
         <Button
+          key="import"
+          icon={<UploadOutlined />}
+          onClick={() => setImportVisible(true)}
+          style={{ marginLeft: 8 }}
+          disabled={!access?.canWorkspaceEdit}
+        >
+          导入
+        </Button>,
+        <Button
+          key="export"
+          icon={<DownloadOutlined />}
+          onClick={handleExport}
+          style={{ marginLeft: 8 }}
+          disabled={!access?.canWorkspaceRead}
+        >
+          导出
+        </Button>,
+        <Button
+          key="export-published"
+          icon={<DownloadOutlined />}
+          onClick={handleExportPublished}
+          style={{ marginLeft: 8 }}
+          disabled={!access?.canWorkspaceRead}
+        >
+          导出已发布
+        </Button>,
+        <Button
+          key="export-metadata"
+          icon={<DownloadOutlined />}
+          onClick={handleExportMetadata}
+          style={{ marginLeft: 8 }}
+          disabled={!access?.canWorkspaceRead}
+        >
+          导出元信息
+        </Button>,
+        <Button
+          key="export-backup"
+          icon={<DownloadOutlined />}
+          onClick={handleExportBackupBundle}
+          style={{ marginLeft: 8 }}
+          disabled={!access?.canWorkspaceRead}
+        >
+          导出备份包
+        </Button>,
+        <Button
           key="versions"
           icon={<HistoryOutlined />}
-          onClick={() => {
-            setVersionsVisible(true);
-            loadVersions().catch(() => {});
-          }}
+          onClick={() => setVersionsVisible(true)}
           style={{ marginLeft: 8 }}
           disabled={!access?.canWorkspaceRead}
         >
@@ -489,19 +964,66 @@ export default function WorkspaceEditor() {
         currentConfig={config as Record<string, any>}
       />
 
+      <Modal
+        title="导入配置 JSON"
+        open={importVisible}
+        onCancel={() => setImportVisible(false)}
+        onOk={() => handleImport().catch(() => {})}
+        confirmLoading={importing}
+        okText="校验并导入"
+        cancelText="取消"
+      >
+        <Space direction="vertical" size={10} style={{ width: '100%' }}>
+          <div style={{ color: '#666' }}>导入后将强制保存为当前对象草稿，不会直接发布。</div>
+          <Space size={8}>
+            <Button onClick={handleSelectImportFile} disabled={!access?.canWorkspaceEdit}>
+              选择 JSON 文件
+            </Button>
+            <div style={{ color: '#999', fontSize: 12 }}>支持 .json 文件或粘贴 JSON 内容</div>
+          </Space>
+          <Input.TextArea
+            value={importContent}
+            onChange={(e) => setImportContent(e.target.value)}
+            placeholder="请粘贴 Workspace 配置 JSON"
+            autoSize={{ minRows: 10, maxRows: 18 }}
+          />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: 'none' }}
+            onChange={handleImportFileChange}
+          />
+        </Space>
+      </Modal>
+
       <Drawer
         title="版本历史"
         open={versionsVisible}
         onClose={() => setVersionsVisible(false)}
         width={520}
         extra={
-          <Button
-            size="small"
-            onClick={() => loadVersions().catch(() => {})}
-            loading={versionsLoading}
-          >
-            刷新
-          </Button>
+          <Space size={8}>
+            <Select<VersionTimeRange>
+              size="small"
+              style={{ width: 120 }}
+              value={versionTimeRange}
+              onChange={(value) => setVersionTimeRange(value)}
+              options={[
+                { label: '全部时间', value: 'all' },
+                { label: '最近 7 天', value: '7d' },
+                { label: '最近 30 天', value: '30d' },
+                { label: '最近 90 天', value: '90d' },
+              ]}
+            />
+            <Button
+              size="small"
+              onClick={() => loadVersions().catch(() => {})}
+              loading={versionsLoading}
+            >
+              刷新
+            </Button>
+          </Space>
         }
       >
         <List
@@ -511,6 +1033,15 @@ export default function WorkspaceEditor() {
           renderItem={(item) => (
             <List.Item
               actions={[
+                <Button
+                  key="detail"
+                  size="small"
+                  onClick={() => handleOpenVersionDetail(item)}
+                  loading={versionDetailLoading && versionDetailId === item.id}
+                  disabled={!access?.canWorkspaceRead}
+                >
+                  详情
+                </Button>,
                 <Button
                   key="rollback"
                   size="small"
@@ -528,6 +1059,8 @@ export default function WorkspaceEditor() {
                   <Space size={8}>
                     <span>{`v${item.version}`}</span>
                     <Tag color="blue">{item.id}</Tag>
+                    {item.isCurrentDraft && <Tag color="gold">当前草稿</Tag>}
+                    {item.isCurrentPublished && <Tag color="green">当前发布</Tag>}
                   </Space>
                 }
                 description={[
@@ -536,6 +1069,14 @@ export default function WorkspaceEditor() {
                   item.comment ? `备注: ${item.comment}` : '',
                   summarizeVersion(item),
                   `差异: ${summarizeDiff(config, item)}`,
+                  (() => {
+                    const diff = buildVersionDiff(config, item.config);
+                    const total =
+                      diff.fieldChanges.filter((line) => line !== '字段未变化').length +
+                      diff.layoutChanges.filter((line) => line !== '布局未变化').length +
+                      diff.tabChanges.filter((line) => line !== 'Tab 结构未变化').length;
+                    return `Diff 项数: ${total}`;
+                  })(),
                 ]
                   .filter(Boolean)
                   .join(' · ')}
@@ -544,6 +1085,85 @@ export default function WorkspaceEditor() {
           )}
         />
       </Drawer>
+
+      <Modal
+        title={selectedVersion ? `版本详情 v${selectedVersion.version}` : '版本详情'}
+        open={Boolean(selectedVersion)}
+        width={860}
+        footer={null}
+        onCancel={() => setSelectedVersion(null)}
+      >
+        {selectedVersion && (
+          <Space direction="vertical" size={12} style={{ width: '100%' }}>
+            <Descriptions size="small" bordered column={2}>
+              <Descriptions.Item label="版本 ID">{selectedVersion.id}</Descriptions.Item>
+              <Descriptions.Item label="对象">{selectedVersion.objectKey}</Descriptions.Item>
+              <Descriptions.Item label="时间">
+                {selectedVersion.createdAt
+                  ? new Date(selectedVersion.createdAt).toLocaleString('zh-CN')
+                  : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="操作人">
+                {selectedVersion.createdBy || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="状态">
+                {resolveWorkspaceStatus(selectedVersion.config)}
+              </Descriptions.Item>
+              <Descriptions.Item label="标签页">
+                {selectedVersion.config?.layout?.type === 'tabs'
+                  ? selectedVersion.config.layout.tabs?.length || 0
+                  : 0}
+              </Descriptions.Item>
+            </Descriptions>
+            <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>配置 JSON</div>
+              <pre
+                style={{
+                  margin: 0,
+                  maxHeight: 420,
+                  overflow: 'auto',
+                  background: '#fafafa',
+                  border: '1px solid #f0f0f0',
+                  padding: 12,
+                  borderRadius: 6,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                }}
+              >
+                {JSON.stringify(selectedVersion.config, null, 2)}
+              </pre>
+            </div>
+            <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>与当前草稿 Diff</div>
+              {(() => {
+                const diff = buildVersionDiff(config, selectedVersion.config);
+                const lines = [
+                  ...diff.fieldChanges.map((line) => `字段: ${line}`),
+                  ...diff.layoutChanges.map((line) => `布局: ${line}`),
+                  ...diff.tabChanges.map((line) => `结构: ${line}`),
+                ];
+                return (
+                  <pre
+                    style={{
+                      margin: 0,
+                      maxHeight: 220,
+                      overflow: 'auto',
+                      background: '#fafafa',
+                      border: '1px solid #f0f0f0',
+                      padding: 12,
+                      borderRadius: 6,
+                      fontSize: 12,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {lines.join('\n')}
+                  </pre>
+                );
+              })()}
+            </div>
+          </Space>
+        )}
+      </Modal>
     </PageContainer>
   );
 }

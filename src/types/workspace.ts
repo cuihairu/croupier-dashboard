@@ -59,6 +59,8 @@ export interface WorkspaceVersionRecord {
   objectKey: string;
   version: number;
   config: WorkspaceConfig;
+  isCurrentDraft?: boolean;
+  isCurrentPublished?: boolean;
   createdAt?: string;
   createdBy?: string;
   comment?: string;

@@ -27,17 +27,10 @@ import {
 import type { ListLayout, ActionConfig, FieldConfig } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
 import * as Icons from '@ant-design/icons';
+import type { RendererProps } from './types';
+import { RendererEmpty, RendererError } from './state';
 
-export interface ListRendererProps {
-  /** 列表布局配置 */
-  layout: ListLayout;
-
-  /** 对象标识 */
-  objectKey: string;
-
-  /** 额外的上下文数据 */
-  context?: Record<string, any>;
-}
+export type ListRendererProps = RendererProps<ListLayout>;
 
 /**
  * 列表布局渲染器组件
@@ -51,6 +44,7 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
   const [actionLoading, setActionLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [currentAction, setCurrentAction] = useState<ActionConfig | null>(null);
   const [currentRecord, setCurrentRecord] = useState<any>(null);
   const [viewData, setViewData] = useState<any>(null);
@@ -59,10 +53,10 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
   // 加载数据
   const loadData = async (params?: any) => {
     if (!layout.listFunction) {
-      message.error('未配置列表函数');
       return;
     }
 
+    setLoadError('');
     setLoading(true);
     try {
       // 使用函数调用服务
@@ -84,7 +78,7 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
         setTotal(0);
       }
     } catch (error: any) {
-      message.error(error.message || '加载数据失败');
+      setLoadError(error?.message || '加载数据失败');
       setData([]);
       setTotal(0);
     } finally {
@@ -285,6 +279,13 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
 
   return (
     <>
+      {!layout.listFunction && (
+        <RendererError
+          message="配置不完整"
+          description="当前列表布局缺少 listFunction，无法加载数据。"
+        />
+      )}
+      {loadError && <RendererError description={loadError} />}
       <ProTable
         columns={columns}
         dataSource={data}
@@ -329,6 +330,9 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
           density: true,
           fullScreen: true,
           setting: true,
+        }}
+        locale={{
+          emptyText: <RendererEmpty description="暂无列表数据" />,
         }}
       />
 

@@ -2,6 +2,9 @@
  * Workspace API 兼容层
  *
  * 统一委托到 services/workspaceConfig，避免重复契约。
+ *
+ * @deprecated 新代码请直接使用 `@/services/workspaceConfig`。
+ * 该文件仅用于兼容历史导入路径，不再承载新增语义。
  */
 
 import type { WorkspaceConfig } from '@/types/workspace';
@@ -9,6 +12,7 @@ import {
   cloneWorkspaceConfig as cloneConfig,
   deleteWorkspaceConfig as deleteConfig,
   exportWorkspaceConfig as exportConfig,
+  getWorkspaceVersionDetail as getVersionDetail,
   importWorkspaceConfig as importConfig,
   listWorkspaceConfigs as listConfigs,
   listWorkspaceVersions as listVersions,
@@ -83,11 +87,14 @@ export async function importWorkspaceConfig(
   configJson: string,
   _overwrite = false,
 ): Promise<WorkspaceConfig> {
-  return importConfig(configJson);
+  return importConfig(configJson, { forceDraft: true });
 }
 
-export async function listWorkspaceVersions(objectKey: string): Promise<any[]> {
-  return listVersions(objectKey);
+export async function listWorkspaceVersions(
+  objectKey: string,
+  params?: { from?: string; to?: string },
+): Promise<any[]> {
+  return listVersions(objectKey, params);
 }
 
 export async function rollbackWorkspaceVersion(
@@ -95,4 +102,11 @@ export async function rollbackWorkspaceVersion(
   versionId: string,
 ): Promise<{ objectKey: string; version: number }> {
   return rollbackVersion(objectKey, versionId);
+}
+
+export async function getWorkspaceVersionDetail(
+  objectKey: string,
+  versionId: string,
+): Promise<any> {
+  return getVersionDetail(objectKey, versionId);
 }

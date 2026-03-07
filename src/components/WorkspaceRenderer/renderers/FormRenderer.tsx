@@ -22,17 +22,10 @@ import {
 } from 'antd';
 import type { FormLayout } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
+import type { RendererProps } from './types';
+import { RendererError } from './state';
 
-export interface FormRendererProps {
-  /** 表单布局配置 */
-  layout: FormLayout;
-
-  /** 对象标识 */
-  objectKey: string;
-
-  /** 额外的上下文数据 */
-  context?: Record<string, any>;
-}
+export type FormRendererProps = RendererProps<FormLayout>;
 
 /**
  * 表单布局渲染器组件
@@ -40,6 +33,15 @@ export interface FormRendererProps {
 export default function FormRenderer({ layout, objectKey, context }: FormRendererProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+
+  if (!layout.submitFunction) {
+    return (
+      <RendererError
+        message="配置不完整"
+        description="当前表单布局缺少 submitFunction，无法提交数据。"
+      />
+    );
+  }
 
   // 处理提交
   const handleSubmit = async (values: any) => {

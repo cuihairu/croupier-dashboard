@@ -18,21 +18,44 @@ export async function unreadCount() {
   return request<{ count: number }>('/api/v1/messages/unread-count');
 }
 
-export async function listMessages(params?: { status?: 'unread' | 'all'; page?: number; size?: number }) {
+export async function listMessages(params?: {
+  status?: 'unread' | 'all';
+  page?: number;
+  size?: number;
+  pageSize?: number;
+}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-  if (!token) return { messages: [], total: 0, page: params?.page || 1, size: params?.size || 10 } as any;
-  return request<{ messages: MessageItem[]; total: number; page: number; size: number }>('/api/v1/messages', { params });
+  if (!token)
+    return { messages: [], total: 0, page: params?.page || 1, size: params?.size || 10 } as any;
+  return request<{ messages: MessageItem[]; total: number; page: number; size: number }>(
+    '/api/v1/messages',
+    {
+      params: {
+        status: params?.status,
+        page: params?.page,
+        pageSize: params?.pageSize || params?.size,
+      },
+    },
+  );
 }
 
 export async function markMessagesRead(ids: number[], options?: { broadcast_ids?: number[] }) {
-  const data: any = { ids };
-  if (options?.broadcast_ids && options.broadcast_ids.length) data.broadcast_ids = options.broadcast_ids;
-  // 注意：这里可能需要根据实际 API 调整，因为后端定义是 POST /:id/read
-  return request<void>('/api/v1/messages/read', { method: 'POST', data });
+  if (!ids || ids.length === 0) return;
+  await Promise.all(
+    ids.map((id) => request<void>(`/api/v1/messages/${id}/read`, { method: 'POST' })),
+  );
+  // 广播消息的已读标记在当前后端契约中未单独提供批量接口，先忽略 broadcast_ids。
+  void options;
 }
 
 // Admin only
-export async function sendMessage(body: { to_username?: string; to_user_id?: number; title: string; content: string; type?: string }) {
+export async function sendMessage(body: {
+  to_username?: string;
+  to_user_id?: number;
+  title: string;
+  content: string;
+  type?: string;
+}) {
   return request<{ id: number }>('/api/v1/messages', { method: 'POST', data: body });
 }
 

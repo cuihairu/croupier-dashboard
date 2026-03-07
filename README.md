@@ -133,7 +133,7 @@ src/
     Console/
   services/
     workspaceConfig.ts
-    api/workspace.ts
+    api/workspace.ts   # 兼容层（deprecated）
     workspace/telemetry.ts
   types/
     workspace.ts

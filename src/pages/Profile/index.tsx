@@ -7,6 +7,7 @@ import {
   Card,
   Col,
   Descriptions,
+  Divider,
   Form,
   Input,
   List,
@@ -14,10 +15,10 @@ import {
   Row,
   Space,
   Statistic,
+  Table,
   Tabs,
   Tag,
   Typography,
-  Upload,
   message,
 } from 'antd';
 import {
@@ -28,14 +29,13 @@ import {
   PhoneOutlined,
   RocketOutlined,
   SafetyOutlined,
-  UploadOutlined,
+  CopyOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
 import { useIntl, useLocation, useNavigate } from '@umijs/max';
 import {
   changeMyPassword,
-  getMyAvatarUploadUrl,
   getMyGames,
   getMyPermissions,
   getMyProfile,
@@ -45,6 +45,8 @@ import {
 } from '@/services/api/me';
 import { listAudit, AuditEvent } from '@/services/api/audit';
 import { listMessages, MessageItem } from '@/services/api/messages';
+import { listPermissions, type PermissionRecord } from '@/services/api/permissions';
+import { createFeedback } from '@/services/api/support';
 import './index.less';
 
 const { Title, Text } = Typography;
@@ -59,6 +61,77 @@ const TAB_KEYS = {
   NOTIFICATIONS: 'notifications',
 } as const;
 
+type PermissionApplyItem = {
+  id: string;
+  name: string;
+  description?: string;
+  resource: string;
+  action: string;
+  category?: string;
+};
+
+const FALLBACK_APPLY_PERMISSIONS: PermissionApplyItem[] = [
+  {
+    id: 'workspaces:edit',
+    name: '工作台编辑权限',
+    description: '允许编辑和保存对象工作台草稿',
+    resource: 'workspaces',
+    action: 'edit',
+    category: 'workspace',
+  },
+  {
+    id: 'workspaces:publish',
+    name: '工作台发布权限',
+    description: '允许发布/取消发布对象工作台',
+    resource: 'workspaces',
+    action: 'publish',
+    category: 'workspace',
+  },
+  {
+    id: 'workspaces:rollback',
+    name: '工作台回滚权限',
+    description: '允许版本回滚操作',
+    resource: 'workspaces',
+    action: 'rollback',
+    category: 'workspace',
+  },
+  {
+    id: 'functions:manage',
+    name: '函数管理权限',
+    description: '允许函数管理与配置调整',
+    resource: 'functions',
+    action: 'manage',
+    category: 'functions',
+  },
+  {
+    id: 'audit:read',
+    name: '审计读取权限',
+    description: '允许查看审计日志与操作历史',
+    resource: 'audit',
+    action: 'read',
+    category: 'audit',
+  },
+  {
+    id: 'ops:manage',
+    name: '运维管理权限',
+    description: '允许运维策略配置与变更',
+    resource: 'ops',
+    action: 'manage',
+    category: 'ops',
+  },
+];
+
+function pickAuditMetaValue(meta: Record<string, any> | undefined, keys: string[]): string {
+  if (!meta) return '';
+  for (const key of keys) {
+    const value = meta[key];
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return String(value);
+    }
+  }
+  return '';
+}
+
 export default function Profile() {
   const intl = useIntl();
   const location = useLocation();
@@ -70,12 +143,22 @@ export default function Profile() {
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [avatarModalVisible, setAvatarModalVisible] = useState(false);
   const [games, setGames] = useState<ProfileGame[]>([]);
   const [permissions, setPermissions] = useState<ProfilePermission[]>([]);
+  const [permissionIds, setPermissionIds] = useState<string[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<PermissionRecord[]>([]);
+  const [permissionCatalogAvailable, setPermissionCatalogAvailable] = useState(true);
+  const [applyPermissionModalVisible, setApplyPermissionModalVisible] = useState(false);
+  const [applySubmitting, setApplySubmitting] = useState(false);
+  const [selectedApplyPermission, setSelectedApplyPermission] =
+    useState<PermissionApplyItem | null>(null);
   const [activities, setActivities] = useState<AuditEvent[]>([]);
   const [loginRecords, setLoginRecords] = useState<AuditEvent[]>([]);
   const [notifications, setNotifications] = useState<MessageItem[]>([]);
   const [extrasLoading, setExtrasLoading] = useState(false);
+  const [applyForm] = Form.useForm();
+  const [avatarForm] = Form.useForm();
   const infoSectionRef = useRef<HTMLDivElement>(null);
   const initialTab = useMemo(
     () => new URLSearchParams(location.search).get('tab') || TAB_KEYS.PROFILE,
@@ -109,20 +192,44 @@ export default function Profile() {
   const loadExtras = async (username?: string) => {
     setExtrasLoading(true);
     try {
-      const [gamesRes, permsRes, auditsRes, loginRes, notificationsRes] = await Promise.all([
-        getMyGames(),
-        getMyPermissions({}),
-        listAudit({ actor: username, size: 5 }),
-        username
-          ? listAudit({ actor: username, kinds: 'auth_login', size: 8 })
-          : Promise.resolve({ events: [] }),
-        listMessages({ status: 'all', size: 5 }),
-      ]);
-      setGames(gamesRes?.games || []);
-      setPermissions(permsRes?.permissions || []);
-      setActivities(auditsRes?.events || []);
-      setLoginRecords(loginRes?.events || []);
-      setNotifications(notificationsRes?.messages || []);
+      const [gamesRes, permsRes, auditsRes, loginRes, notificationsRes, permissionCatalogRes] =
+        await Promise.allSettled([
+          getMyGames(),
+          getMyPermissions({}),
+          listAudit({ actor: username, size: 8 }),
+          username
+            ? listAudit({
+                actor: username,
+                kinds: 'login,auth_login,login_fail,login_rate_limited',
+                size: 20,
+              })
+            : Promise.resolve({ events: [] }),
+          listMessages({ status: 'all', size: 8 }),
+          listPermissions({ page: 1, pageSize: 500 }),
+        ]);
+
+      setGames(gamesRes.status === 'fulfilled' ? gamesRes.value?.games || [] : []);
+      if (permsRes.status === 'fulfilled') {
+        const payload = permsRes.value || {};
+        const ids = payload.permissionIds || payload.permission_ids || [];
+        setPermissions(payload.permissions || []);
+        setPermissionIds(Array.isArray(ids) ? ids : []);
+      } else {
+        setPermissions([]);
+        setPermissionIds([]);
+      }
+      setActivities(auditsRes.status === 'fulfilled' ? auditsRes.value?.events || [] : []);
+      setLoginRecords(loginRes.status === 'fulfilled' ? loginRes.value?.events || [] : []);
+      setNotifications(
+        notificationsRes.status === 'fulfilled' ? notificationsRes.value?.messages || [] : [],
+      );
+      if (permissionCatalogRes.status === 'fulfilled') {
+        setPermissionCatalog(permissionCatalogRes.value?.items || []);
+        setPermissionCatalogAvailable(true);
+      } else {
+        setPermissionCatalog([]);
+        setPermissionCatalogAvailable(false);
+      }
     } catch (error) {
       message.error(formatMessage('profile.extras.error'));
     } finally {
@@ -170,14 +277,15 @@ export default function Profile() {
     setPasswordModalVisible(true);
   };
 
-  const handleAvatarChange = (info: any) => {
-    if (info.file.status === 'uploading') {
-      message.info(formatMessage('profile.avatar.uploading'));
-      return;
-    }
-    if (info.file.status === 'done') {
+  const handleAvatarSubmit = async () => {
+    const values = await avatarForm.validateFields();
+    try {
+      await updateMyProfile({ avatar: values.avatar });
       message.success(formatMessage('profile.avatar.success'));
+      setAvatarModalVisible(false);
       loadProfile();
+    } catch (error) {
+      message.error(formatMessage('profile.update.error'));
     }
   };
 
@@ -235,7 +343,120 @@ export default function Profile() {
     }));
   }, [permissions]);
 
+  const ownedPermissionKeySet = useMemo(() => {
+    const keys = new Set<string>();
+    permissions.forEach((perm) => {
+      (perm.actions || []).forEach((action) => {
+        keys.add(`${perm.resource}:${action}`.toLowerCase());
+      });
+    });
+    permissionIds.forEach((id) => keys.add(String(id).toLowerCase()));
+    return keys;
+  }, [permissions, permissionIds]);
+
+  const applyPermissionCandidates = useMemo(() => {
+    const source: PermissionApplyItem[] =
+      permissionCatalog.length > 0
+        ? permissionCatalog.map((item) => ({
+            id: item.id,
+            name: item.name,
+            description: item.description,
+            resource: item.resource,
+            action: item.action,
+            category: item.category,
+          }))
+        : FALLBACK_APPLY_PERMISSIONS;
+
+    return source
+      .filter((item) => {
+        const key = `${item.resource}:${item.action}`.toLowerCase();
+        return (
+          !ownedPermissionKeySet.has(key) &&
+          !ownedPermissionKeySet.has(String(item.id).toLowerCase())
+        );
+      })
+      .slice(0, 20);
+  }, [permissionCatalog, ownedPermissionKeySet]);
+
+  const loginSessionRows = useMemo(() => {
+    return (loginRecords || []).map((item, idx) => {
+      const meta = (item.meta || {}) as Record<string, any>;
+      const ip = pickAuditMetaValue(meta, ['ip', 'client_ip', 'remote_ip', 'x_forwarded_for']);
+      const region = pickAuditMetaValue(meta, ['ip_region', 'region', 'geo']);
+      const userAgent = pickAuditMetaValue(meta, ['user_agent', 'ua', 'agent']);
+      const success =
+        !String(item.kind || '').includes('fail') &&
+        !String(item.kind || '').includes('rate_limited');
+      return {
+        key: `${item.hash || item.time || idx}`,
+        time: item.time,
+        kind: item.kind,
+        ip,
+        region,
+        userAgent,
+        success,
+        target: item.target,
+      };
+    });
+  }, [loginRecords]);
+
+  const latestLoginIP = useMemo(() => {
+    const first = loginSessionRows.find((row) => row.ip);
+    return first?.ip || 'N/A';
+  }, [loginSessionRows]);
+
+  const handleOpenApplyPermission = (item: PermissionApplyItem) => {
+    setSelectedApplyPermission(item);
+    applyForm.resetFields();
+    setApplyPermissionModalVisible(true);
+  };
+
+  const buildApplyPermissionContent = (reason: string) => {
+    if (!selectedApplyPermission) return '';
+    return [
+      `申请人: ${profile?.username || '-'}`,
+      `权限: ${selectedApplyPermission.name}`,
+      `权限标识: ${selectedApplyPermission.resource}:${selectedApplyPermission.action}`,
+      `权限ID: ${selectedApplyPermission.id}`,
+      `申请理由: ${reason || '-'}`,
+    ].join('\n');
+  };
+
+  const handleCopyPermissionApplyContent = async () => {
+    const values = await applyForm.validateFields();
+    const content = buildApplyPermissionContent(values.reason);
+    await navigator.clipboard.writeText(content);
+    message.success('申请文案已复制');
+  };
+
+  const handleSubmitPermissionApply = async () => {
+    const values = await applyForm.validateFields();
+    const content = buildApplyPermissionContent(values.reason);
+    setApplySubmitting(true);
+    try {
+      await createFeedback({
+        category: 'permission_request',
+        content,
+        priority: 'normal',
+        source: 'profile_permission_apply',
+      });
+      message.success('权限申请已提交');
+      setApplyPermissionModalVisible(false);
+    } catch (error) {
+      // 部分环境可能未开放反馈写入，降级为复制文案+人工提交流程
+      await navigator.clipboard.writeText(content);
+      message.warning('自动提交失败，申请文案已复制，请提交给管理员审批');
+    } finally {
+      setApplySubmitting(false);
+    }
+  };
+
   const infoItems = [
+    {
+      title: '用户ID',
+      value: profile?.id ?? 'N/A',
+      icon: <UserOutlined />,
+    },
     {
       title: formatMessage('profile.info.username'),
       value: profile?.username,
@@ -267,6 +488,11 @@ export default function Profile() {
         : profile?.lastLoginAt
         ? new Date(profile.lastLoginAt).toLocaleString()
         : 'N/A',
+      icon: <HistoryOutlined />,
+    },
+    {
+      title: '最近登录IP',
+      value: latestLoginIP,
       icon: <HistoryOutlined />,
     },
   ];
@@ -320,31 +546,70 @@ export default function Profile() {
   );
 
   const renderPermissions = () => (
-    <Card loading={extrasLoading}>
-      <List
-        dataSource={permissionGroups}
-        locale={{ emptyText: formatMessage('profile.permissions.empty') }}
-        renderItem={(item) => (
-          <List.Item>
-            <div style={{ width: '100%' }}>
-              <Space>
-                <Text strong>{item.resource}</Text>
-                {item.scope && <Tag color="purple">{item.scope}</Tag>}
-              </Space>
-              <div style={{ marginTop: 8 }}>
-                <Space wrap>
-                  {item.actions.map((action) => (
-                    <Tag key={action} color="cyan">
-                      {action}
-                    </Tag>
-                  ))}
+    <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      <Card loading={extrasLoading} title={formatMessage('profile.permissions.summary.title')}>
+        <List
+          dataSource={permissionGroups}
+          locale={{ emptyText: formatMessage('profile.permissions.empty') }}
+          renderItem={(item) => (
+            <List.Item>
+              <div style={{ width: '100%' }}>
+                <Space>
+                  <Text strong>{item.resource}</Text>
+                  {item.scope && <Tag color="purple">{item.scope}</Tag>}
                 </Space>
+                <div style={{ marginTop: 8 }}>
+                  <Space wrap>
+                    {item.actions.map((action) => (
+                      <Tag key={action} color="cyan">
+                        {action}
+                      </Tag>
+                    ))}
+                  </Space>
+                </div>
               </div>
-            </div>
-          </List.Item>
-        )}
-      />
-    </Card>
+            </List.Item>
+          )}
+        />
+      </Card>
+      <Card
+        title="可申请权限"
+        extra={
+          !permissionCatalogAvailable ? (
+            <Tag color="gold">权限目录受限，展示推荐清单</Tag>
+          ) : (
+            <Tag color="green">基于系统权限目录</Tag>
+          )
+        }
+      >
+        <List
+          dataSource={applyPermissionCandidates}
+          locale={{ emptyText: '暂无可申请权限，当前权限已覆盖主要能力' }}
+          renderItem={(item) => (
+            <List.Item
+              actions={[
+                <Button key="apply" type="link" onClick={() => handleOpenApplyPermission(item)}>
+                  申请
+                </Button>,
+              ]}
+            >
+              <List.Item.Meta
+                title={
+                  <Space>
+                    <Text strong>{item.name}</Text>
+                    <Tag>
+                      {item.resource}:{item.action}
+                    </Tag>
+                    {item.category && <Tag color="blue">{item.category}</Tag>}
+                  </Space>
+                }
+                description={item.description || '无描述'}
+              />
+            </List.Item>
+          )}
+        />
+      </Card>
+    </Space>
   );
 
   const renderAuditList = (data: AuditEvent[], emptyText: string) => (
@@ -412,6 +677,68 @@ export default function Profile() {
     </Card>
   );
 
+  const renderLoginSessions = () => (
+    <Card
+      loading={extrasLoading}
+      extra={
+        <Button type="link" onClick={() => loadExtras(profile?.username)}>
+          {formatMessage('profile.activities.refresh')}
+        </Button>
+      }
+    >
+      <Table
+        rowKey="key"
+        size="small"
+        pagination={{ pageSize: 8, showSizeChanger: false }}
+        dataSource={loginSessionRows}
+        locale={{ emptyText: formatMessage('profile.sessions.empty') }}
+        columns={[
+          {
+            title: '时间',
+            dataIndex: 'time',
+            width: 180,
+            render: (value: string) => (value ? new Date(value).toLocaleString() : '-'),
+          },
+          {
+            title: '结果',
+            dataIndex: 'success',
+            width: 100,
+            render: (success: boolean) =>
+              success ? <Tag color="green">成功</Tag> : <Tag color="red">失败</Tag>,
+          },
+          {
+            title: 'IP',
+            dataIndex: 'ip',
+            width: 160,
+            render: (value: string) => value || '-',
+          },
+          {
+            title: '属地',
+            dataIndex: 'region',
+            width: 160,
+            render: (value: string) => value || '-',
+          },
+          {
+            title: '类型',
+            dataIndex: 'kind',
+            width: 140,
+            render: (value: string) => <Tag>{value || '-'}</Tag>,
+          },
+          {
+            title: '客户端',
+            dataIndex: 'userAgent',
+            ellipsis: true,
+            render: (value: string) => value || '-',
+          },
+        ]}
+      />
+      <Divider style={{ margin: '12px 0' }} />
+      <Text type="secondary">
+        登录记录来源于审计日志（`login/auth_login/login_fail/login_rate_limited`）。
+      </Text>
+    </Card>
+  );
+
   const passwordModal = (
     <Modal
       open={passwordModalVisible}
@@ -469,6 +796,78 @@ export default function Profile() {
     </Modal>
   );
 
+  const avatarModal = (
+    <Modal
+      open={avatarModalVisible}
+      title="设置头像 URL"
+      onCancel={() => setAvatarModalVisible(false)}
+      onOk={() => handleAvatarSubmit().catch(() => {})}
+      okText="保存头像"
+    >
+      <Form form={avatarForm} layout="vertical" initialValues={{ avatar: profile?.avatar }}>
+        <Form.Item
+          name="avatar"
+          label="头像 URL"
+          rules={[
+            { required: true, message: '请输入头像 URL' },
+            { type: 'url', message: '请输入合法 URL' },
+          ]}
+        >
+          <Input placeholder="https://example.com/avatar.png" />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+
+  const permissionApplyModal = (
+    <Modal
+      open={applyPermissionModalVisible}
+      title="申请权限"
+      onCancel={() => {
+        setApplyPermissionModalVisible(false);
+        applyForm.resetFields();
+      }}
+      onOk={() => handleSubmitPermissionApply().catch(() => {})}
+      okText="提交申请"
+      confirmLoading={applySubmitting}
+    >
+      <Space direction="vertical" style={{ width: '100%' }} size={12}>
+        {selectedApplyPermission && (
+          <Alert
+            showIcon
+            type="info"
+            message={selectedApplyPermission.name}
+            description={`${selectedApplyPermission.resource}:${selectedApplyPermission.action}`}
+          />
+        )}
+        <Form form={applyForm} layout="vertical">
+          <Form.Item
+            name="reason"
+            label="申请理由"
+            rules={[{ required: true, message: '请填写申请理由' }]}
+          >
+            <Input.TextArea rows={4} placeholder="请说明业务场景、影响范围、预计使用时长等信息" />
+          </Form.Item>
+        </Form>
+        <Space>
+          <Button
+            icon={<CopyOutlined />}
+            onClick={() => handleCopyPermissionApplyContent().catch(() => {})}
+          >
+            复制申请文案
+          </Button>
+          <Button
+            onClick={() => {
+              navigate('/support/feedback');
+            }}
+          >
+            前往反馈中心
+          </Button>
+        </Space>
+      </Space>
+    </Modal>
+  );
+
   if (!profile) {
     return (
       <>
@@ -493,28 +892,15 @@ export default function Profile() {
             <Row gutter={[32, 24]} align="middle">
               <Col xs={24} md={10}>
                 <Space align="center">
-                  <Upload
-                    name="avatar"
-                    listType="picture-card"
-                    className="avatar-uploader"
-                    showUploadList={false}
-                    action={getMyAvatarUploadUrl()}
-                    beforeUpload={() => false}
-                    onChange={handleAvatarChange}
-                    headers={{
-                      Authorization: `Bearer ${localStorage.getItem('token')}`,
+                  <Avatar
+                    size={96}
+                    src={profile?.avatar}
+                    icon={!profile?.avatar ? <UserOutlined /> : undefined}
+                    style={{
+                      border: '3px solid #1890ff',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                     }}
-                  >
-                    <Avatar
-                      size={96}
-                      src={profile?.avatar}
-                      icon={!profile?.avatar ? <UserOutlined /> : undefined}
-                      style={{
-                        border: '3px solid #1890ff',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                      }}
-                    />
-                  </Upload>
+                  />
                   <div>
                     <Space align="center">
                       <Title level={3} style={{ margin: 0 }}>
@@ -565,6 +951,14 @@ export default function Profile() {
                       </Button>
                       <Button onClick={showPasswordModal}>
                         {formatMessage('profile.password.change.btn')}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          avatarForm.setFieldsValue({ avatar: profile?.avatar || '' });
+                          setAvatarModalVisible(true);
+                        }}
+                      >
+                        设置头像
                       </Button>
                     </Space>
                   </div>
@@ -776,7 +1170,7 @@ export default function Profile() {
                     {formatMessage('profile.sessions.title')}
                   </Space>
                 ),
-                children: renderAuditList(loginRecords, formatMessage('profile.sessions.empty')),
+                children: renderLoginSessions(),
               },
               {
                 key: TAB_KEYS.NOTIFICATIONS,
@@ -793,6 +1187,8 @@ export default function Profile() {
         </Space>
       </PageContainer>
       {passwordModal}
+      {avatarModal}
+      {permissionApplyModal}
     </>
   );
 }

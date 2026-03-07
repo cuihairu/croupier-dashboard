@@ -1,16 +1,22 @@
-import { history } from '@umijs/max';
-import { Alert, Card, List, Space, Typography, Input, Select } from 'antd';
+import { history, useAccess } from '@umijs/max';
+import { Alert, Card, List, Space, Typography, Input, Select, Result } from 'antd';
 import { useEffect, useMemo, useState } from 'react';
 import { AppstoreOutlined } from '@ant-design/icons';
 import { listPublishedWorkspaceConfigs } from '@/services/workspaceConfig';
 import type { WorkspaceConfig } from '@/types/workspace';
 import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
-import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
+import {
+  getWorkspaceErrorMessage,
+  parseWorkspaceError,
+  type WorkspaceErrorCode,
+} from '@/services/workspace/errors';
 
 export default function ConsolePage() {
+  const access = useAccess() as any;
   const [loading, setLoading] = useState(false);
   const [configs, setConfigs] = useState<WorkspaceConfig[]>([]);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState<WorkspaceErrorCode | undefined>();
   const [keyword, setKeyword] = useState('');
   const [sortBy, setSortBy] = useState<'updated_desc' | 'title_asc'>('updated_desc');
 
@@ -22,6 +28,7 @@ export default function ConsolePage() {
     const load = async () => {
       setLoading(true);
       setError('');
+      setErrorCode(undefined);
       try {
         const rows = await listPublishedWorkspaceConfigs();
         trackWorkspaceEvent('workspace_load', {
@@ -36,6 +43,8 @@ export default function ConsolePage() {
           error: err?.message || String(err),
         });
         if (!mounted) return;
+        const parsedError = parseWorkspaceError(err);
+        setErrorCode(parsedError.code);
         setError(getWorkspaceErrorMessage(err, '加载控制台失败'));
       } finally {
         if (mounted) setLoading(false);
@@ -72,7 +81,13 @@ export default function ConsolePage() {
     return sortable;
   }, [configs, keyword, sortBy]);
 
+  if (!access?.canWorkspaceRead) {
+    return <Result status="403" title="无访问权限" subTitle="你没有查看控制台工作台的权限。" />;
+  }
   if (loading) return <Card loading />;
+  if (errorCode === 'forbidden') {
+    return <Result status="403" title="无访问权限" subTitle="你没有查看控制台工作台的权限。" />;
+  }
   if (error) return <Alert type="error" message={error} showIcon />;
   if (configs.length === 0) return <Alert type="info" message="暂无已发布的工作台" showIcon />;
 

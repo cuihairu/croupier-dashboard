@@ -14,6 +14,7 @@ import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
 import { loadPackPlugins } from './plugin/registry';
+import { initWorkspaceAlerting } from './services/workspace/alerts';
 
 const isDev = process.env.NODE_ENV === 'development';
 const loginPath = '/user/login';
@@ -97,6 +98,9 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     useEffect(() => {
       setAppApi({ message: inst.message, notification: inst.notification });
     }, [inst]);
+    useEffect(() => {
+      initWorkspaceAlerting();
+    }, []);
     useEffect(() => {
       if (initialState?.currentUser) {
         loadPackPlugins().catch(() => {});

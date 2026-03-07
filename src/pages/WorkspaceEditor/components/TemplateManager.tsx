@@ -48,6 +48,7 @@ const V1_TAB_LAYOUT_TYPES = new Set(['form-detail', 'list', 'form', 'detail']);
 
 // 模板类型
 export type TemplateType = 'workspace' | 'layout' | 'function-set' | 'workflow';
+export type TemplateScope = 'builtin' | 'team' | 'personal';
 
 // 模板分类
 export type TemplateCategory = 'standard' | 'gaming' | 'analytics' | 'admin' | 'custom';
@@ -68,6 +69,7 @@ export interface TemplateMeta {
   isBuiltIn: boolean;
   usageCount: number;
   thumbnail?: string;
+  scope?: TemplateScope;
 }
 
 // 模板完整数据
@@ -99,6 +101,7 @@ const BUILTIN_TEMPLATES: Template[] = [
     isFavorite: false,
     isBuiltIn: true,
     usageCount: 0,
+    scope: 'builtin',
     config: {
       layout: {
         type: 'tabs',
@@ -137,6 +140,7 @@ const BUILTIN_TEMPLATES: Template[] = [
     isFavorite: false,
     isBuiltIn: true,
     usageCount: 0,
+    scope: 'builtin',
     config: {
       layout: {
         type: 'tabs',
@@ -177,6 +181,7 @@ const BUILTIN_TEMPLATES: Template[] = [
     isFavorite: false,
     isBuiltIn: true,
     usageCount: 0,
+    scope: 'builtin',
     config: {
       layout: {
         type: 'tabs',
@@ -239,9 +244,21 @@ export default function TemplateManager({
   const [searchText, setSearchText] = useState('');
   const [filterType, setFilterType] = useState<TemplateType | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<TemplateCategory | 'all'>('all');
+  const [filterScope, setFilterScope] = useState<TemplateScope | 'all'>('all');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [saveForm] = Form.useForm();
+
+  const persistTemplates = (allTemplates: Template[]) => {
+    const personalTemplates = allTemplates.filter(
+      (t) => !t.isBuiltIn && (t.scope || 'personal') === 'personal',
+    );
+    const teamTemplates = allTemplates.filter(
+      (t) => !t.isBuiltIn && (t.scope || 'personal') === 'team',
+    );
+    localStorage.setItem('workspace_templates', JSON.stringify(personalTemplates));
+    localStorage.setItem('workspace_team_templates', JSON.stringify(teamTemplates));
+  };
 
   // 加载模板
   useEffect(() => {
@@ -256,7 +273,9 @@ export default function TemplateManager({
       // 这里应该从 API 加载，现在使用内置模板
       // 同时加载本地存储的用户模板
       const storedTemplates = localStorage.getItem('workspace_templates');
+      const storedTeamTemplates = localStorage.getItem('workspace_team_templates');
       let userTemplates: Template[] = [];
+      let teamTemplates: Template[] = [];
 
       if (storedTemplates) {
         try {
@@ -265,9 +284,19 @@ export default function TemplateManager({
           console.error('Failed to parse stored templates', e);
         }
       }
+      if (storedTeamTemplates) {
+        try {
+          teamTemplates = JSON.parse(storedTeamTemplates);
+        } catch (e) {
+          console.error('Failed to parse stored team templates', e);
+        }
+      }
+
+      userTemplates = userTemplates.map((item) => ({ ...item, scope: item.scope || 'personal' }));
+      teamTemplates = teamTemplates.map((item) => ({ ...item, scope: item.scope || 'team' }));
 
       setTemplates(
-        [...BUILTIN_TEMPLATES, ...userTemplates].filter((template) =>
+        [...BUILTIN_TEMPLATES, ...teamTemplates, ...userTemplates].filter((template) =>
           isV1TemplateConfig(template.config),
         ),
       );
@@ -290,21 +319,18 @@ export default function TemplateManager({
 
     if (filterType !== 'all' && template.type !== filterType) return false;
     if (filterCategory !== 'all' && template.category !== filterCategory) return false;
+    if (filterScope !== 'all' && (template.scope || 'personal') !== filterScope) return false;
 
     return true;
   });
 
   // 收藏/取消收藏
   const toggleFavorite = (templateId: string) => {
-    setTemplates((prev) =>
-      prev.map((t) => (t.id === templateId ? { ...t, isFavorite: !t.isFavorite } : t)),
-    );
-    // 保存到本地存储
     const updatedTemplates = templates.map((t) =>
       t.id === templateId ? { ...t, isFavorite: !t.isFavorite } : t,
     );
-    const userTemplates = updatedTemplates.filter((t) => !t.isBuiltIn);
-    localStorage.setItem('workspace_templates', JSON.stringify(userTemplates));
+    setTemplates(updatedTemplates);
+    persistTemplates(updatedTemplates);
   };
 
   // 删除模板
@@ -315,9 +341,9 @@ export default function TemplateManager({
       return;
     }
 
-    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-    const userTemplates = templates.filter((t) => !t.isBuiltIn && t.id !== templateId);
-    localStorage.setItem('workspace_templates', JSON.stringify(userTemplates));
+    const updatedTemplates = templates.filter((t) => t.id !== templateId);
+    setTemplates(updatedTemplates);
+    persistTemplates(updatedTemplates);
     message.success('模板已删除');
   };
 
@@ -328,15 +354,14 @@ export default function TemplateManager({
       id: `tpl_${Date.now()}`,
       name: `${template.name} (副本)`,
       isBuiltIn: false,
+      scope: 'personal',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    const userTemplates = templates.filter((t) => !t.isBuiltIn);
-    userTemplates.push(newTemplate);
-    localStorage.setItem('workspace_templates', JSON.stringify(userTemplates));
-
-    setTemplates((prev) => [...prev, newTemplate]);
+    const updatedTemplates = [...templates, newTemplate];
+    setTemplates(updatedTemplates);
+    persistTemplates(updatedTemplates);
     message.success('模板已复制');
   };
 
@@ -377,14 +402,13 @@ export default function TemplateManager({
         // 生成新 ID
         template.id = `tpl_${Date.now()}`;
         template.isBuiltIn = false;
+        template.scope = template.scope || 'personal';
         template.createdAt = new Date().toISOString();
         template.updatedAt = new Date().toISOString();
 
-        const userTemplates = templates.filter((t) => !t.isBuiltIn);
-        userTemplates.push(template);
-        localStorage.setItem('workspace_templates', JSON.stringify(userTemplates));
-
-        setTemplates((prev) => [...prev, template]);
+        const updatedTemplates = [...templates, template];
+        setTemplates(updatedTemplates);
+        persistTemplates(updatedTemplates);
         message.success('模板导入成功');
       } catch (error: any) {
         message.error(error.message || '导入失败');
@@ -416,14 +440,13 @@ export default function TemplateManager({
         isFavorite: false,
         isBuiltIn: false,
         usageCount: 0,
+        scope: values.scope || 'personal',
         config: currentConfig,
       };
 
-      const userTemplates = templates.filter((t) => !t.isBuiltIn);
-      userTemplates.push(template);
-      localStorage.setItem('workspace_templates', JSON.stringify(userTemplates));
-
-      setTemplates((prev) => [...prev, template]);
+      const updatedTemplates = [...templates, template];
+      setTemplates(updatedTemplates);
+      persistTemplates(updatedTemplates);
       setShowSaveModal(false);
       saveForm.resetFields();
       message.success('模板保存成功');
@@ -512,6 +535,23 @@ export default function TemplateManager({
                 { value: 'analytics', label: '分析' },
                 { value: 'admin', label: '管理' },
                 { value: 'custom', label: '自定义' },
+              ]}
+            />
+          </div>
+
+          <div style={{ marginBottom: 16 }}>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              按来源
+            </Text>
+            <Select
+              value={filterScope}
+              onChange={setFilterScope}
+              style={{ width: '100%', marginTop: 8 }}
+              options={[
+                { value: 'all', label: '全部' },
+                { value: 'builtin', label: '内置' },
+                { value: 'team', label: '团队' },
+                { value: 'personal', label: '个人' },
               ]}
             />
           </div>
@@ -629,6 +669,13 @@ export default function TemplateManager({
                       </Paragraph>
                       <div>
                         <Tag color={CATEGORY_COLORS[template.category]}>{template.category}</Tag>
+                        <Tag>
+                          {template.scope === 'builtin'
+                            ? '内置'
+                            : template.scope === 'team'
+                            ? '团队'
+                            : '个人'}
+                        </Tag>
                         {template.tags.slice(0, 2).map((tag) => (
                           <Tag key={tag}>{tag}</Tag>
                         ))}
@@ -749,6 +796,15 @@ export default function TemplateManager({
                 { value: 'analytics', label: '分析' },
                 { value: 'admin', label: '管理' },
                 { value: 'custom', label: '自定义' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item name="scope" label="保存到" initialValue="personal">
+            <Select
+              options={[
+                { value: 'personal', label: '个人模板' },
+                { value: 'team', label: '团队模板' },
               ]}
             />
           </Form.Item>
