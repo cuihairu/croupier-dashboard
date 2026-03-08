@@ -1,5 +1,11 @@
 # Croupier Dashboard
 
+<p align="left">
+  <img src="https://img.shields.io/badge/Workspace%20Editor-V1%2B-blue" alt="Workspace Editor">
+  <img src="https://img.shields.io/badge/Layout-tabs%20based-success" alt="Layout">
+  <img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License">
+</p>
+
 `croupier-dashboard` 是 Croupier 的前端管理台，定位为配置驱动的对象工作台系统。
 
 当前主线能力：
@@ -8,6 +14,25 @@
 - 控制台运行时渲染
 - 权限控制与版本回滚入口
 - V1 稳定布局（`tabs + form-detail/list/form/detail`）
+
+## 0. 图标与状态图例
+
+- `✅` 已稳定可用（默认开启，主链路覆盖）
+- `🧪` 实验/增强能力（可用，但仍在持续优化）
+- `⚠️` 受限能力（仅部分场景可用，需注意边界）
+- `❌` 暂不支持（当前版本不建议使用）
+
+能力状态速览：
+
+| 能力                                               | 状态 | 说明                           |
+| -------------------------------------------------- | ---- | ------------------------------ |
+| Workspace 配置保存/发布/回滚                       | ✅   | 主链路能力，已接入权限和版本   |
+| tabs 顶层布局                                      | ✅   | 控制台与编辑器主入口           |
+| form-detail/list/form/detail                       | ✅   | 核心布局闭环                   |
+| kanban/timeline/split/wizard/dashboard/grid/custom | 🧪   | 已支持编辑和预览，持续增强中   |
+| 函数界面向导（单函数）                             | 🧪   | 基于 descriptor 可视化生成布局 |
+| 多函数编排向导                                     | 🧪   | 自动角色分配 + 手动改绑        |
+| 节点执行语义（Node Graph runtime）                 | ❌   | 不在当前稳定交付范围           |
 
 ## 1. 快速开始
 
