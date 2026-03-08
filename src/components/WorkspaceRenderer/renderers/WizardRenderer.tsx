@@ -22,16 +22,29 @@ type WizardLayout = {
   steps: WizardStepConfig[];
 };
 
-export default function WizardRenderer({ layout, objectKey, context }: RendererProps<WizardLayout>) {
+export default function WizardRenderer({
+  layout,
+  objectKey,
+  context,
+}: RendererProps<WizardLayout>) {
   const isTemplatePreview = Boolean((context as any)?.templatePreview);
-  const steps = Array.isArray(layout?.steps) && layout.steps.length > 0
-    ? layout.steps
-    : isTemplatePreview
-    ? [
-        { key: 'step1', title: '步骤一', component: { type: 'form', config: buildPreviewFormConfig('') } },
-        { key: 'step2', title: '步骤二', component: { type: 'detail', config: buildPreviewDetailConfig('') } },
-      ]
-    : [];
+  const steps =
+    Array.isArray(layout?.steps) && layout.steps.length > 0
+      ? layout.steps
+      : isTemplatePreview
+      ? [
+          {
+            key: 'step1',
+            title: '步骤一',
+            component: { type: 'form', config: buildPreviewFormConfig('') },
+          },
+          {
+            key: 'step2',
+            title: '步骤二',
+            component: { type: 'detail', config: buildPreviewDetailConfig('') },
+          },
+        ]
+      : [];
   const [current, setCurrent] = useState(0);
 
   const safeCurrent = useMemo(() => {
@@ -75,18 +88,40 @@ export default function WizardRenderer({ layout, objectKey, context }: RendererP
   );
 }
 
-function renderStepContent(step: WizardStepConfig, objectKey: string, context?: Record<string, any>) {
+function renderStepContent(
+  step: WizardStepConfig,
+  objectKey: string,
+  context?: Record<string, any>,
+) {
   const comp = step?.component;
   if (!comp) {
     return <Alert type="info" showIcon message={`步骤 ${step?.title || '-'} 未配置 component`} />;
   }
   switch (comp.type) {
     case 'list':
-      return <ListRenderer layout={{ type: 'list', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <ListRenderer
+          layout={{ type: 'list', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form':
-      return <FormRenderer layout={{ type: 'form', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <FormRenderer
+          layout={{ type: 'form', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'detail':
-      return <DetailRenderer layout={{ type: 'detail', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <DetailRenderer
+          layout={{ type: 'detail', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form-detail':
       return (
         <FormDetailRenderer
@@ -96,6 +131,8 @@ function renderStepContent(step: WizardStepConfig, objectKey: string, context?: 
         />
       );
     default:
-      return <Alert type="error" showIcon message={`不支持的 wizard 组件类型: ${(comp as any).type}`} />;
+      return (
+        <Alert type="error" showIcon message={`不支持的 wizard 组件类型: ${(comp as any).type}`} />
+      );
   }
 }

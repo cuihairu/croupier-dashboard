@@ -56,7 +56,11 @@ const TAB_SCENARIO_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'activity_wizard', label: '活动配置向导' },
 ];
 
-type ScenarioId = 'player_list_ops' | 'player_detail_profile' | 'ops_kanban_flow' | 'activity_wizard';
+type ScenarioId =
+  | 'player_list_ops'
+  | 'player_detail_profile'
+  | 'ops_kanban_flow'
+  | 'activity_wizard';
 type ScenarioRecommendation = {
   id: ScenarioId;
   confidence: number;
@@ -81,10 +85,14 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   const [fieldModalOpen, setFieldModalOpen] = useState(false);
   const [descriptorPreviewOpen, setDescriptorPreviewOpen] = useState(false);
   const [previewDescriptor, setPreviewDescriptor] = useState<FunctionDescriptor | null>(null);
-  const [layoutWizardDescriptor, setLayoutWizardDescriptor] = useState<FunctionDescriptor | null>(null);
+  const [layoutWizardDescriptor, setLayoutWizardDescriptor] = useState<FunctionDescriptor | null>(
+    null,
+  );
   const [orchestratorOpen, setOrchestratorOpen] = useState(false);
   const [orchestratorMode, setOrchestratorMode] = useState<OrchestratorMode>('form-detail');
-  const [orchestratorBindings, setOrchestratorBindings] = useState<OrchestratorBindings | null>(null);
+  const [orchestratorBindings, setOrchestratorBindings] = useState<OrchestratorBindings | null>(
+    null,
+  );
   const [columnForm] = Form.useForm();
   const [fieldForm] = Form.useForm();
   const { Text } = Typography;
@@ -115,7 +123,9 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       return;
     }
     onChange({ ...safeTab, layout: scenarioLayout });
-    message.success(`已应用场景模板：${TAB_SCENARIO_OPTIONS.find((x) => x.value === scenarioId)?.label}`);
+    message.success(
+      `已应用场景模板：${TAB_SCENARIO_OPTIONS.find((x) => x.value === scenarioId)?.label}`,
+    );
   };
 
   const recommendedScenario = React.useMemo((): ScenarioRecommendation | null => {
@@ -137,7 +147,13 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   };
 
   const orchestrationPlan = React.useMemo(
-    () => buildOrchestrationLayout(orchestratorMode, safeTab.functions, descriptors, orchestratorBindings),
+    () =>
+      buildOrchestrationLayout(
+        orchestratorMode,
+        safeTab.functions,
+        descriptors,
+        orchestratorBindings,
+      ),
     [orchestratorMode, safeTab.functions, descriptors, orchestratorBindings],
   );
 
@@ -390,7 +406,9 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       </Modal>
 
       <Modal
-        title={`界面向导: ${layoutWizardDescriptor?.display_name?.zh || layoutWizardDescriptor?.id || ''}`}
+        title={`界面向导: ${
+          layoutWizardDescriptor?.display_name?.zh || layoutWizardDescriptor?.id || ''
+        }`}
         open={!!layoutWizardDescriptor}
         footer={null}
         onCancel={() => setLayoutWizardDescriptor(null)}
@@ -406,7 +424,9 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
             <Button onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'detail')}>
               生成详情界面
             </Button>
-            <Button onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'form-detail')}>
+            <Button
+              onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'form-detail')}
+            >
               生成查询详情界面
             </Button>
           </Space>
@@ -422,7 +442,8 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
               <>
                 <Tooltip title={recommendedScenario.reasons.join('；')}>
                   <Tag color="gold">
-                    推荐: {getScenarioLabel(recommendedScenario.id)} ({recommendedScenario.confidence}%)
+                    推荐: {getScenarioLabel(recommendedScenario.id)} (
+                    {recommendedScenario.confidence}%)
                   </Tag>
                 </Tooltip>
                 <Button size="small" onClick={() => handleApplyScenario(recommendedScenario.id)}>
@@ -496,25 +517,27 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
             <>
               <div style={{ fontSize: 12, color: '#999' }}>角色绑定（可手动调整）</div>
               <Space direction="vertical" style={{ width: '100%' }} size="small">
-                {(['list', 'detail', 'submit', 'query', 'data'] as OrchestratorRole[]).map((role) => (
-                  <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 64 }}>{role}</div>
-                    <Select
-                      value={orchestratorBindings?.[role]}
-                      style={{ flex: 1 }}
-                      options={safeTab.functions.map((fid) => {
-                        const d = descriptors.find((x) => x.id === fid);
-                        return { value: fid, label: d?.display_name?.zh || fid };
-                      })}
-                      onChange={(v) =>
-                        setOrchestratorBindings((prev) => ({
-                          ...(prev || defaultBindings),
-                          [role]: v,
-                        }))
-                      }
-                    />
-                  </div>
-                ))}
+                {(['list', 'detail', 'submit', 'query', 'data'] as OrchestratorRole[]).map(
+                  (role) => (
+                    <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 64 }}>{role}</div>
+                      <Select
+                        value={orchestratorBindings?.[role]}
+                        style={{ flex: 1 }}
+                        options={safeTab.functions.map((fid) => {
+                          const d = descriptors.find((x) => x.id === fid);
+                          return { value: fid, label: d?.display_name?.zh || fid };
+                        })}
+                        onChange={(v) =>
+                          setOrchestratorBindings((prev) => ({
+                            ...(prev || defaultBindings),
+                            [role]: v,
+                          }))
+                        }
+                      />
+                    </div>
+                  ),
+                )}
               </Space>
               <div style={{ fontSize: 12, color: '#999' }}>函数角色分配</div>
               <div style={{ fontSize: 13 }}>
@@ -976,7 +999,9 @@ function detectRecommendedScenario(descriptors: FunctionDescriptor[]): ScenarioR
     const idText = String(descriptor.id || '').toLowerCase();
     const opText = String(descriptor.operation || '').toLowerCase();
     const tagsText = (descriptor.tags || []).join(',').toLowerCase();
-    const summaryText = `${descriptor.summary?.zh || ''} ${descriptor.summary?.en || ''}`.toLowerCase();
+    const summaryText = `${descriptor.summary?.zh || ''} ${
+      descriptor.summary?.en || ''
+    }`.toLowerCase();
     const allText = `${idText} ${opText} ${tagsText} ${summaryText}`;
     const inputScore = estimateInputComplexity(descriptor);
 
@@ -991,7 +1016,10 @@ function detectRecommendedScenario(descriptors: FunctionDescriptor[]): ScenarioR
       scores.ops_kanban_flow += 9;
       reasons.ops_kanban_flow.push(`${descriptor.id}: 命中看板/任务关键词`);
     }
-    if (hitAny(['detail', 'profile', 'info', 'get', 'query']) && !hitAny(['list', 'page', 'search'])) {
+    if (
+      hitAny(['detail', 'profile', 'info', 'get', 'query']) &&
+      !hitAny(['list', 'page', 'search'])
+    ) {
       scores.player_detail_profile += 8;
       reasons.player_detail_profile.push(`${descriptor.id}: 偏详情查询函数`);
     }
@@ -1190,7 +1218,8 @@ function buildOrchestrationLayout(
     layout: {
       type: 'form-detail',
       queryFunction: queryFn,
-      queryFields: queryFields.length > 0 ? queryFields : [{ key: 'keyword', label: '关键字', type: 'input' }],
+      queryFields:
+        queryFields.length > 0 ? queryFields : [{ key: 'keyword', label: '关键字', type: 'input' }],
       detailSections:
         detailSections.length > 0
           ? detailSections
@@ -1314,10 +1343,14 @@ function healTabLayoutWithTemplate(tab: TabConfig, descriptors: FunctionDescript
         const panelCfg = panelComp.config || {};
         const templateCfg = templateComp.config || {};
         const cfg = { ...panelCfg };
-        if (!cfg.listFunction && templateCfg.listFunction) cfg.listFunction = templateCfg.listFunction;
-        if (!cfg.detailFunction && templateCfg.detailFunction) cfg.detailFunction = templateCfg.detailFunction;
-        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0) cfg.columns = templateCfg.columns || [];
-        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0) cfg.sections = templateCfg.sections || [];
+        if (!cfg.listFunction && templateCfg.listFunction)
+          cfg.listFunction = templateCfg.listFunction;
+        if (!cfg.detailFunction && templateCfg.detailFunction)
+          cfg.detailFunction = templateCfg.detailFunction;
+        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0)
+          cfg.columns = templateCfg.columns || [];
+        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0)
+          cfg.sections = templateCfg.sections || [];
         return {
           ...panel,
           component: {
@@ -1340,10 +1373,14 @@ function healTabLayoutWithTemplate(tab: TabConfig, descriptors: FunctionDescript
         const stepCfg = stepComp.config || {};
         const templateCfg = templateComp.config || {};
         const cfg = { ...stepCfg };
-        if (!cfg.submitFunction && templateCfg.submitFunction) cfg.submitFunction = templateCfg.submitFunction;
-        if (!cfg.detailFunction && templateCfg.detailFunction) cfg.detailFunction = templateCfg.detailFunction;
-        if (!Array.isArray(cfg.fields) || cfg.fields.length === 0) cfg.fields = templateCfg.fields || [];
-        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0) cfg.sections = templateCfg.sections || [];
+        if (!cfg.submitFunction && templateCfg.submitFunction)
+          cfg.submitFunction = templateCfg.submitFunction;
+        if (!cfg.detailFunction && templateCfg.detailFunction)
+          cfg.detailFunction = templateCfg.detailFunction;
+        if (!Array.isArray(cfg.fields) || cfg.fields.length === 0)
+          cfg.fields = templateCfg.fields || [];
+        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0)
+          cfg.sections = templateCfg.sections || [];
         return {
           ...step,
           component: {
@@ -1368,10 +1405,14 @@ function healTabLayoutWithTemplate(tab: TabConfig, descriptors: FunctionDescript
         const panelCfg = panelComp.config || {};
         const templateCfg = templateComp.config || {};
         const cfg = { ...panelCfg };
-        if (!cfg.listFunction && templateCfg.listFunction) cfg.listFunction = templateCfg.listFunction;
-        if (!cfg.detailFunction && templateCfg.detailFunction) cfg.detailFunction = templateCfg.detailFunction;
-        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0) cfg.columns = templateCfg.columns || [];
-        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0) cfg.sections = templateCfg.sections || [];
+        if (!cfg.listFunction && templateCfg.listFunction)
+          cfg.listFunction = templateCfg.listFunction;
+        if (!cfg.detailFunction && templateCfg.detailFunction)
+          cfg.detailFunction = templateCfg.detailFunction;
+        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0)
+          cfg.columns = templateCfg.columns || [];
+        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0)
+          cfg.sections = templateCfg.sections || [];
         return {
           ...panel,
           component: {
@@ -1394,10 +1435,14 @@ function healTabLayoutWithTemplate(tab: TabConfig, descriptors: FunctionDescript
         const itemCfg = itemComp.config || {};
         const templateCfg = templateComp.config || {};
         const cfg = { ...itemCfg };
-        if (!cfg.listFunction && templateCfg.listFunction) cfg.listFunction = templateCfg.listFunction;
-        if (!cfg.detailFunction && templateCfg.detailFunction) cfg.detailFunction = templateCfg.detailFunction;
-        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0) cfg.columns = templateCfg.columns || [];
-        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0) cfg.sections = templateCfg.sections || [];
+        if (!cfg.listFunction && templateCfg.listFunction)
+          cfg.listFunction = templateCfg.listFunction;
+        if (!cfg.detailFunction && templateCfg.detailFunction)
+          cfg.detailFunction = templateCfg.detailFunction;
+        if (!Array.isArray(cfg.columns) || cfg.columns.length === 0)
+          cfg.columns = templateCfg.columns || [];
+        if (!Array.isArray(cfg.sections) || cfg.sections.length === 0)
+          cfg.sections = templateCfg.sections || [];
         return {
           ...item,
           component: {
@@ -2066,7 +2111,11 @@ function renderSplitConfig(
   );
 }
 
-function renderWizardConfig(layout: any, tab: TabConfig, onChange: (tab: TabConfig) => void): React.ReactNode {
+function renderWizardConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+): React.ReactNode {
   const steps = Array.isArray(layout.steps) ? layout.steps : [];
   return (
     <Form layout="vertical">
@@ -2090,7 +2139,11 @@ function renderWizardConfig(layout: any, tab: TabConfig, onChange: (tab: TabConf
   );
 }
 
-function renderDashboardConfig(layout: any, tab: TabConfig, onChange: (tab: TabConfig) => void): React.ReactNode {
+function renderDashboardConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+): React.ReactNode {
   const stats = Array.isArray(layout.stats) ? layout.stats : [];
   const panels = Array.isArray(layout.panels) ? layout.panels : [];
   return (
@@ -2131,7 +2184,11 @@ function renderDashboardConfig(layout: any, tab: TabConfig, onChange: (tab: TabC
   );
 }
 
-function renderGridConfig(layout: any, tab: TabConfig, onChange: (tab: TabConfig) => void): React.ReactNode {
+function renderGridConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+): React.ReactNode {
   const items = Array.isArray(layout.items) ? layout.items : [];
   return (
     <Form layout="vertical">
@@ -2164,7 +2221,11 @@ function renderGridConfig(layout: any, tab: TabConfig, onChange: (tab: TabConfig
   );
 }
 
-function renderCustomConfig(layout: any, tab: TabConfig, onChange: (tab: TabConfig) => void): React.ReactNode {
+function renderCustomConfig(
+  layout: any,
+  tab: TabConfig,
+  onChange: (tab: TabConfig) => void,
+): React.ReactNode {
   return (
     <Form layout="vertical">
       <Form.Item label="组件名称">

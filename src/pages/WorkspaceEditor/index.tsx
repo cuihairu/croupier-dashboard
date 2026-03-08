@@ -301,17 +301,29 @@ function autoBindTemplateFunctions(
       next.detailFunction = pickFn(preferred);
     }
     if (t === 'detail' && (!Array.isArray(next.sections) || next.sections.length === 0)) {
-      next.sections = [{ title: '基础信息', fields: [{ key: 'id', label: 'ID' }, { key: 'name', label: '名称' }] }];
+      next.sections = [
+        {
+          title: '基础信息',
+          fields: [
+            { key: 'id', label: 'ID' },
+            { key: 'name', label: '名称' },
+          ],
+        },
+      ];
     }
 
-    if ((t === 'kanban' || t === 'timeline' || 'dataFunction' in next) && !isAvailable(next.dataFunction)) {
+    if (
+      (t === 'kanban' || t === 'timeline' || 'dataFunction' in next) &&
+      !isAvailable(next.dataFunction)
+    ) {
       next.dataFunction = pickFn(preferred);
     }
     return next;
   };
 
   const nextTabs = candidate.layout.tabs.map((tab: any) => {
-    const preferred = Array.isArray(tab?.functions) && tab.functions.length > 0 ? tab.functions : [];
+    const preferred =
+      Array.isArray(tab?.functions) && tab.functions.length > 0 ? tab.functions : [];
     const fallback = pickFn(preferred);
     const nextTab = { ...tab };
     if (!Array.isArray(nextTab.functions) || nextTab.functions.length === 0) {

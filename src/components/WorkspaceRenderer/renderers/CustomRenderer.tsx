@@ -14,8 +14,11 @@ export default function CustomRenderer({ layout }: RendererProps<CustomLayout>) 
       type="info"
       showIcon
       message={`自定义布局组件: ${layout?.component || '未设置'}`}
-      description={<pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{JSON.stringify(layout?.props || {}, null, 2)}</pre>}
+      description={
+        <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+          {JSON.stringify(layout?.props || {}, null, 2)}
+        </pre>
+      }
     />
   );
 }
-

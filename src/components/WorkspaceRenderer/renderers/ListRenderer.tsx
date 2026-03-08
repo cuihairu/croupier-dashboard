@@ -405,13 +405,16 @@ function getPreviewCellValue(key: string, title: string | undefined, idx: number
   if (lower.includes('server')) return `S${10 + idx}`;
   if (lower.includes('level')) return 20 + idx;
   if (lower.includes('vip')) return idx % 2 === 0 ? 3 : 1;
-  if (lower.includes('count') || lower.includes('num') || lower.includes('quantity')) return idx * 8;
+  if (lower.includes('count') || lower.includes('num') || lower.includes('quantity'))
+    return idx * 8;
   if (lower.includes('price') || lower.includes('amount')) return 128 + idx * 16;
-  if (lower.includes('status')) return idx % 3 === 0 ? 'disabled' : idx % 2 === 0 ? 'active' : 'pending';
+  if (lower.includes('status'))
+    return idx % 3 === 0 ? 'disabled' : idx % 2 === 0 ? 'active' : 'pending';
   if (lower.includes('time') || lower.includes('date')) {
     return new Date(Date.now() - idx * 3600 * 1000).toISOString();
   }
-  if (lower.includes('desc') || lower.includes('remark')) return `这是${title || key}的示例说明 ${idx}`;
+  if (lower.includes('desc') || lower.includes('remark'))
+    return `这是${title || key}的示例说明 ${idx}`;
   return `${title || key}示例${idx}`;
 }
 

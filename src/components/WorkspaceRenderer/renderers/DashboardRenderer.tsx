@@ -40,29 +40,31 @@ export default function DashboardRenderer({
   context,
 }: RendererProps<DashboardLayout>) {
   const isTemplatePreview = Boolean((context as any)?.templatePreview);
-  const stats = Array.isArray(layout?.stats) && layout.stats.length > 0
-    ? layout.stats
-    : isTemplatePreview
-    ? buildGamePreviewDashboardStats()
-    : [];
-  const panels = Array.isArray(layout?.panels) && layout.panels.length > 0
-    ? layout.panels
-    : isTemplatePreview
-    ? [
-        {
-          key: 'p1',
-          title: '示例列表',
-          span: 12,
-          component: { type: 'list', config: buildPreviewListConfig('') },
-        },
-        {
-          key: 'p2',
-          title: '示例详情',
-          span: 12,
-          component: { type: 'detail', config: buildPreviewDetailConfig('') },
-        },
-      ]
-    : [];
+  const stats =
+    Array.isArray(layout?.stats) && layout.stats.length > 0
+      ? layout.stats
+      : isTemplatePreview
+      ? buildGamePreviewDashboardStats()
+      : [];
+  const panels =
+    Array.isArray(layout?.panels) && layout.panels.length > 0
+      ? layout.panels
+      : isTemplatePreview
+      ? [
+          {
+            key: 'p1',
+            title: '示例列表',
+            span: 12,
+            component: { type: 'list', config: buildPreviewListConfig('') },
+          },
+          {
+            key: 'p2',
+            title: '示例详情',
+            span: 12,
+            component: { type: 'detail', config: buildPreviewDetailConfig('') },
+          },
+        ]
+      : [];
 
   if (stats.length === 0 && panels.length === 0) {
     return <Alert type="warning" showIcon message="dashboard 布局缺少 stats/panels 配置" />;
@@ -94,11 +96,29 @@ function renderPanel(panel: DashboardPanel, objectKey: string, context?: Record<
   }
   switch (comp.type) {
     case 'list':
-      return <ListRenderer layout={{ type: 'list', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <ListRenderer
+          layout={{ type: 'list', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form':
-      return <FormRenderer layout={{ type: 'form', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <FormRenderer
+          layout={{ type: 'form', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'detail':
-      return <DetailRenderer layout={{ type: 'detail', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <DetailRenderer
+          layout={{ type: 'detail', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form-detail':
       return (
         <FormDetailRenderer
@@ -108,6 +128,12 @@ function renderPanel(panel: DashboardPanel, objectKey: string, context?: Record<
         />
       );
     default:
-      return <Alert type="error" showIcon message={`不支持的 dashboard 组件类型: ${(comp as any).type}`} />;
+      return (
+        <Alert
+          type="error"
+          showIcon
+          message={`不支持的 dashboard 组件类型: ${(comp as any).type}`}
+        />
+      );
   }
 }

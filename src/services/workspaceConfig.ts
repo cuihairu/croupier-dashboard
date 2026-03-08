@@ -440,7 +440,10 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
         }
 
         if (tab.layout?.type === 'split') {
-          if (!Array.isArray((tab.layout as any).panels) || (tab.layout as any).panels.length === 0) {
+          if (
+            !Array.isArray((tab.layout as any).panels) ||
+            (tab.layout as any).panels.length === 0
+          ) {
             errors.push(`tabs[${index}].panels 至少需要一个面板`);
           }
         }
@@ -450,8 +453,10 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
           }
         }
         if (tab.layout?.type === 'dashboard') {
-          const hasStats = Array.isArray((tab.layout as any).stats) && (tab.layout as any).stats.length > 0;
-          const hasPanels = Array.isArray((tab.layout as any).panels) && (tab.layout as any).panels.length > 0;
+          const hasStats =
+            Array.isArray((tab.layout as any).stats) && (tab.layout as any).stats.length > 0;
+          const hasPanels =
+            Array.isArray((tab.layout as any).panels) && (tab.layout as any).panels.length > 0;
           if (!hasStats && !hasPanels) {
             errors.push(`tabs[${index}] dashboard 至少需要 stats 或 panels`);
           }

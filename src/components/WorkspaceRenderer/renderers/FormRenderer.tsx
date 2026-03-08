@@ -46,7 +46,9 @@ export default function FormRenderer({ layout, objectKey, context }: FormRendere
   }, [isTemplatePreview, layout.fields]);
 
   if (!layout.submitFunction && !isTemplatePreview) {
-    return <RendererEmpty description="当前表单未绑定提交函数，请在布局配置中选择 submitFunction" />;
+    return (
+      <RendererEmpty description="当前表单未绑定提交函数，请在布局配置中选择 submitFunction" />
+    );
   }
 
   // 处理提交

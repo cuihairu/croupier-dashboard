@@ -24,24 +24,25 @@ type SplitLayout = {
 
 export default function SplitRenderer({ layout, objectKey, context }: RendererProps<SplitLayout>) {
   const isTemplatePreview = Boolean((context as any)?.templatePreview);
-  const panels = Array.isArray(layout?.panels) && layout.panels.length > 0
-    ? layout.panels
-    : isTemplatePreview
-    ? [
-        {
-          key: 'left',
-          title: '主列表',
-          span: 12,
-          component: { type: 'list', config: buildPreviewListConfig('') },
-        },
-        {
-          key: 'right',
-          title: '详情',
-          span: 12,
-          component: { type: 'detail', config: buildPreviewDetailConfig('') },
-        },
-      ]
-    : [];
+  const panels =
+    Array.isArray(layout?.panels) && layout.panels.length > 0
+      ? layout.panels
+      : isTemplatePreview
+      ? [
+          {
+            key: 'left',
+            title: '主列表',
+            span: 12,
+            component: { type: 'list', config: buildPreviewListConfig('') },
+          },
+          {
+            key: 'right',
+            title: '详情',
+            span: 12,
+            component: { type: 'detail', config: buildPreviewDetailConfig('') },
+          },
+        ]
+      : [];
   if (panels.length === 0) {
     return <Alert type="warning" message="split 布局缺少 panels 配置" showIcon />;
   }
@@ -65,11 +66,29 @@ function renderPanel(panel: SplitPanelConfig, objectKey: string, context?: Recor
 
   switch (comp.type) {
     case 'list':
-      return <ListRenderer layout={{ type: 'list', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <ListRenderer
+          layout={{ type: 'list', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form':
-      return <FormRenderer layout={{ type: 'form', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <FormRenderer
+          layout={{ type: 'form', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'detail':
-      return <DetailRenderer layout={{ type: 'detail', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <DetailRenderer
+          layout={{ type: 'detail', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form-detail':
       return (
         <FormDetailRenderer
@@ -79,6 +98,8 @@ function renderPanel(panel: SplitPanelConfig, objectKey: string, context?: Recor
         />
       );
     default:
-      return <Alert type="error" message={`不支持的 split 组件类型: ${(comp as any).type}`} showIcon />;
+      return (
+        <Alert type="error" message={`不支持的 split 组件类型: ${(comp as any).type}`} showIcon />
+      );
   }
 }

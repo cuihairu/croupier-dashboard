@@ -129,7 +129,17 @@ const BUILTIN_TEMPLATES: Template[] = [
     usageCount: 0,
     scope: 'builtin',
     config: {
-      layout: { type: 'tabs', tabs: [{ key: 'list', title: '列表', functions: [], layout: { type: 'list', listFunction: '', columns: [] } }] },
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'list',
+            title: '列表',
+            functions: [],
+            layout: { type: 'list', listFunction: '', columns: [] },
+          },
+        ],
+      },
     },
   },
   {
@@ -433,7 +443,10 @@ const BUILTIN_TEMPLATES: Template[] = [
             layout: {
               type: 'list',
               listFunction: '',
-              columns: [{ key: 'id', title: 'ID' }, { key: 'name', title: '名称' }],
+              columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'name', title: '名称' },
+              ],
               toolbarActions: [
                 {
                   key: 'create',
@@ -498,7 +511,15 @@ const BUILTIN_TEMPLATES: Template[] = [
                   function: '',
                   fields: [
                     { key: 'name', label: '名称', type: 'input', required: true },
-                    { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+                    {
+                      key: 'status',
+                      label: '状态',
+                      type: 'select',
+                      options: [
+                        { label: '启用', value: 'active' },
+                        { label: '禁用', value: 'disabled' },
+                      ],
+                    },
                   ],
                 },
               ],
@@ -510,7 +531,15 @@ const BUILTIN_TEMPLATES: Template[] = [
                   function: '',
                   fields: [
                     { key: 'name', label: '名称', type: 'input', required: true },
-                    { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+                    {
+                      key: 'status',
+                      label: '状态',
+                      type: 'select',
+                      options: [
+                        { label: '启用', value: 'active' },
+                        { label: '禁用', value: 'disabled' },
+                      ],
+                    },
                   ],
                 },
                 {
@@ -534,7 +563,15 @@ const BUILTIN_TEMPLATES: Template[] = [
               fields: [
                 { key: 'name', label: '名称', type: 'input', required: true },
                 { key: 'description', label: '描述', type: 'textarea' },
-                { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+                {
+                  key: 'status',
+                  label: '状态',
+                  type: 'select',
+                  options: [
+                    { label: '启用', value: 'active' },
+                    { label: '禁用', value: 'disabled' },
+                  ],
+                },
               ],
             },
           },

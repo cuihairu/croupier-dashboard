@@ -79,7 +79,9 @@ export default function TabContentRenderer({ tab, objectKey, context }: TabConte
       return (
         <Alert
           message="当前 Tab 布局不在 V1 支持范围"
-          description={`仅支持 form-detail/list/form/detail/kanban/timeline/split/wizard/dashboard/grid/custom，当前类型: ${(layout as any).type}`}
+          description={`仅支持 form-detail/list/form/detail/kanban/timeline/split/wizard/dashboard/grid/custom，当前类型: ${
+            (layout as any).type
+          }`}
           type="error"
           showIcon
           style={{ margin: '20px' }}

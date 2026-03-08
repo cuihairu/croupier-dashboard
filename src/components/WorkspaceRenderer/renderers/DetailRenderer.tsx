@@ -127,7 +127,7 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
           <Descriptions column={section.column || 2}>
             {section.fields.map((field) => (
               <Descriptions.Item key={field.key} label={field.label} span={field.span}>
-                    {renderDetailField(field, resolvedData[field.key])}
+                {renderDetailField(field, resolvedData[field.key])}
               </Descriptions.Item>
             ))}
           </Descriptions>

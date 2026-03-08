@@ -28,14 +28,15 @@ export default function GridRenderer({ layout, objectKey, context }: RendererPro
   const isTemplatePreview = Boolean((context as any)?.templatePreview);
   const columns = layout?.columns || 3;
   const gutter = layout?.gutter || [16, 16];
-  const items = Array.isArray(layout?.items) && layout.items.length > 0
-    ? layout.items
-    : isTemplatePreview
-    ? [
-        { key: 'g-list', component: { type: 'list', config: buildPreviewListConfig('') } },
-        { key: 'g-detail', component: { type: 'detail', config: buildPreviewDetailConfig('') } },
-      ]
-    : [];
+  const items =
+    Array.isArray(layout?.items) && layout.items.length > 0
+      ? layout.items
+      : isTemplatePreview
+      ? [
+          { key: 'g-list', component: { type: 'list', config: buildPreviewListConfig('') } },
+          { key: 'g-detail', component: { type: 'detail', config: buildPreviewDetailConfig('') } },
+        ]
+      : [];
 
   if (items.length === 0) {
     return <Empty description="暂无网格内容" />;
@@ -46,7 +47,10 @@ export default function GridRenderer({ layout, objectKey, context }: RendererPro
       {items
         .filter((item) => item.visible !== false)
         .map((item) => (
-          <Col key={item.key} span={Math.max(1, Math.min(24, Math.floor((24 / columns) * (item.colSpan || 1))))}>
+          <Col
+            key={item.key}
+            span={Math.max(1, Math.min(24, Math.floor((24 / columns) * (item.colSpan || 1))))}
+          >
             {renderGridItem(item, objectKey, context)}
           </Col>
         ))}
@@ -61,11 +65,29 @@ function renderGridItem(item: GridItem, objectKey: string, context?: Record<stri
   }
   switch (comp.type) {
     case 'list':
-      return <ListRenderer layout={{ type: 'list', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <ListRenderer
+          layout={{ type: 'list', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form':
-      return <FormRenderer layout={{ type: 'form', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <FormRenderer
+          layout={{ type: 'form', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'detail':
-      return <DetailRenderer layout={{ type: 'detail', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+      return (
+        <DetailRenderer
+          layout={{ type: 'detail', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
     case 'form-detail':
       return (
         <FormDetailRenderer
@@ -75,8 +97,12 @@ function renderGridItem(item: GridItem, objectKey: string, context?: Record<stri
         />
       );
     case 'custom':
-      return <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(comp.config || {}, null, 2)}</pre>;
+      return (
+        <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(comp.config || {}, null, 2)}</pre>
+      );
     default:
-      return <Alert type="error" showIcon message={`不支持的 grid 组件类型: ${(comp as any).type}`} />;
+      return (
+        <Alert type="error" showIcon message={`不支持的 grid 组件类型: ${(comp as any).type}`} />
+      );
   }
 }
