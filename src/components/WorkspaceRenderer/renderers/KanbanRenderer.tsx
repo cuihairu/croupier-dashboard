@@ -32,6 +32,7 @@ import {
   DragOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { buildGamePreviewKanbanColumns } from './mockData';
 
 export interface KanbanRendererProps {
   config: any;
@@ -82,8 +83,14 @@ const DEFAULT_KANBAN_DATA: KanbanData = {
   ],
 };
 
+const PREVIEW_KANBAN_DATA: KanbanData = { columns: buildGamePreviewKanbanColumns() as any };
+
 export default function KanbanRenderer({ config, context, onDataChange }: KanbanRendererProps) {
-  const [data, setData] = useState<KanbanData>(config?.data || DEFAULT_KANBAN_DATA);
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
+  const [data, setData] = useState<KanbanData>(() => {
+    if (config?.data) return config.data;
+    return isTemplatePreview ? PREVIEW_KANBAN_DATA : DEFAULT_KANBAN_DATA;
+  });
   const [draggedCard, setDraggedCard] = useState<{
     card: KanbanCard;
     sourceColumnId: string;

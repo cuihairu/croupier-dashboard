@@ -7,10 +7,11 @@
  */
 
 import React, { useState } from 'react';
-import { Card, Tabs, Button, Modal } from 'antd';
+import { Card, Tabs, Button, Modal, Segmented, Space } from 'antd';
 import { EyeOutlined, CodeOutlined } from '@ant-design/icons';
 import type { WorkspaceConfig } from '@/types/workspace';
 import WorkspaceRenderer from '@/components/WorkspaceRenderer';
+import { CodeEditor } from '@/components/MonacoDynamic';
 
 export interface ConfigPreviewProps {
   /** Workspace 配置 */
@@ -23,6 +24,7 @@ export interface ConfigPreviewProps {
 export default function ConfigPreview({ config }: ConfigPreviewProps) {
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview');
   const [showFullPreview, setShowFullPreview] = useState(false);
+  const [previewDataMode, setPreviewDataMode] = useState<'mock' | 'live'>('mock');
 
   if (!config) {
     return (
@@ -38,29 +40,42 @@ export default function ConfigPreview({ config }: ConfigPreviewProps) {
         title="预览"
         style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
         extra={
-          <Tabs
-            activeKey={viewMode}
-            onChange={(key) => setViewMode(key as any)}
-            size="small"
-            items={[
-              {
-                key: 'preview',
-                label: (
-                  <>
-                    <EyeOutlined /> 预览
-                  </>
-                ),
-              },
-              {
-                key: 'code',
-                label: (
-                  <>
-                    <CodeOutlined /> 代码
-                  </>
-                ),
-              },
-            ]}
-          />
+          <Space size={8}>
+            {viewMode === 'preview' && (
+              <Segmented
+                size="small"
+                value={previewDataMode}
+                onChange={(v) => setPreviewDataMode(v as 'mock' | 'live')}
+                options={[
+                  { label: '示例数据', value: 'mock' },
+                  { label: '真实数据', value: 'live' },
+                ]}
+              />
+            )}
+            <Tabs
+              activeKey={viewMode}
+              onChange={(key) => setViewMode(key as any)}
+              size="small"
+              items={[
+                {
+                  key: 'preview',
+                  label: (
+                    <>
+                      <EyeOutlined /> 预览
+                    </>
+                  ),
+                },
+                {
+                  key: 'code',
+                  label: (
+                    <>
+                      <CodeOutlined /> 代码
+                    </>
+                  ),
+                },
+              ]}
+            />
+          </Space>
         }
       >
         {viewMode === 'preview' ? (
@@ -74,7 +89,10 @@ export default function ConfigPreview({ config }: ConfigPreviewProps) {
                 borderRadius: 4,
               }}
             >
-              <WorkspaceRenderer config={config} />
+              <WorkspaceRenderer
+                config={config}
+                context={previewDataMode === 'mock' ? { templatePreview: true } : undefined}
+              />
             </div>
             <div style={{ marginTop: 16, textAlign: 'center' }}>
               <Button type="link" onClick={() => setShowFullPreview(true)}>
@@ -83,19 +101,21 @@ export default function ConfigPreview({ config }: ConfigPreviewProps) {
             </div>
           </div>
         ) : (
-          <pre
-            style={{
-              backgroundColor: '#f5f5f5',
-              padding: 16,
-              borderRadius: 4,
-              overflow: 'auto',
-              maxHeight: 'calc(100vh - 350px)',
-              fontSize: 12,
-              lineHeight: 1.6,
-            }}
-          >
-            {JSON.stringify(config, null, 2)}
-          </pre>
+          <div style={{ border: '1px solid #f0f0f0', borderRadius: 4, overflow: 'hidden' }}>
+            <CodeEditor
+              value={JSON.stringify(config, null, 2)}
+              language="json"
+              height={480}
+              readOnly
+              options={{
+                lineNumbers: 'on',
+                renderLineHighlight: 'line',
+                scrollBeyondLastLine: false,
+                automaticLayout: true,
+                minimap: { enabled: false },
+              }}
+            />
+          </div>
         )}
       </Card>
 
@@ -109,7 +129,10 @@ export default function ConfigPreview({ config }: ConfigPreviewProps) {
         style={{ top: 20 }}
         styles={{ body: { height: 'calc(100vh - 150px)', overflow: 'auto' } }}
       >
-        <WorkspaceRenderer config={config} />
+        <WorkspaceRenderer
+          config={config}
+          context={previewDataMode === 'mock' ? { templatePreview: true } : undefined}
+        />
       </Modal>
     </>
   );

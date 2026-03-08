@@ -52,7 +52,19 @@ import { useSimpleHistory } from './hooks/useHistory';
 
 /** 两种模式：2=函数+设计器（默认），3=函数+设计器+预览 */
 type ViewMode = 2 | 3;
-const V1_TAB_LAYOUT_TYPES = new Set(['form-detail', 'list', 'form', 'detail']);
+const V1_TAB_LAYOUT_TYPES = new Set([
+  'form-detail',
+  'list',
+  'form',
+  'detail',
+  'kanban',
+  'timeline',
+  'split',
+  'wizard',
+  'dashboard',
+  'grid',
+  'custom',
+]);
 type VersionTimeRange = 'all' | '7d' | '30d' | '90d';
 
 function resolveWorkspaceStatus(config?: WorkspaceConfig | null): string {
@@ -217,8 +229,149 @@ function collectRequiredFunctions(candidate: WorkspaceConfig): string[] {
     if (layout?.queryFunction) result.add(layout.queryFunction);
     if (layout?.submitFunction) result.add(layout.submitFunction);
     if (layout?.detailFunction) result.add(layout.detailFunction);
+    if (layout?.dataFunction) result.add(layout.dataFunction);
+
+    const tryCollectComp = (comp: any) => {
+      if (!comp?.config) return;
+      if (comp.config.listFunction) result.add(comp.config.listFunction);
+      if (comp.config.queryFunction) result.add(comp.config.queryFunction);
+      if (comp.config.submitFunction) result.add(comp.config.submitFunction);
+      if (comp.config.detailFunction) result.add(comp.config.detailFunction);
+      if (comp.config.dataFunction) result.add(comp.config.dataFunction);
+    };
+    if (Array.isArray(layout?.panels)) {
+      layout.panels.forEach((p: any) => tryCollectComp(p?.component));
+    }
+    if (Array.isArray(layout?.steps)) {
+      layout.steps.forEach((s: any) => tryCollectComp(s?.component));
+    }
+    if (Array.isArray(layout?.items)) {
+      layout.items.forEach((it: any) => tryCollectComp(it?.component));
+    }
   });
   return Array.from(result);
+}
+
+function autoBindTemplateFunctions(
+  candidate: WorkspaceConfig,
+  availableFunctionIds: string[],
+): WorkspaceConfig {
+  if (candidate.layout?.type !== 'tabs' || !Array.isArray(candidate.layout.tabs)) return candidate;
+  if (!Array.isArray(availableFunctionIds) || availableFunctionIds.length === 0) return candidate;
+
+  const pickFn = (preferred: string[] = []) => {
+    for (const id of preferred) {
+      if (id && availableFunctionIds.includes(id)) return id;
+    }
+    return availableFunctionIds[0];
+  };
+
+  const bindIntoConfig = (cfg: any, preferred: string[]) => {
+    if (!cfg) return cfg;
+    const next = { ...cfg };
+    const t = String(next?.type || '');
+    const isAvailable = (id?: string) => !!id && availableFunctionIds.includes(id);
+
+    if ((t === 'list' || 'listFunction' in next) && !isAvailable(next.listFunction)) {
+      next.listFunction = pickFn(preferred);
+    }
+    if (t === 'list' && (!Array.isArray(next.columns) || next.columns.length === 0)) {
+      next.columns = [
+        { key: 'id', title: 'ID' },
+        { key: 'name', title: '名称' },
+        { key: 'status', title: '状态' },
+      ];
+    }
+
+    if ((t === 'form-detail' || 'queryFunction' in next) && !isAvailable(next.queryFunction)) {
+      next.queryFunction = pickFn(preferred);
+    }
+    if (t === 'form-detail' && !Array.isArray(next.queryFields)) {
+      next.queryFields = [];
+    }
+
+    if ((t === 'form' || 'submitFunction' in next) && !isAvailable(next.submitFunction)) {
+      next.submitFunction = pickFn(preferred);
+    }
+    if (t === 'form' && (!Array.isArray(next.fields) || next.fields.length === 0)) {
+      next.fields = [{ key: 'name', label: '名称', type: 'input', required: true }];
+    }
+
+    if ((t === 'detail' || 'detailFunction' in next) && !isAvailable(next.detailFunction)) {
+      next.detailFunction = pickFn(preferred);
+    }
+    if (t === 'detail' && (!Array.isArray(next.sections) || next.sections.length === 0)) {
+      next.sections = [{ title: '基础信息', fields: [{ key: 'id', label: 'ID' }, { key: 'name', label: '名称' }] }];
+    }
+
+    if ((t === 'kanban' || t === 'timeline' || 'dataFunction' in next) && !isAvailable(next.dataFunction)) {
+      next.dataFunction = pickFn(preferred);
+    }
+    return next;
+  };
+
+  const nextTabs = candidate.layout.tabs.map((tab: any) => {
+    const preferred = Array.isArray(tab?.functions) && tab.functions.length > 0 ? tab.functions : [];
+    const fallback = pickFn(preferred);
+    const nextTab = { ...tab };
+    if (!Array.isArray(nextTab.functions) || nextTab.functions.length === 0) {
+      nextTab.functions = [fallback];
+    }
+    const layout = nextTab.layout as any;
+    if (!layout) return nextTab;
+    let nextLayout = bindIntoConfig(layout, nextTab.functions);
+
+    if (Array.isArray(layout.panels)) {
+      nextLayout = {
+        ...nextLayout,
+        panels: layout.panels.map((p: any) => ({
+          ...p,
+          component: p?.component
+            ? { ...p.component, config: bindIntoConfig(p.component.config, nextTab.functions) }
+            : p?.component,
+        })),
+      };
+    }
+    if (Array.isArray(layout.steps)) {
+      nextLayout = {
+        ...nextLayout,
+        steps: layout.steps.map((s: any) => ({
+          ...s,
+          component: s?.component
+            ? { ...s.component, config: bindIntoConfig(s.component.config, nextTab.functions) }
+            : s?.component,
+        })),
+      };
+    }
+    if (Array.isArray(layout.items)) {
+      nextLayout = {
+        ...nextLayout,
+        items: layout.items.map((it: any) => ({
+          ...it,
+          component: it?.component
+            ? { ...it.component, config: bindIntoConfig(it.component.config, nextTab.functions) }
+            : it?.component,
+        })),
+      };
+    }
+
+    nextTab.layout = nextLayout;
+    return nextTab;
+  });
+
+  return {
+    ...candidate,
+    layout: {
+      ...candidate.layout,
+      tabs: nextTabs,
+    },
+  };
+}
+
+function isTemplateNonBlockingValidationError(error: string): boolean {
+  return /(listFunction|submitFunction|detailFunction|queryFunction|dataFunction) 不能为空/.test(
+    error,
+  );
 }
 
 export default function WorkspaceEditor() {
@@ -573,15 +726,21 @@ export default function WorkspaceEditor() {
           template: template.name,
           reason: 'unsupported_layout',
         });
-        message.error('当前仅支持 tabs + form-detail/list/form/detail 模板');
+        message.error(
+          '当前仅支持 tabs + form-detail/list/form/detail/kanban/timeline/split/wizard/dashboard/grid/custom 模板',
+        );
         return;
       }
 
-      const newConfig: WorkspaceConfig = {
+      const draftConfig: WorkspaceConfig = {
         ...config,
         ...template.config,
         objectKey: config.objectKey, // 保持原始 objectKey
       };
+      const allAvailableIds = (availableFunctions || [])
+        .map((fn: any) => String(fn?.id || ''))
+        .filter(Boolean);
+      const newConfig = autoBindTemplateFunctions(draftConfig, allAvailableIds);
 
       const availableFunctionIds = new Set(
         (availableFunctions || []).map((fn: any) => String(fn?.id || '')).filter(Boolean),
@@ -604,6 +763,21 @@ export default function WorkspaceEditor() {
 
       const validation = validateWorkspaceConfig(newConfig);
       if (!validation.valid) {
+        const blockingErrors = (validation.errors || []).filter(
+          (error) => !isTemplateNonBlockingValidationError(error),
+        );
+        const onlyMissingFunctionBindings = blockingErrors.length === 0;
+        if (onlyMissingFunctionBindings) {
+          handleConfigChange(newConfig, `应用模板: ${template.name}`);
+          setTemplateModalVisible(false);
+          trackWorkspaceEvent('workspace_template_apply', {
+            objectKey: config.objectKey,
+            template: template.name,
+            degraded: true,
+          });
+          message.warning('模板已应用，部分函数待绑定后再保存');
+          return;
+        }
         trackWorkspaceEvent('workspace_template_apply_error', {
           objectKey: config.objectKey,
           template: template.name,
@@ -611,7 +785,7 @@ export default function WorkspaceEditor() {
         });
         Modal.warning({
           title: '模板预检查未通过',
-          content: `配置不兼容: ${(validation.errors || []).slice(0, 6).join('；')}`,
+          content: `配置不兼容: ${blockingErrors.slice(0, 6).join('；')}`,
         });
         return;
       }
@@ -769,7 +943,7 @@ export default function WorkspaceEditor() {
   }
 
   const functionWidth = collapsed ? 40 : 260;
-  const previewWidth = viewMode === 3 ? 320 : 0;
+  const previewWidth = viewMode === 3 ? 520 : 0;
   const gap = viewMode === 3 ? 16 : 8;
   const designerWidth = `calc(100% - ${functionWidth}px - ${previewWidth}px - ${gap}px)`;
 

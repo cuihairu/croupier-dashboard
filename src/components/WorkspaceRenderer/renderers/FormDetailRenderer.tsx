@@ -22,12 +22,13 @@ import {
   Modal,
   Drawer,
   Popconfirm,
+  Alert,
 } from 'antd';
 import type { FormDetailLayout, ActionConfig } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
 import * as Icons from '@ant-design/icons';
 import type { RendererProps } from './types';
-import { RendererEmpty, RendererError } from './state';
+import { RendererEmpty } from './state';
 
 export type FormDetailRendererProps = RendererProps<FormDetailLayout>;
 
@@ -39,6 +40,7 @@ export default function FormDetailRenderer({
   objectKey,
   context,
 }: FormDetailRendererProps) {
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
   const [form] = Form.useForm();
   const [actionForm] = Form.useForm();
   const [loading, setLoading] = useState(false);
@@ -48,10 +50,53 @@ export default function FormDetailRenderer({
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [currentAction, setCurrentAction] = useState<ActionConfig | null>(null);
   const [hasQueried, setHasQueried] = useState(false);
+  const effectiveQueryFields = React.useMemo(() => {
+    const fields = Array.isArray(layout.queryFields) ? layout.queryFields : [];
+    if (fields.length > 0) return fields;
+    if (!isTemplatePreview) return fields;
+    return [{ key: 'keyword', label: '关键字', type: 'input', required: true }] as any[];
+  }, [isTemplatePreview, layout.queryFields]);
+  const effectiveDetailSections = React.useMemo(() => {
+    const sections = Array.isArray(layout.detailSections) ? layout.detailSections : [];
+    if (sections.length > 0) return sections;
+    if (!isTemplatePreview) return sections;
+    return [
+      {
+        title: '详情信息',
+        column: 2,
+        fields: [
+          { key: 'id', label: 'ID' },
+          { key: 'name', label: '名称' },
+          { key: 'status', label: '状态' },
+        ],
+      },
+    ] as any[];
+  }, [isTemplatePreview, layout.detailSections]);
+  const previewDetailData = React.useMemo(() => {
+    if (!isTemplatePreview) return null;
+    const obj: Record<string, any> = {};
+    (layout.detailSections || []).forEach((section: any) => {
+      (section?.fields || []).forEach((field: any) => {
+        if (!field?.key) return;
+        obj[field.key] = `${field.label || field.key}示例值`;
+      });
+    });
+    if (Object.keys(obj).length === 0) {
+      obj.id = 'demo-001';
+      obj.name = '示例对象';
+    }
+    return obj;
+  }, [effectiveDetailSections, isTemplatePreview]);
 
   // 处理查询
   const handleQuery = async (values: any) => {
     if (!layout.queryFunction) {
+      if (isTemplatePreview) {
+        setHasQueried(true);
+        setDetailData(previewDetailData || null);
+        message.info('模板预览模式：查询函数待绑定');
+        return;
+      }
       message.error('未配置查询函数');
       return;
     }
@@ -127,27 +172,36 @@ export default function FormDetailRenderer({
 
   // 自动查询
   React.useEffect(() => {
+    if (isTemplatePreview) {
+      setHasQueried(true);
+      setDetailData(previewDetailData || null);
+      return;
+    }
     if (layout.autoQuery) {
       setHasQueried(true);
       form.submit();
     }
-  }, [layout.autoQuery]);
+  }, [layout.autoQuery, isTemplatePreview, previewDetailData]);
 
-  if (!layout.queryFunction) {
-    return (
-      <RendererError
-        message="配置不完整"
-        description="当前 form-detail 布局缺少 queryFunction，无法执行查询。"
-      />
-    );
+  if (!layout.queryFunction && !isTemplatePreview) {
+    return <RendererEmpty description="当前查询未绑定函数，请在布局配置中选择 queryFunction" />;
   }
 
   return (
     <div>
+      {!layout.queryFunction && isTemplatePreview && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="模板预览"
+          description="当前查询未绑定函数，应用模板后可在编辑器中绑定。"
+        />
+      )}
       {/* 查询区 */}
       <Card title="查询条件" style={{ marginBottom: 16 }}>
         <Form form={form} layout="inline" onFinish={handleQuery}>
-          {(layout.queryFields || []).map((field) => (
+          {(effectiveQueryFields || []).map((field) => (
             <Form.Item
               key={field.key}
               name={field.key}
@@ -169,7 +223,7 @@ export default function FormDetailRenderer({
       {/* 详情区 */}
       {detailData && (
         <>
-          {(layout.detailSections || []).map((section, index) => (
+          {(effectiveDetailSections || []).map((section, index) => (
             <Card key={index} title={section.title} style={{ marginBottom: 16 }}>
               <Descriptions column={section.column || 2}>
                 {section.fields.map((field) => (

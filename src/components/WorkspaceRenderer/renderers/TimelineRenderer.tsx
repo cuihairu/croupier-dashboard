@@ -34,6 +34,7 @@ import {
   MoreOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import { buildGamePreviewTimelineEvents } from './mockData';
 
 export interface TimelineRendererProps {
   config: any;
@@ -80,7 +81,12 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function TimelineRenderer({ config, context, onDataChange }: TimelineRendererProps) {
-  const [data, setData] = useState<TimelineData>(config?.data || { events: [] });
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
+  const [data, setData] = useState<TimelineData>(
+    config?.data || {
+      events: isTemplatePreview ? (buildGamePreviewTimelineEvents() as any) : [],
+    },
+  );
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEvent, setEditingEvent] = useState<TimelineEvent | null>(null);
   const [filterType, setFilterType] = useState<string | null>(null);

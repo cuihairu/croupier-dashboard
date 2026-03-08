@@ -19,11 +19,12 @@ import {
   Button,
   Space,
   message,
+  Alert,
 } from 'antd';
 import type { FormLayout } from '@/types/workspace';
 import { invokeFunction } from '@/services/functionInvoke';
 import type { RendererProps } from './types';
-import { RendererError } from './state';
+import { RendererEmpty } from './state';
 
 export type FormRendererProps = RendererProps<FormLayout>;
 
@@ -31,21 +32,30 @@ export type FormRendererProps = RendererProps<FormLayout>;
  * 表单布局渲染器组件
  */
 export default function FormRenderer({ layout, objectKey, context }: FormRendererProps) {
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const effectiveFields = React.useMemo(() => {
+    const fields = Array.isArray(layout.fields) ? layout.fields : [];
+    if (fields.length > 0) return fields;
+    if (!isTemplatePreview) return fields;
+    return [
+      { key: 'name', label: '名称', type: 'input', required: true, placeholder: '请输入名称' },
+      { key: 'count', label: '数量', type: 'number', required: true },
+    ] as any[];
+  }, [isTemplatePreview, layout.fields]);
 
-  if (!layout.submitFunction) {
-    return (
-      <RendererError
-        message="配置不完整"
-        description="当前表单布局缺少 submitFunction，无法提交数据。"
-      />
-    );
+  if (!layout.submitFunction && !isTemplatePreview) {
+    return <RendererEmpty description="当前表单未绑定提交函数，请在布局配置中选择 submitFunction" />;
   }
 
   // 处理提交
   const handleSubmit = async (values: any) => {
     if (!layout.submitFunction) {
+      if (isTemplatePreview) {
+        message.info('模板预览模式：提交函数待绑定');
+        return;
+      }
       message.error('未配置提交函数');
       return;
     }
@@ -74,45 +84,56 @@ export default function FormRenderer({ layout, objectKey, context }: FormRendere
   };
 
   return (
-    <Form
-      form={form}
-      layout={layout.formLayout || 'horizontal'}
-      labelCol={{ span: 6 }}
-      wrapperCol={{ span: 14 }}
-      onFinish={handleSubmit}
-      style={{ maxWidth: 800, margin: '20px auto' }}
-    >
-      {(layout.fields || []).map((field) => (
-        <Form.Item
-          key={field.key}
-          name={field.key}
-          label={field.label}
-          rules={[
-            { required: field.required, message: `请输入${field.label}` },
-            ...(field.rules || []).map((rule) => ({
-              type: rule.type as any,
-              pattern: rule.pattern ? new RegExp(rule.pattern) : undefined,
-              min: rule.min,
-              max: rule.max,
-              message: rule.message,
-            })),
-          ]}
-          tooltip={field.tooltip}
-          initialValue={field.defaultValue}
-        >
-          {renderField(field)}
-        </Form.Item>
-      ))}
+    <>
+      {!layout.submitFunction && isTemplatePreview && (
+        <Alert
+          type="info"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="模板预览"
+          description="当前表单未绑定提交函数，应用模板后可在编辑器中绑定。"
+        />
+      )}
+      <Form
+        form={form}
+        layout={layout.formLayout || 'horizontal'}
+        labelCol={{ span: 6 }}
+        wrapperCol={{ span: 14 }}
+        onFinish={handleSubmit}
+        style={{ maxWidth: 800, margin: '20px auto' }}
+      >
+        {(effectiveFields || []).map((field) => (
+          <Form.Item
+            key={field.key}
+            name={field.key}
+            label={field.label}
+            rules={[
+              { required: field.required, message: `请输入${field.label}` },
+              ...(field.rules || []).map((rule) => ({
+                type: rule.type as any,
+                pattern: rule.pattern ? new RegExp(rule.pattern) : undefined,
+                min: rule.min,
+                max: rule.max,
+                message: rule.message,
+              })),
+            ]}
+            tooltip={field.tooltip}
+            initialValue={field.defaultValue}
+          >
+            {renderField(field)}
+          </Form.Item>
+        ))}
 
-      <Form.Item wrapperCol={{ offset: 6, span: 14 }}>
-        <Space>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            {layout.submitText || '提交'}
-          </Button>
-          {layout.showReset !== false && <Button onClick={handleReset}>重置</Button>}
-        </Space>
-      </Form.Item>
-    </Form>
+        <Form.Item wrapperCol={{ offset: 6, span: 14 }}>
+          <Space>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {layout.submitText || '提交'}
+            </Button>
+            {layout.showReset !== false && <Button onClick={handleReset}>重置</Button>}
+          </Space>
+        </Form.Item>
+      </Form>
+    </>
   );
 }
 

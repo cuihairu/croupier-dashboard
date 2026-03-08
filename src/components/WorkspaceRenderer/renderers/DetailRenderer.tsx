@@ -20,9 +20,45 @@ export type DetailRendererProps = RendererProps<DetailLayout>;
  * 详情布局渲染器组件
  */
 export default function DetailRenderer({ layout, objectKey, context }: DetailRendererProps) {
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState('');
+  const previewData = React.useMemo(() => {
+    if (!isTemplatePreview) return null;
+    const obj: Record<string, any> = {};
+    (layout.sections || []).forEach((section: any) => {
+      (section?.fields || []).forEach((field: any) => {
+        if (!field?.key) return;
+        obj[field.key] = getPreviewDetailValue(field.key, field.label);
+      });
+    });
+    if (Object.keys(obj).length === 0) {
+      obj.playerId = '900001';
+      obj.nickname = '示例玩家A';
+      obj.level = 36;
+      obj.vip = 3;
+      obj.status = 'active';
+    }
+    return obj;
+  }, [isTemplatePreview, layout.sections]);
+  const effectiveSections = React.useMemo(() => {
+    const sections = Array.isArray(layout.sections) ? layout.sections : [];
+    if (sections.length > 0) return sections;
+    if (!isTemplatePreview) return sections;
+    return [
+      {
+        title: '基础信息',
+        column: 2,
+        fields: [
+          { key: 'id', label: 'ID' },
+          { key: 'name', label: '名称' },
+          { key: 'status', label: '状态' },
+          { key: 'updatedAt', label: '更新时间' },
+        ],
+      },
+    ] as any[];
+  }, [isTemplatePreview, layout.sections]);
 
   // 加载数据
   const loadData = async () => {
@@ -46,8 +82,11 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
   };
 
   useEffect(() => {
+    if (isTemplatePreview) {
+      return;
+    }
     loadData();
-  }, [layout.detailFunction]);
+  }, [layout.detailFunction, isTemplatePreview]);
 
   // 处理操作
   const handleAction = async (action: any) => {
@@ -68,30 +107,27 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
     }
   };
 
-  if (!layout.detailFunction) {
-    return (
-      <RendererError
-        message="配置不完整"
-        description="当前详情布局缺少 detailFunction，无法加载详情数据。"
-      />
-    );
+  if (!layout.detailFunction && !isTemplatePreview) {
+    return <RendererEmpty description="当前详情未绑定函数，请在布局配置中选择 detailFunction" />;
   }
+  // 模板预览下允许无函数渲染示例数据，不直接返回空态。
 
   if (loading) return <RendererLoading tip="加载详情中..." />;
 
   if (loadError) return <RendererError description={loadError} />;
 
-  if (!data) return <RendererEmpty description="暂无详情数据" />;
+  const resolvedData = isTemplatePreview ? previewData : data;
+  if (!resolvedData) return <RendererEmpty description="暂无详情数据" />;
 
   return (
     <div>
       {/* 详情分区 */}
-      {(layout.sections || []).map((section, index) => (
+      {(effectiveSections || []).map((section, index) => (
         <Card key={index} title={section.title} style={{ marginBottom: 16 }}>
           <Descriptions column={section.column || 2}>
             {section.fields.map((field) => (
               <Descriptions.Item key={field.key} label={field.label} span={field.span}>
-                {renderDetailField(field, data[field.key])}
+                    {renderDetailField(field, resolvedData[field.key])}
               </Descriptions.Item>
             ))}
           </Descriptions>
@@ -119,6 +155,23 @@ export default function DetailRenderer({ layout, objectKey, context }: DetailRen
       )}
     </div>
   );
+}
+
+function getPreviewDetailValue(key: string, label?: string): any {
+  const lower = key.toLowerCase();
+  if (lower === 'id' || lower.endsWith('id')) return 'ID-1001';
+  if (lower.includes('player') && lower.includes('id')) return '900001';
+  if (lower.includes('user') && lower.includes('id')) return '700001';
+  if (lower.includes('nickname')) return '示例玩家A';
+  if (lower.includes('name') || lower.includes('title')) return `示例${label || key}`;
+  if (lower.includes('server')) return 'S12';
+  if (lower.includes('level')) return 36;
+  if (lower.includes('vip')) return 3;
+  if (lower.includes('status')) return 'active';
+  if (lower.includes('count') || lower.includes('num')) return 42;
+  if (lower.includes('time') || lower.includes('date')) return new Date().toISOString();
+  if (lower.includes('desc') || lower.includes('remark')) return `这是${label || key}的示例说明`;
+  return `${label || key}示例值`;
 }
 
 /**

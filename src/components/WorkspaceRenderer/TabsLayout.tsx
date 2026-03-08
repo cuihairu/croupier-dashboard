@@ -37,6 +37,9 @@ export default function TabsLayout({ config, context }: TabsLayoutProps) {
   }, [tabs]);
 
   const [activeKey, setActiveKey] = useState<string>(defaultActiveKey);
+  React.useEffect(() => {
+    setActiveKey(defaultActiveKey);
+  }, [defaultActiveKey]);
 
   // 生成 Tabs 配置
   const tabItems: TabsProps['items'] = useMemo(() => {

@@ -24,6 +24,7 @@ import {
   Form,
   Select,
   Divider,
+  Segmented,
 } from 'antd';
 import {
   SaveOutlined,
@@ -41,10 +42,23 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import type { WorkspaceConfig } from '@/types/workspace';
+import WorkspaceRenderer from '@/components/WorkspaceRenderer';
+import { CodeEditor } from '@/components/MonacoDynamic';
 
 const { Text, Title, Paragraph } = Typography;
 const { Search } = Input;
-const V1_TAB_LAYOUT_TYPES = new Set(['form-detail', 'list', 'form', 'detail']);
+const V1_TAB_LAYOUT_TYPES = new Set([
+  'form-detail',
+  'list',
+  'form',
+  'detail',
+  'kanban',
+  'timeline',
+  'split',
+  'wizard',
+  'dashboard',
+]);
 
 // 模板类型
 export type TemplateType = 'workspace' | 'layout' | 'function-set' | 'workflow';
@@ -77,6 +91,18 @@ export interface Template extends TemplateMeta {
   config: Record<string, any>;
 }
 
+function toPreviewWorkspaceConfig(template: Template): WorkspaceConfig {
+  const cfg = (template?.config || {}) as Record<string, any>;
+  return {
+    objectKey: `template.${template.id}`,
+    title: template.name || '模板预览',
+    description: template.description || '',
+    layout: (cfg.layout || { type: 'tabs', tabs: [] }) as any,
+    status: 'draft',
+    published: false,
+  };
+}
+
 function isV1TemplateConfig(config: Record<string, any> | undefined): boolean {
   const layout = config?.layout;
   if (!layout || layout.type !== 'tabs' || !Array.isArray(layout.tabs)) {
@@ -87,6 +113,351 @@ function isV1TemplateConfig(config: Record<string, any> | undefined): boolean {
 
 // 内置模板
 const BUILTIN_TEMPLATES: Template[] = [
+  {
+    id: 'tpl-layout-list-empty',
+    name: '列表布局-空模板',
+    description: '最小列表布局，适合从零开始配置',
+    type: 'layout',
+    category: 'standard',
+    tags: ['list', 'empty'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: { type: 'tabs', tabs: [{ key: 'list', title: '列表', functions: [], layout: { type: 'list', listFunction: '', columns: [] } }] },
+    },
+  },
+  {
+    id: 'tpl-layout-kanban-standard',
+    name: '看板布局-标准模板',
+    description: '待处理/处理中/已完成三列看板',
+    type: 'layout',
+    category: 'standard',
+    tags: ['kanban', 'standard'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'kanban',
+            title: '看板',
+            functions: [],
+            layout: {
+              type: 'kanban',
+              dataFunction: '',
+              columns: [
+                { id: 'todo', title: '待处理', color: '#1677ff' },
+                { id: 'processing', title: '处理中', color: '#faad14' },
+                { id: 'done', title: '已完成', color: '#52c41a' },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-timeline-standard',
+    name: '时间线布局-标准模板',
+    description: '事件流时间线，带筛选与逆序',
+    type: 'layout',
+    category: 'standard',
+    tags: ['timeline', 'standard'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'timeline',
+            title: '时间线',
+            functions: [],
+            layout: { type: 'timeline', dataFunction: '', showFilter: true, reverse: true },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-split-master-detail',
+    name: '主从布局-标准模板',
+    description: '左列表右详情的主从分栏',
+    type: 'layout',
+    category: 'standard',
+    tags: ['split', 'master-detail'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'master-detail',
+            title: '主从视图',
+            functions: [],
+            layout: {
+              type: 'split',
+              direction: 'horizontal',
+              panels: [
+                {
+                  key: 'left',
+                  title: '主列表',
+                  span: 12,
+                  component: { type: 'list', config: { listFunction: '', columns: [] } },
+                },
+                {
+                  key: 'right',
+                  title: '详情',
+                  span: 12,
+                  component: { type: 'detail', config: { detailFunction: '', sections: [] } },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-wizard-standard',
+    name: '向导布局-标准模板',
+    description: '两步向导流程模板',
+    type: 'layout',
+    category: 'standard',
+    tags: ['wizard', 'standard'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'wizard',
+            title: '向导流程',
+            functions: [],
+            layout: {
+              type: 'wizard',
+              steps: [
+                {
+                  key: 'step1',
+                  title: '信息填写',
+                  component: { type: 'form', config: { submitFunction: '', fields: [] } },
+                },
+                {
+                  key: 'step2',
+                  title: '结果确认',
+                  component: { type: 'detail', config: { detailFunction: '', sections: [] } },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-dashboard-standard',
+    name: '仪表盘布局-标准模板',
+    description: '指标卡 + 数据面板',
+    type: 'layout',
+    category: 'analytics',
+    tags: ['dashboard', 'analytics'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'dashboard',
+            title: '仪表盘',
+            functions: [],
+            layout: {
+              type: 'dashboard',
+              stats: [
+                { key: 'online', title: '在线人数', value: 0 },
+                { key: 'dau', title: 'DAU', value: 0 },
+              ],
+              panels: [
+                {
+                  key: 'p1',
+                  title: '列表',
+                  span: 12,
+                  component: { type: 'list', config: { listFunction: '', columns: [] } },
+                },
+                {
+                  key: 'p2',
+                  title: '详情',
+                  span: 12,
+                  component: { type: 'detail', config: { detailFunction: '', sections: [] } },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-grid-standard',
+    name: '网格布局-标准模板',
+    description: '双列网格，左列表右详情',
+    type: 'layout',
+    category: 'standard',
+    tags: ['grid', 'standard'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'grid',
+            title: '网格',
+            functions: [],
+            layout: {
+              type: 'grid',
+              columns: 2,
+              items: [
+                {
+                  key: 'item-list',
+                  component: { type: 'list', config: { listFunction: '', columns: [] } },
+                },
+                {
+                  key: 'item-detail',
+                  component: { type: 'detail', config: { detailFunction: '', sections: [] } },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-layout-custom-empty',
+    name: '自定义布局-空模板',
+    description: '自定义组件占位模板',
+    type: 'layout',
+    category: 'custom',
+    tags: ['custom', 'empty'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'custom',
+            title: '自定义',
+            functions: [],
+            layout: { type: 'custom', component: 'CustomPanel', props: {} },
+          },
+        ],
+      },
+    },
+  },
+  {
+    id: 'tpl-gaming-list-drawer-form',
+    name: '游戏运营-列表+抽屉表单',
+    description: '适合活动配置/补偿管理：列表 + 抽屉编辑 + 弹窗创建',
+    type: 'workspace',
+    category: 'gaming',
+    tags: ['gaming', 'list', 'drawer', 'form'],
+    version: '1.0.0',
+    author: 'System',
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
+    isFavorite: false,
+    isBuiltIn: true,
+    usageCount: 0,
+    scope: 'builtin',
+    config: {
+      layout: {
+        type: 'tabs',
+        tabs: [
+          {
+            key: 'ops-list',
+            title: '运营列表',
+            functions: [],
+            layout: {
+              type: 'list',
+              listFunction: '',
+              columns: [{ key: 'id', title: 'ID' }, { key: 'name', title: '名称' }],
+              toolbarActions: [
+                {
+                  key: 'create',
+                  label: '新建',
+                  type: 'modal',
+                  function: '',
+                  fields: [{ key: 'name', label: '名称', type: 'input', required: true }],
+                },
+              ],
+              rowActions: [
+                {
+                  key: 'edit',
+                  label: '编辑',
+                  type: 'drawer',
+                  function: '',
+                  fields: [{ key: 'name', label: '名称', type: 'input', required: true }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  },
   {
     id: 'tpl-standard-crud',
     name: '标准 CRUD 管理页',
@@ -109,17 +480,62 @@ const BUILTIN_TEMPLATES: Template[] = [
           {
             key: 'list',
             title: '列表',
+            functions: [],
             layout: {
               type: 'list',
-              columns: ['id', 'name', 'status', 'createdAt'],
+              listFunction: '',
+              columns: [
+                { key: 'id', title: 'ID' },
+                { key: 'name', title: '名称' },
+                { key: 'status', title: '状态' },
+                { key: 'createdAt', title: '创建时间', render: 'datetime' },
+              ],
+              toolbarActions: [
+                {
+                  key: 'create',
+                  label: '新建',
+                  type: 'modal',
+                  function: '',
+                  fields: [
+                    { key: 'name', label: '名称', type: 'input', required: true },
+                    { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+                  ],
+                },
+              ],
+              rowActions: [
+                {
+                  key: 'edit',
+                  label: '编辑',
+                  type: 'drawer',
+                  function: '',
+                  fields: [
+                    { key: 'name', label: '名称', type: 'input', required: true },
+                    { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+                  ],
+                },
+                {
+                  key: 'delete',
+                  label: '删除',
+                  type: 'popconfirm',
+                  function: '',
+                  danger: true,
+                  confirmMessage: '确认删除该记录？',
+                },
+              ],
             },
           },
           {
             key: 'create',
             title: '创建',
+            functions: [],
             layout: {
               type: 'form',
-              fields: ['name', 'description', 'status'],
+              submitFunction: '',
+              fields: [
+                { key: 'name', label: '名称', type: 'input', required: true },
+                { key: 'description', label: '描述', type: 'textarea' },
+                { key: 'status', label: '状态', type: 'select', options: [{ label: '启用', value: 'active' }, { label: '禁用', value: 'disabled' }] },
+              ],
             },
           },
         ],
@@ -149,19 +565,51 @@ const BUILTIN_TEMPLATES: Template[] = [
             key: 'info',
             title: '玩家信息',
             icon: 'UserOutlined',
-            layout: { type: 'detail' },
+            layout: {
+              type: 'detail',
+              detailFunction: '',
+              sections: [
+                {
+                  title: '基础信息',
+                  fields: [
+                    { key: 'playerId', label: '玩家ID' },
+                    { key: 'nickname', label: '昵称' },
+                    { key: 'level', label: '等级' },
+                    { key: 'vip', label: 'VIP' },
+                  ],
+                },
+              ],
+            },
           },
           {
             key: 'inventory',
             title: '背包',
             icon: 'InboxOutlined',
-            layout: { type: 'list' },
+            layout: {
+              type: 'list',
+              listFunction: '',
+              columns: [
+                { key: 'itemId', title: '道具ID' },
+                { key: 'itemName', title: '道具名' },
+                { key: 'count', title: '数量' },
+                { key: 'expireAt', title: '过期时间', render: 'datetime' },
+              ],
+            },
           },
           {
             key: 'mail',
             title: '邮件',
             icon: 'MailOutlined',
-            layout: { type: 'list' },
+            layout: {
+              type: 'list',
+              listFunction: '',
+              columns: [
+                { key: 'mailId', title: '邮件ID' },
+                { key: 'title', title: '标题' },
+                { key: 'status', title: '状态' },
+                { key: 'createdAt', title: '发送时间', render: 'datetime' },
+              ],
+            },
           },
         ],
       },
@@ -189,17 +637,47 @@ const BUILTIN_TEMPLATES: Template[] = [
           {
             key: 'users',
             title: '用户列表',
-            layout: { type: 'list' },
+            layout: {
+              type: 'list',
+              listFunction: '',
+              columns: [
+                { key: 'userId', title: '用户ID' },
+                { key: 'username', title: '用户名' },
+                { key: 'status', title: '状态' },
+                { key: 'updatedAt', title: '更新时间', render: 'datetime' },
+              ],
+            },
           },
           {
             key: 'roles',
             title: '角色管理',
-            layout: { type: 'list' },
+            layout: {
+              type: 'list',
+              listFunction: '',
+              columns: [
+                { key: 'roleId', title: '角色ID' },
+                { key: 'roleName', title: '角色名' },
+                { key: 'memberCount', title: '成员数' },
+              ],
+            },
           },
           {
             key: 'permissions',
             title: '权限设置',
-            layout: { type: 'tree' },
+            layout: {
+              type: 'detail',
+              detailFunction: '',
+              sections: [
+                {
+                  title: '权限信息',
+                  fields: [
+                    { key: 'role', label: '角色' },
+                    { key: 'scopes', label: '权限范围' },
+                    { key: 'updatedBy', label: '最后修改人' },
+                  ],
+                },
+              ],
+            },
           },
         ],
       },
@@ -247,6 +725,7 @@ export default function TemplateManager({
   const [filterScope, setFilterScope] = useState<TemplateScope | 'all'>('all');
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [previewMode, setPreviewMode] = useState<'page' | 'json'>('page');
   const [saveForm] = Form.useForm();
 
   const persistTemplates = (allTemplates: Template[]) => {
@@ -396,7 +875,9 @@ export default function TemplateManager({
           throw new Error('无效的模板格式');
         }
         if (!isV1TemplateConfig(template.config)) {
-          throw new Error('仅支持 V1 模板：tabs + form-detail/list/form/detail');
+          throw new Error(
+            '仅支持 V1 模板：tabs + form-detail/list/form/detail/kanban/timeline/split/wizard/dashboard/grid/custom',
+          );
         }
 
         // 生成新 ID
@@ -516,6 +997,7 @@ export default function TemplateManager({
               options={[
                 { value: 'all', label: '全部' },
                 { value: 'workspace', label: '工作空间' },
+                { value: 'layout', label: '布局模板' },
               ]}
             />
           </div>
@@ -646,6 +1128,7 @@ export default function TemplateManager({
                           icon={<EyeOutlined />}
                           onClick={(e) => {
                             e.stopPropagation();
+                            setPreviewMode('page');
                             setPreviewTemplate(template);
                           }}
                         >
@@ -693,9 +1176,18 @@ export default function TemplateManager({
       <Modal
         title={`预览: ${previewTemplate?.name}`}
         open={!!previewTemplate}
-        onCancel={() => setPreviewTemplate(null)}
+        onCancel={() => {
+          setPreviewTemplate(null);
+          setPreviewMode('page');
+        }}
         footer={[
-          <Button key="cancel" onClick={() => setPreviewTemplate(null)}>
+          <Button
+            key="cancel"
+            onClick={() => {
+              setPreviewTemplate(null);
+              setPreviewMode('page');
+            }}
+          >
             取消
           </Button>,
           <Button
@@ -711,7 +1203,8 @@ export default function TemplateManager({
             使用此模板
           </Button>,
         ]}
-        width={700}
+        width="92vw"
+        styles={{ body: { paddingTop: 12 } }}
       >
         {previewTemplate && (
           <div>
@@ -735,18 +1228,51 @@ export default function TemplateManager({
                 <Tag key={tag}>{tag}</Tag>
               ))}
             </Paragraph>
-            <Divider>配置预览</Divider>
-            <pre
-              style={{
-                background: '#f5f5f5',
-                padding: 16,
-                borderRadius: 4,
-                maxHeight: 300,
-                overflow: 'auto',
-              }}
-            >
-              {JSON.stringify(previewTemplate.config, null, 2)}
-            </pre>
+            <Divider>预览模式</Divider>
+            <Segmented
+              style={{ marginBottom: 12 }}
+              value={previewMode}
+              onChange={(v) => setPreviewMode(v as 'page' | 'json')}
+              options={[
+                { label: '页面预览', value: 'page' },
+                { label: 'JSON 预览', value: 'json' },
+              ]}
+            />
+            {previewMode === 'page' ? (
+              <div
+                style={{
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 6,
+                  minHeight: '62vh',
+                  maxHeight: '72vh',
+                  overflow: 'auto',
+                  padding: 12,
+                }}
+              >
+                <WorkspaceRenderer
+                  key={`tpl-preview-${previewTemplate.id}-${previewMode}`}
+                  config={toPreviewWorkspaceConfig(previewTemplate)}
+                  loading={false}
+                  context={{ templatePreview: true }}
+                />
+              </div>
+            ) : (
+              <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, overflow: 'hidden' }}>
+                <CodeEditor
+                  value={JSON.stringify(previewTemplate.config, null, 2)}
+                  language="json"
+                  height={420}
+                  readOnly
+                  options={{
+                    lineNumbers: 'on',
+                    renderLineHighlight: 'line',
+                    scrollBeyondLastLine: false,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </Modal>

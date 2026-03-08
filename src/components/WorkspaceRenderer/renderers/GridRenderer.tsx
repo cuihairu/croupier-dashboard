@@ -1,179 +1,82 @@
-/**
- * 网格布局渲染器
- *
- * 支持响应式网格布局，可配置列数和间距。
- *
- * @module components/WorkspaceRenderer/renderers/GridRenderer
- */
-
 import React from 'react';
-import { Row, Col, Card, Empty } from 'antd';
-import type { WorkspaceConfig, TabConfig } from '@/types/workspace';
+import { Alert, Col, Empty, Row } from 'antd';
+import type { RendererProps } from './types';
 import ListRenderer from './ListRenderer';
 import FormRenderer from './FormRenderer';
 import DetailRenderer from './DetailRenderer';
 import FormDetailRenderer from './FormDetailRenderer';
+import { buildPreviewDetailConfig, buildPreviewListConfig } from './mockData';
 
-export interface GridRendererProps {
-  config: WorkspaceConfig | TabConfig;
-  context?: Record<string, any>;
-}
-
-export interface GridLayout {
-  type: 'grid';
-  columns?: number; // 每行列数
-  gutter?: number | [number, number]; // 间距
-  items: GridItem[];
-  responsive?: boolean; // 是否响应式
-}
-
-export interface GridItem {
+type GridItem = {
   key: string;
-  colSpan?: number; // 占几列
-  rowSpan?: number; // 占几行
-  minWidth?: number; // 最小宽度
-  maxWidth?: number; // 最大宽度
-  visible?: boolean; // 是否可见
-  render?: () => React.ReactNode;
+  colSpan?: number;
+  visible?: boolean;
   component?: {
-    type: 'list' | 'form' | 'detail' | 'form-detail' | 'chart' | 'stat' | 'custom';
+    type: 'list' | 'form' | 'detail' | 'form-detail' | 'custom';
     config: Record<string, any>;
   };
-}
+};
 
-export default function GridRenderer({ config, context }: GridRendererProps) {
-  const layout = (config.layout as any) || {};
-  const { columns = 3, gutter = [16, 16], items = [], responsive = true } = layout as GridLayout;
+type GridLayout = {
+  type: 'grid';
+  columns?: number;
+  gutter?: number | [number, number];
+  items: GridItem[];
+};
 
-  if (!items || items.length === 0) {
-    return <Empty description="暂无内容" />;
+export default function GridRenderer({ layout, objectKey, context }: RendererProps<GridLayout>) {
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
+  const columns = layout?.columns || 3;
+  const gutter = layout?.gutter || [16, 16];
+  const items = Array.isArray(layout?.items) && layout.items.length > 0
+    ? layout.items
+    : isTemplatePreview
+    ? [
+        { key: 'g-list', component: { type: 'list', config: buildPreviewListConfig('') } },
+        { key: 'g-detail', component: { type: 'detail', config: buildPreviewDetailConfig('') } },
+      ]
+    : [];
+
+  if (items.length === 0) {
+    return <Empty description="暂无网格内容" />;
   }
 
-  // 计算响应式配置
-  const getResponsiveColSpan = (item: GridItem) => {
-    if (!responsive) {
-      return item.colSpan || 1;
-    }
-
-    // 根据屏幕宽度调整
-    // 这里简化处理，实际应该使用 antd 的响应式系统
-    return {
-      xs: 24, // 手机
-      sm: 12, // 平板
-      md: (24 / columns) * (item.colSpan || 1), // 桌面
-      lg: (24 / columns) * (item.colSpan || 1), // 大屏
-      xl: (24 / columns) * (item.colSpan || 1), // 超大屏
-    };
-  };
-
-  // 渲染网格项内容
-  const renderItemContent = (item: GridItem) => {
-    if (item.render) {
-      return item.render();
-    }
-
-    if (item.component) {
-      switch (item.component.type) {
-        case 'list':
-          return (
-            <ListRenderer
-              config={
-                {
-                  layout: { type: 'list', ...item.component.config },
-                } as any
-              }
-              context={context}
-            />
-          );
-        case 'form':
-          return (
-            <FormRenderer
-              config={
-                {
-                  layout: { type: 'form', ...item.component.config },
-                } as any
-              }
-              context={context}
-            />
-          );
-        case 'detail':
-          return (
-            <DetailRenderer
-              config={
-                {
-                  layout: { type: 'detail', ...item.component.config },
-                } as any
-              }
-              context={context}
-            />
-          );
-        case 'form-detail':
-          return (
-            <FormDetailRenderer
-              config={
-                {
-                  layout: { type: 'form-detail', ...item.component.config },
-                } as any
-              }
-              context={context}
-            />
-          );
-        case 'chart':
-          return (
-            <Card>
-              <div
-                style={{
-                  height: 300,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                图表组件 (待实现)
-              </div>
-            </Card>
-          );
-        case 'stat':
-          return (
-            <Card>
-              <div style={{ textAlign: 'center', padding: 20 }}>
-                <div style={{ fontSize: 32, fontWeight: 'bold', color: '#1677ff' }}>
-                  {item.component.config.value || 0}
-                </div>
-                <div style={{ color: '#666', marginTop: 8 }}>
-                  {item.component.config.label || '统计'}
-                </div>
-              </div>
-            </Card>
-          );
-        case 'custom':
-          return item.component.config.content || <Empty description="自定义内容" />;
-        default:
-          return <Empty description="未知组件类型" />;
-      }
-    }
-
-    return <Empty description="无内容配置" />;
-  };
-
   return (
-    <div className="grid-layout">
-      <Row gutter={gutter}>
-        {items
-          .filter((item) => item.visible !== false)
-          .map((item) => (
-            <Col
-              key={item.key}
-              {...getResponsiveColSpan(item)}
-              style={{
-                minWidth: item.minWidth,
-                maxWidth: item.maxWidth,
-              }}
-            >
-              {renderItemContent(item)}
-            </Col>
-          ))}
-      </Row>
-    </div>
+    <Row gutter={gutter as any}>
+      {items
+        .filter((item) => item.visible !== false)
+        .map((item) => (
+          <Col key={item.key} span={Math.max(1, Math.min(24, Math.floor((24 / columns) * (item.colSpan || 1))))}>
+            {renderGridItem(item, objectKey, context)}
+          </Col>
+        ))}
+    </Row>
   );
+}
+
+function renderGridItem(item: GridItem, objectKey: string, context?: Record<string, any>) {
+  const comp = item.component;
+  if (!comp) {
+    return <Alert type="info" showIcon message={`网格项 ${item.key} 未配置 component`} />;
+  }
+  switch (comp.type) {
+    case 'list':
+      return <ListRenderer layout={{ type: 'list', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+    case 'form':
+      return <FormRenderer layout={{ type: 'form', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+    case 'detail':
+      return <DetailRenderer layout={{ type: 'detail', ...(comp.config || {}) } as any} objectKey={objectKey} context={context} />;
+    case 'form-detail':
+      return (
+        <FormDetailRenderer
+          layout={{ type: 'form-detail', ...(comp.config || {}) } as any}
+          objectKey={objectKey}
+          context={context}
+        />
+      );
+    case 'custom':
+      return <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(comp.config || {}, null, 2)}</pre>;
+    default:
+      return <Alert type="error" showIcon message={`不支持的 grid 组件类型: ${(comp as any).type}`} />;
+  }
 }

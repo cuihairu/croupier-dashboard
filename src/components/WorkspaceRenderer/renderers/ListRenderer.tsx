@@ -36,6 +36,7 @@ export type ListRendererProps = RendererProps<ListLayout>;
  * 列表布局渲染器组件
  */
 export default function ListRenderer({ layout, objectKey, context }: ListRendererProps) {
+  const isTemplatePreview = Boolean((context as any)?.templatePreview);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
@@ -49,6 +50,32 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
   const [currentRecord, setCurrentRecord] = useState<any>(null);
   const [viewData, setViewData] = useState<any>(null);
   const [actionForm] = Form.useForm();
+  const effectiveColumns = React.useMemo(() => {
+    const cols = Array.isArray(layout.columns) ? layout.columns : [];
+    if (cols.length > 0) return cols;
+    if (!isTemplatePreview) return cols;
+    return [
+      { key: 'id', title: 'ID' },
+      { key: 'name', title: '名称' },
+      { key: 'status', title: '状态' },
+      { key: 'updatedAt', title: '更新时间' },
+    ] as any[];
+  }, [isTemplatePreview, layout.columns]);
+
+  const previewRows = React.useMemo(() => {
+    if (!isTemplatePreview) return [];
+    const cols = effectiveColumns;
+    const buildRow = (idx: number) => {
+      const row: Record<string, any> = { id: `demo-${idx}` };
+      cols.forEach((col: any) => {
+        const key = String(col?.key || '');
+        if (!key) return;
+        row[key] = getPreviewCellValue(key, col?.title, idx);
+      });
+      return row;
+    };
+    return [buildRow(1), buildRow(2), buildRow(3), buildRow(4), buildRow(5)];
+  }, [effectiveColumns, isTemplatePreview]);
 
   // 加载数据
   const loadData = async (params?: any) => {
@@ -87,11 +114,14 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
   };
 
   useEffect(() => {
+    if (isTemplatePreview) {
+      return;
+    }
     loadData();
-  }, [layout.listFunction]);
+  }, [layout.listFunction, isTemplatePreview]);
 
   // 生成列配置
-  const columns: ProColumns<any>[] = (layout.columns || []).map((col) => ({
+  const columns: ProColumns<any>[] = (effectiveColumns || []).map((col) => ({
     title: col.title,
     dataIndex: col.key,
     key: col.key,
@@ -279,16 +309,13 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
 
   return (
     <>
-      {!layout.listFunction && (
-        <RendererError
-          message="配置不完整"
-          description="当前列表布局缺少 listFunction，无法加载数据。"
-        />
+      {!layout.listFunction && !isTemplatePreview && (
+        <RendererEmpty description="当前列表未绑定函数，请在布局配置中选择 listFunction" />
       )}
       {loadError && <RendererError description={loadError} />}
       <ProTable
         columns={columns}
-        dataSource={data}
+        dataSource={isTemplatePreview ? previewRows : data}
         loading={loading}
         rowKey="id"
         search={false}
@@ -297,20 +324,21 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
             ? {
                 current,
                 pageSize,
-                total,
+                total: isTemplatePreview ? previewRows.length : total,
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total) => `共 ${total} 条`,
                 onChange: (page, size) => {
                   setCurrent(page);
                   setPageSize(size);
+                  if (isTemplatePreview) return;
                   loadData({ current: page, pageSize: size });
                 },
               }
             : false
         }
         toolBarRender={() => [
-          <Button key="refresh" onClick={() => loadData()}>
+          <Button key="refresh" onClick={() => (isTemplatePreview ? null : loadData())}>
             刷新
           </Button>,
           ...(layout.toolbarActions || []).map((action) => (
@@ -364,6 +392,27 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
       </Drawer>
     </>
   );
+}
+
+function getPreviewCellValue(key: string, title: string | undefined, idx: number): any {
+  const lower = key.toLowerCase();
+  if (lower === 'id' || lower.endsWith('id')) return `ID-${1000 + idx}`;
+  if (lower.includes('player') && lower.includes('id')) return `${900000 + idx}`;
+  if (lower.includes('user') && lower.includes('id')) return `${700000 + idx}`;
+  if (lower.includes('name') || lower.includes('nickname') || lower.includes('title')) {
+    return `示例${title || key}${idx}`;
+  }
+  if (lower.includes('server')) return `S${10 + idx}`;
+  if (lower.includes('level')) return 20 + idx;
+  if (lower.includes('vip')) return idx % 2 === 0 ? 3 : 1;
+  if (lower.includes('count') || lower.includes('num') || lower.includes('quantity')) return idx * 8;
+  if (lower.includes('price') || lower.includes('amount')) return 128 + idx * 16;
+  if (lower.includes('status')) return idx % 3 === 0 ? 'disabled' : idx % 2 === 0 ? 'active' : 'pending';
+  if (lower.includes('time') || lower.includes('date')) {
+    return new Date(Date.now() - idx * 3600 * 1000).toISOString();
+  }
+  if (lower.includes('desc') || lower.includes('remark')) return `这是${title || key}的示例说明 ${idx}`;
+  return `${title || key}示例${idx}`;
 }
 
 /**

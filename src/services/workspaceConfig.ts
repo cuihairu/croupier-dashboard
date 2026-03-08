@@ -343,7 +343,20 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
   errors: string[];
 } {
   const errors: string[] = [];
-  const supportedLayoutTypes = new Set(['list', 'form', 'detail', 'form-detail']);
+  const supportedLayoutTypes = new Set([
+    'list',
+    'form',
+    'detail',
+    'form-detail',
+    'kanban',
+    'timeline',
+    'split',
+    'wizard',
+    'dashboard',
+    'grid',
+    'custom',
+    'single',
+  ]);
 
   // 验证必填字段
   if (!config.objectKey) {
@@ -389,7 +402,7 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
         }
         if (tab.layout?.type && !supportedLayoutTypes.has(tab.layout.type)) {
           errors.push(
-            `tabs[${index}].layout.type 不受支持: ${tab.layout.type}，仅支持 list/form/detail/form-detail`,
+            `tabs[${index}].layout.type 不受支持: ${tab.layout.type}，仅支持 list/form/detail/form-detail/kanban/timeline/split/wizard/dashboard/grid/custom/single`,
           );
         }
 
@@ -423,6 +436,44 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
           }
           if (tab.layout.queryFields !== undefined && !Array.isArray(tab.layout.queryFields)) {
             errors.push(`tabs[${index}].queryFields 必须为数组`);
+          }
+        }
+
+        if (tab.layout?.type === 'split') {
+          if (!Array.isArray((tab.layout as any).panels) || (tab.layout as any).panels.length === 0) {
+            errors.push(`tabs[${index}].panels 至少需要一个面板`);
+          }
+        }
+        if (tab.layout?.type === 'wizard') {
+          if (!Array.isArray((tab.layout as any).steps) || (tab.layout as any).steps.length === 0) {
+            errors.push(`tabs[${index}].steps 至少需要一个步骤`);
+          }
+        }
+        if (tab.layout?.type === 'dashboard') {
+          const hasStats = Array.isArray((tab.layout as any).stats) && (tab.layout as any).stats.length > 0;
+          const hasPanels = Array.isArray((tab.layout as any).panels) && (tab.layout as any).panels.length > 0;
+          if (!hasStats && !hasPanels) {
+            errors.push(`tabs[${index}] dashboard 至少需要 stats 或 panels`);
+          }
+        }
+        if (tab.layout?.type === 'grid') {
+          if (!Array.isArray((tab.layout as any).items) || (tab.layout as any).items.length === 0) {
+            errors.push(`tabs[${index}].items 至少需要一个网格项`);
+          }
+        }
+        if (tab.layout?.type === 'custom') {
+          if (!(tab.layout as any).component) {
+            errors.push(`tabs[${index}].component 不能为空`);
+          }
+        }
+
+        // 历史兼容：single 是旧版自动生成结构，允许保存以便逐步迁移。
+        // 该结构一般形如 { type: 'single', component: { type: 'function', functionId } }。
+        const legacyLayoutType = (tab.layout as any)?.type;
+        if (legacyLayoutType === 'single') {
+          const functionId = (tab.layout as any)?.component?.functionId;
+          if (functionId && !Array.isArray(tab.functions)) {
+            errors.push(`tabs[${index}].functions 必须为数组`);
           }
         }
       });
