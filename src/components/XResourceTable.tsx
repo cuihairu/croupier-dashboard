@@ -65,12 +65,15 @@ export default function XResourceTable<T = any>({
   const { message } = App.useApp();
 
   // Build action column if any action is enabled
-  const shouldShowActions = (canEdit && onEdit) || (canDelete && onDelete) || (canPreview && onPreview);
+  const shouldShowActions =
+    (canEdit && onEdit) || (canDelete && onDelete) || (canPreview && onPreview);
 
   const handleDelete = (record: T) => {
     if (!onDelete) return;
 
-    const content = getDeleteConfirmContent ? getDeleteConfirmContent(record) : 'Are you sure you want to delete this item?';
+    const content = getDeleteConfirmContent
+      ? getDeleteConfirmContent(record)
+      : 'Are you sure you want to delete this item?';
 
     Modal.confirm({
       title: deleteConfirmTitle,
@@ -91,43 +94,47 @@ export default function XResourceTable<T = any>({
   // Enhanced columns with actions
   const enhancedColumns: ProColumns<T>[] = [
     ...baseColumns,
-    ...(shouldShowActions ? [{
-      title: 'Actions',
-      key: 'actions',
-      width: 200,
-      render: (_: any, record: T) => (
-        <Space size="small">
-          {canPreview && onPreview && (
-            <Button
-              key="preview"
-              icon={<EyeOutlined />}
-              size="small"
-              onClick={() => onPreview(record)}
-              title="Preview"
-            />
-          )}
-          {canEdit && onEdit && (
-            <Button
-              key="edit"
-              icon={<EditOutlined />}
-              size="small"
-              onClick={() => onEdit(record)}
-              title="Edit"
-            />
-          )}
-          {canDelete && onDelete && (
-            <Button
-              key="delete"
-              icon={<DeleteOutlined />}
-              size="small"
-              danger
-              onClick={() => handleDelete(record)}
-              title="Delete"
-            />
-          )}
-        </Space>
-      ),
-    }] : [])
+    ...(shouldShowActions
+      ? [
+          {
+            title: 'Actions',
+            key: 'actions',
+            width: 200,
+            render: (_: any, record: T) => (
+              <Space size="small">
+                {canPreview && onPreview && (
+                  <Button
+                    key="preview"
+                    icon={<EyeOutlined />}
+                    size="small"
+                    onClick={() => onPreview(record)}
+                    title="Preview"
+                  />
+                )}
+                {canEdit && onEdit && (
+                  <Button
+                    key="edit"
+                    icon={<EditOutlined />}
+                    size="small"
+                    onClick={() => onEdit(record)}
+                    title="Edit"
+                  />
+                )}
+                {canDelete && onDelete && (
+                  <Button
+                    key="delete"
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    danger
+                    onClick={() => handleDelete(record)}
+                    title="Delete"
+                  />
+                )}
+              </Space>
+            ),
+          },
+        ]
+      : []),
   ];
 
   // Default toolbar render
@@ -136,14 +143,9 @@ export default function XResourceTable<T = any>({
 
     if (canAdd && onAdd) {
       actions.push(
-        <Button
-          key="add"
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={onAdd}
-        >
+        <Button key="add" type="primary" icon={<PlusOutlined />} onClick={onAdd}>
           {addButtonText}
-        </Button>
+        </Button>,
       );
     }
 

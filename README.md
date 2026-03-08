@@ -60,18 +60,22 @@ pnpm lint
 pnpm tsc
 ```
 
-## 2. 当前功能边界（V1）
+## 2. 当前功能边界（稳定 + 增强）
 
-为保证可用性，当前仅支持以下配置能力：
+稳定主链路（默认建议）：
 
 - 顶层布局：`tabs`
 - Tab 布局：`form-detail`、`list`、`form`、`detail`
 
-以下能力暂不纳入 V1 主链路：
+增强能力（已可用，持续优化）：
 
-- `sections` / `wizard` / `dashboard`
-- `grid` / `kanban` / `timeline` / `split` / `custom`
-- 节点流程执行编排（Node Graph 执行语义）
+- `wizard` / `dashboard` / `grid` / `kanban` / `timeline` / `split` / `custom`
+- 函数界面向导（单函数）
+- 多函数编排向导（自动分配 + 手动改绑）
+
+当前不支持：
+
+- 节点流程执行语义（Node Graph runtime 执行）
 
 ## 3. 架构关系图（Graph）
 

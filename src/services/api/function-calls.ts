@@ -83,14 +83,16 @@ export async function rerunFunctionCall(id: string, payload?: any) {
 /**
  * 获取调用统计
  */
-export async function getFunctionCallStats(params: {
-  function_id?: string;
-  game_id?: string;
-  env?: string;
-  actor_id?: string;
-  start_time?: string;
-  end_time?: string;
-} = {}) {
+export async function getFunctionCallStats(
+  params: {
+    function_id?: string;
+    game_id?: string;
+    env?: string;
+    actor_id?: string;
+    start_time?: string;
+    end_time?: string;
+  } = {},
+) {
   return request<FunctionCallStatsResponse>('/api/v1/function-calls/stats', {
     params,
   });

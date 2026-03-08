@@ -58,7 +58,10 @@ export const validateJSONSchema = (schema: any): { valid: boolean; errors: strin
 /**
  * 验证函数参数
  */
-export const validateFunctionParams = (params: any, schema: any): { valid: boolean; errors: string[] } => {
+export const validateFunctionParams = (
+  params: any,
+  schema: any,
+): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
   if (!schema || !schema.properties) {
@@ -75,7 +78,7 @@ export const validateFunctionParams = (params: any, schema: any): { valid: boole
   });
 
   // Check field types
-  Object.keys(params).forEach(field => {
+  Object.keys(params).forEach((field) => {
     const value = params[field];
     const property = schema.properties[field];
 
@@ -105,7 +108,10 @@ export const validateFunctionParams = (params: any, schema: any): { valid: boole
       errors.push(`Field "${field}" must be an array`);
     }
 
-    if (type === 'object' && (typeof value !== 'object' || Array.isArray(value) || value === null)) {
+    if (
+      type === 'object' &&
+      (typeof value !== 'object' || Array.isArray(value) || value === null)
+    ) {
       errors.push(`Field "${field}" must be an object`);
     }
 

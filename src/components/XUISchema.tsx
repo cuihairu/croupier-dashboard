@@ -1,5 +1,21 @@
 import React from 'react';
-import { Form, Input, InputNumber, Switch, Select, DatePicker, TimePicker, Rate, Slider, Cascader, TreeSelect, Checkbox, Radio, Upload, Button } from 'antd';
+import {
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Select,
+  DatePicker,
+  TimePicker,
+  Rate,
+  Slider,
+  Cascader,
+  TreeSelect,
+  Checkbox,
+  Radio,
+  Upload,
+  Button,
+} from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { FormInstance } from 'antd';
 
@@ -62,7 +78,11 @@ export interface XUISchemaProps {
   required?: string[];
 }
 
-export function evaluateCondition(condition: string, formData: any, namePath: (string | number)[] = []): boolean {
+export function evaluateCondition(
+  condition: string,
+  formData: any,
+  namePath: (string | number)[] = [],
+): boolean {
   if (!condition) return true;
 
   const getValueByPath = (obj: any, path: string): any => {
@@ -83,8 +103,10 @@ export function evaluateCondition(condition: string, formData: any, namePath: (s
     if (trimmed === 'false') return false;
     if (trimmed === 'null') return null;
     if (trimmed === 'undefined') return undefined;
-    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-        (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+    if (
+      (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+      (trimmed.startsWith("'") && trimmed.endsWith("'"))
+    ) {
       return trimmed.slice(1, -1);
     }
     const num = Number(trimmed);
@@ -106,14 +128,22 @@ export function evaluateCondition(condition: string, formData: any, namePath: (s
         const rightValue = parseLiteral(right);
 
         switch (op) {
-          case '===': return leftValue === rightValue;
-          case '!==': return leftValue !== rightValue;
-          case '==': return leftValue == rightValue;
-          case '!=': return leftValue != rightValue;
-          case '>=': return leftValue >= rightValue;
-          case '<=': return leftValue <= rightValue;
-          case '>': return leftValue > rightValue;
-          case '<': return leftValue < rightValue;
+          case '===':
+            return leftValue === rightValue;
+          case '!==':
+            return leftValue !== rightValue;
+          case '==':
+            return leftValue == rightValue;
+          case '!=':
+            return leftValue != rightValue;
+          case '>=':
+            return leftValue >= rightValue;
+          case '<=':
+            return leftValue <= rightValue;
+          case '>':
+            return leftValue > rightValue;
+          case '<':
+            return leftValue < rightValue;
         }
       }
     }
@@ -124,10 +154,16 @@ export function evaluateCondition(condition: string, formData: any, namePath: (s
   };
 
   // Handle OR conditions
-  const orParts = condition.split('||').map(s => s.trim()).filter(Boolean);
+  const orParts = condition
+    .split('||')
+    .map((s) => s.trim())
+    .filter(Boolean);
   for (const orPart of orParts) {
     // Handle AND conditions within each OR part
-    const andParts = orPart.split('&&').map(s => s.trim()).filter(Boolean);
+    const andParts = orPart
+      .split('&&')
+      .map((s) => s.trim())
+      .filter(Boolean);
     let allAndTrue = true;
 
     for (const andPart of andParts) {
@@ -150,12 +186,15 @@ export function renderXUIField(
   formData: any,
   form: FormInstance,
   namePath: (string | number)[] = [fieldName],
-  required: boolean = false
+  required: boolean = false,
 ): React.ReactNode {
   // Evaluate conditional rendering
   const shouldShow = !uiField.show_if || evaluateCondition(uiField.show_if, formData, namePath);
-  const shouldRequire = required || (uiField.required_if && evaluateCondition(uiField.required_if, formData, namePath));
-  const shouldDisable = uiField.disabled || (uiField.disabled_if && evaluateCondition(uiField.disabled_if, formData, namePath));
+  const shouldRequire =
+    required || (uiField.required_if && evaluateCondition(uiField.required_if, formData, namePath));
+  const shouldDisable =
+    uiField.disabled ||
+    (uiField.disabled_if && evaluateCondition(uiField.disabled_if, formData, namePath));
 
   if (!shouldShow) return null;
 
@@ -185,9 +224,14 @@ export function renderXUIField(
   const widget = uiField.widget || getDefaultWidget(schema);
 
   // Build form item props
-  const label = shouldRequire ?
-    <span>{uiField.label || fieldName}<span style={{ color: 'red' }}>*</span></span> :
-    (uiField.label || fieldName);
+  const label = shouldRequire ? (
+    <span>
+      {uiField.label || fieldName}
+      <span style={{ color: 'red' }}>*</span>
+    </span>
+  ) : (
+    uiField.label || fieldName
+  );
 
   const formItemProps = {
     name: namePath,
@@ -212,18 +256,23 @@ function getDefaultWidget(schema: any): string {
   if (!schema) return 'input';
 
   switch (schema.type) {
-    case 'boolean': return 'switch';
+    case 'boolean':
+      return 'switch';
     case 'integer':
-    case 'number': return 'number';
+    case 'number':
+      return 'number';
     case 'string':
       if (schema.enum) return 'select';
       if (schema.format === 'date') return 'date';
       if (schema.format === 'date-time') return 'datetime';
       if (schema.format === 'time') return 'time';
       return 'input';
-    case 'array': return 'multiselect';
-    case 'object': return 'object';
-    default: return 'input';
+    case 'array':
+      return 'multiselect';
+    case 'object':
+      return 'object';
+    default:
+      return 'input';
   }
 }
 
@@ -232,7 +281,7 @@ function renderWidget(
   schema: any,
   uiField: XUISchemaField,
   disabled: boolean = false,
-  formData: any
+  formData: any,
 ): React.ReactNode {
   const commonProps = {
     disabled,
@@ -298,11 +347,7 @@ function renderWidget(
 
     case 'date':
       return (
-        <DatePicker
-          {...commonProps}
-          format="YYYY-MM-DD"
-          disabledDate={uiField.disabledDate}
-        />
+        <DatePicker {...commonProps} format="YYYY-MM-DD" disabledDate={uiField.disabledDate} />
       );
 
     case 'datetime':
@@ -320,20 +365,12 @@ function renderWidget(
 
     case 'daterange':
       return (
-        <RangePicker
-          {...commonProps}
-          format="YYYY-MM-DD"
-          disabledDate={uiField.disabledDate}
-        />
+        <RangePicker {...commonProps} format="YYYY-MM-DD" disabledDate={uiField.disabledDate} />
       );
 
     case 'rate':
       return (
-        <Rate
-          disabled={disabled}
-          count={uiField.max || 5}
-          allowHalf={uiField.options?.allowHalf}
-        />
+        <Rate disabled={disabled} count={uiField.max || 5} allowHalf={uiField.options?.allowHalf} />
       );
 
     case 'slider':
@@ -348,14 +385,10 @@ function renderWidget(
       );
 
     case 'checkbox':
-      return (
-        <Checkbox.Group disabled={disabled} options={uiField.options?.options || []} />
-      );
+      return <Checkbox.Group disabled={disabled} options={uiField.options?.options || []} />;
 
     case 'radio':
-      return (
-        <Radio.Group disabled={disabled} options={uiField.options?.options || []} />
-      );
+      return <Radio.Group disabled={disabled} options={uiField.options?.options || []} />;
 
     case 'cascader':
       return (

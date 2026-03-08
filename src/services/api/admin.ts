@@ -8,12 +8,16 @@ export type PendingFunctionRow = {
 };
 
 export async function listPendingFunctions() {
-  const res = await request<{ pending?: PendingFunctionRow[] }>('/api/admin/pending', { method: 'GET' });
+  const res = await request<{ pending?: PendingFunctionRow[] }>('/api/admin/pending', {
+    method: 'GET',
+  });
   return res?.pending || [];
 }
 
 export async function publishPendingFunction(functionId: string) {
-  return request<void>(`/api/admin/functions/${encodeURIComponent(functionId)}/publish`, { method: 'POST' });
+  return request<void>(`/api/admin/functions/${encodeURIComponent(functionId)}/publish`, {
+    method: 'POST',
+  });
 }
 
 export async function getAdminFunctionPermissions(functionId: string) {

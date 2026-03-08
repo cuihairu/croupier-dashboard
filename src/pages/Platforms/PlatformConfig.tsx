@@ -24,7 +24,13 @@ export default function PlatformConfig() {
         </Card>
 
         {/* QuickSDK 配置 */}
-        <Card title={<Space><CheckCircleOutlined /> QuickSDK 配置说明</Space>}>
+        <Card
+          title={
+            <Space>
+              <CheckCircleOutlined /> QuickSDK 配置说明
+            </Space>
+          }
+        >
           <Descriptions bordered column={1} size="small">
             <Descriptions.Item label="平台类型">QuickSDK</Descriptions.Item>
             <Descriptions.Item label="官方文档">
@@ -40,13 +46,15 @@ export default function PlatformConfig() {
           <Divider orientation="left">配置参数</Divider>
 
           <Card size="small" type="inner" title="环境变量配置">
-            <pre style={{
-              background: '#f5f5f5',
-              padding: 12,
-              borderRadius: 4,
-              overflow: 'auto',
-            }}>
-{`# QuickSDK 配置
+            <pre
+              style={{
+                background: '#f5f5f5',
+                padding: 12,
+                borderRadius: 4,
+                overflow: 'auto',
+              }}
+            >
+              {`# QuickSDK 配置
 export QUICKSDK_OPEN_ID="your_open_id"
 export QUICKSDK_OPEN_KEY="your_open_key"
 export QUICKSDK_API_BASE_URL="https://www.quicksdk.com"
@@ -56,14 +64,21 @@ export CROUPIER_PLATFORM_ENABLED=true`}
             </pre>
           </Card>
 
-          <Card size="small" type="inner" title="配置文件 (platforms.yaml)" style={{ marginTop: 16 }}>
-            <pre style={{
-              background: '#f5f5f5',
-              padding: 12,
-              borderRadius: 4,
-              overflow: 'auto',
-            }}>
-{`platforms:
+          <Card
+            size="small"
+            type="inner"
+            title="配置文件 (platforms.yaml)"
+            style={{ marginTop: 16 }}
+          >
+            <pre
+              style={{
+                background: '#f5f5f5',
+                padding: 12,
+                borderRadius: 4,
+                overflow: 'auto',
+              }}
+            >
+              {`platforms:
   quicksdk:
     enabled: true
     type: quicksdk
@@ -88,17 +103,29 @@ export CROUPIER_PLATFORM_ENABLED=true`}
             <div>
               <Text strong>基础数据 (5 个 API)</Text>
               <div style={{ marginTop: 8 }}>
-                {['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'].map(m => (
-                  <Tag key={m} color="blue" style={{ margin: '4px' }}>{m}</Tag>
-                ))}
+                {['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'].map(
+                  (m) => (
+                    <Tag key={m} color="blue" style={{ margin: '4px' }}>
+                      {m}
+                    </Tag>
+                  ),
+                )}
               </div>
             </div>
 
             <div>
               <Text strong>运营报表 (5 个 API)</Text>
               <div style={{ marginTop: 8 }}>
-                {['day_report', 'day_hour_report', 'user_live', 'channel_days_report', 'channel_report'].map(m => (
-                  <Tag key={m} color="green" style={{ margin: '4px' }}>{m}</Tag>
+                {[
+                  'day_report',
+                  'day_hour_report',
+                  'user_live',
+                  'channel_days_report',
+                  'channel_report',
+                ].map((m) => (
+                  <Tag key={m} color="green" style={{ margin: '4px' }}>
+                    {m}
+                  </Tag>
                 ))}
               </div>
             </div>
@@ -106,8 +133,19 @@ export CROUPIER_PLATFORM_ENABLED=true`}
             <div>
               <Text strong>广告管理 (9 个 API)</Text>
               <div style={{ marginTop: 8 }}>
-                {['ad_report', 'media_app_list', 'ad_plan_group_list', 'package_version_list', 'ad_pages_list', 'create_ad_plan', 'update_ad_plan', 'ad_plan_list'].map(m => (
-                  <Tag key={m} color="purple" style={{ margin: '4px' }}>{m}</Tag>
+                {[
+                  'ad_report',
+                  'media_app_list',
+                  'ad_plan_group_list',
+                  'package_version_list',
+                  'ad_pages_list',
+                  'create_ad_plan',
+                  'update_ad_plan',
+                  'ad_plan_list',
+                ].map((m) => (
+                  <Tag key={m} color="purple" style={{ margin: '4px' }}>
+                    {m}
+                  </Tag>
                 ))}
               </div>
             </div>
@@ -115,8 +153,10 @@ export CROUPIER_PLATFORM_ENABLED=true`}
             <div>
               <Text strong>其他 (2 个 API)</Text>
               <div style={{ marginTop: 8 }}>
-                {['user_lost_list', 'push_message'].map(m => (
-                  <Tag key={m} color="orange" style={{ margin: '4px' }}>{m}</Tag>
+                {['user_lost_list', 'push_message'].map((m) => (
+                  <Tag key={m} color="orange" style={{ margin: '4px' }}>
+                    {m}
+                  </Tag>
                 ))}
               </div>
             </div>
@@ -124,7 +164,13 @@ export CROUPIER_PLATFORM_ENABLED=true`}
         </Card>
 
         {/* 使用说明 */}
-        <Card title={<Space><WarningOutlined /> 使用说明</Space>}>
+        <Card
+          title={
+            <Space>
+              <WarningOutlined /> 使用说明
+            </Space>
+          }
+        >
           <Space direction="vertical" size="small">
             <Alert
               message="API 调用需要正确的请求参数"

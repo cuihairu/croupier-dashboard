@@ -39,16 +39,27 @@ export const DiffEditor: React.FC<{
       <textarea
         readOnly
         value={original}
-        style={{ width: '50%', height, fontFamily: 'Menlo,Consolas,monospace', fontSize: 12, background: '#fafafa' }}
+        style={{
+          width: '50%',
+          height,
+          fontFamily: 'Menlo,Consolas,monospace',
+          fontSize: 12,
+          background: '#fafafa',
+        }}
       />
       <textarea
         readOnly
         value={modified}
-        style={{ width: '50%', height, fontFamily: 'Menlo,Consolas,monospace', fontSize: 12, background: '#fff' }}
+        style={{
+          width: '50%',
+          height,
+          fontFamily: 'Menlo,Consolas,monospace',
+          fontSize: 12,
+          background: '#fff',
+        }}
       />
     </div>
   );
 };
 
 export default { Editor, DiffEditor };
-

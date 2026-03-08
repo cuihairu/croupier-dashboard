@@ -3,7 +3,13 @@ import { Card, Table, Space, Tag, Button, App, Tabs, Descriptions, Badge, Switch
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
 import { ReloadOutlined, ApiOutlined, ExperimentOutlined } from '@ant-design/icons';
-import { listPlatforms, listPlatformMethods, reloadPlatformConfig, callPlatform, type PlatformInfo } from '@/services/api/platforms';
+import {
+  listPlatforms,
+  listPlatformMethods,
+  reloadPlatformConfig,
+  callPlatform,
+  type PlatformInfo,
+} from '@/services/api/platforms';
 import APITester from './APITester';
 import PlatformConfig from './PlatformConfig';
 
@@ -85,20 +91,22 @@ export default function PlatformsPage() {
       title: '支持方法数',
       dataIndex: 'methods',
       key: 'methods',
-      render: (methods: string[]) => (
-        <Tag color="blue">{methods?.length || 0} 个 API</Tag>
-      ),
+      render: (methods: string[]) => <Tag color="blue">{methods?.length || 0} 个 API</Tag>,
     },
     {
       title: '操作',
       key: 'action',
       render: (_: any, record: PlatformInfo) => (
         <Space>
-          <Button size="small" icon={<ApiOutlined />} onClick={() => {
-            setSelectedPlatform(record.name);
-            loadPlatformMethods(record.name);
-            setActiveTab('test');
-          }}>
+          <Button
+            size="small"
+            icon={<ApiOutlined />}
+            onClick={() => {
+              setSelectedPlatform(record.name);
+              loadPlatformMethods(record.name);
+              setActiveTab('test');
+            }}
+          >
             测试 API
           </Button>
         </Space>
@@ -107,9 +115,33 @@ export default function PlatformsPage() {
   ];
 
   const quickSDKMethods = [
-    { category: '基础数据', methods: ['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'] },
-    { category: '运营报表', methods: ['day_report', 'day_hour_report', 'user_live', 'channel_days_report', 'channel_report'] },
-    { category: '广告管理', methods: ['ad_report', 'media_app_list', 'ad_plan_group_list', 'package_version_list', 'ad_pages_list', 'create_ad_plan', 'update_ad_plan', 'ad_plan_list'] },
+    {
+      category: '基础数据',
+      methods: ['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'],
+    },
+    {
+      category: '运营报表',
+      methods: [
+        'day_report',
+        'day_hour_report',
+        'user_live',
+        'channel_days_report',
+        'channel_report',
+      ],
+    },
+    {
+      category: '广告管理',
+      methods: [
+        'ad_report',
+        'media_app_list',
+        'ad_plan_group_list',
+        'package_version_list',
+        'ad_pages_list',
+        'create_ad_plan',
+        'update_ad_plan',
+        'ad_plan_list',
+      ],
+    },
     { category: '其他', methods: ['user_lost_list', 'push_message'] },
   ];
 
@@ -123,62 +155,74 @@ export default function PlatformsPage() {
         </Button>,
       ]}
     >
-      <Tabs activeKey={activeTab} onChange={setActiveTab} items={[
-        {
-          key: 'list',
-          label: <span>平台列表 <Badge count={platforms?.length || 0} showZero /></span>,
-          children: (
-            <Card>
-              <Table
-                rowKey="name"
-                dataSource={platforms}
-                columns={columns}
-                loading={loading}
-                pagination={false}
-              />
-            </Card>
-          ),
-        },
-        {
-          key: 'test',
-          label: <span>API 测试 <ExperimentOutlined /></span>,
-          children: (
-            <Card>
-              <APITester
-                platforms={platforms}
-                selectedPlatform={selectedPlatform}
-                onPlatformChange={setSelectedPlatform}
-              />
-            </Card>
-          ),
-        },
-        {
-          key: 'config',
-          label: '配置说明',
-          children: (
-            <Card>
-              <PlatformConfig />
-            </Card>
-          ),
-        },
-      ]} />
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={[
+          {
+            key: 'list',
+            label: (
+              <span>
+                平台列表 <Badge count={platforms?.length || 0} showZero />
+              </span>
+            ),
+            children: (
+              <Card>
+                <Table
+                  rowKey="name"
+                  dataSource={platforms}
+                  columns={columns}
+                  loading={loading}
+                  pagination={false}
+                />
+              </Card>
+            ),
+          },
+          {
+            key: 'test',
+            label: (
+              <span>
+                API 测试 <ExperimentOutlined />
+              </span>
+            ),
+            children: (
+              <Card>
+                <APITester
+                  platforms={platforms}
+                  selectedPlatform={selectedPlatform}
+                  onPlatformChange={setSelectedPlatform}
+                />
+              </Card>
+            ),
+          },
+          {
+            key: 'config',
+            label: '配置说明',
+            children: (
+              <Card>
+                <PlatformConfig />
+              </Card>
+            ),
+          },
+        ]}
+      />
 
       {/* 方法说明 */}
       {selectedPlatform && (
         <Card style={{ marginTop: 16 }} title={`QuickSDK 支持的 ${platformMethods.length} 个方法`}>
-        {quickSDKMethods.map((cat) => (
-          <div key={cat.category} style={{ marginBottom: 16 }}>
-            <strong>{cat.category}:</strong>
-            <Space wrap style={{ marginLeft: 8 }}>
-              {cat.methods.map((m) => (
-                <Tag key={m} color={platformMethods.includes(m) ? 'green' : 'default'}>
-                  {m}
-                </Tag>
-              ))}
-            </Space>
-          </div>
-        ))}
-      </Card>
+          {quickSDKMethods.map((cat) => (
+            <div key={cat.category} style={{ marginBottom: 16 }}>
+              <strong>{cat.category}:</strong>
+              <Space wrap style={{ marginLeft: 8 }}>
+                {cat.methods.map((m) => (
+                  <Tag key={m} color={platformMethods.includes(m) ? 'green' : 'default'}>
+                    {m}
+                  </Tag>
+                ))}
+              </Space>
+            </div>
+          ))}
+        </Card>
       )}
     </PageContainer>
   );

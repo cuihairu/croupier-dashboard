@@ -9,7 +9,7 @@ export const FUNCTION_EXECUTION_STATUS = {
   RUNNING: 'running',
   CANCELLED: 'cancelled',
   TIMEOUT: 'timeout',
-  PENDING: 'pending'
+  PENDING: 'pending',
 } as const;
 
 /**
@@ -19,7 +19,7 @@ export const FUNCTION_STATUS = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
   ENABLED: 'enabled',
-  DISABLED: 'disabled'
+  DISABLED: 'disabled',
 } as const;
 
 /**
@@ -30,7 +30,7 @@ export const SERVICE_HEALTH_STATUS = {
   UNHEALTHY: 'unhealthy',
   UNKNOWN: 'unknown',
   ONLINE: 'online',
-  OFFLINE: 'offline'
+  OFFLINE: 'offline',
 } as const;
 
 /**
@@ -43,7 +43,7 @@ export const DATA_TYPES = {
   BOOLEAN: 'boolean',
   ARRAY: 'array',
   OBJECT: 'object',
-  NULL: 'null'
+  NULL: 'null',
 } as const;
 
 /**
@@ -54,7 +54,7 @@ export const HTTP_METHODS = {
   POST: 'POST',
   PUT: 'PUT',
   DELETE: 'DELETE',
-  PATCH: 'PATCH'
+  PATCH: 'PATCH',
 } as const;
 
 /**
@@ -67,14 +67,14 @@ export const DEFAULT_CONFIG = {
     PAGE_SIZE_OPTIONS: [10, 20, 50, 100],
     SHOW_SIZE_CHANGER: true,
     SHOW_QUICK_JUMPER: true,
-    SHOW_TOTAL: true
+    SHOW_TOTAL: true,
   },
 
   // 表格配置
   TABLE: {
     DEFAULT_SCROLL_X: 1000,
     DEFAULT_SCROLL_Y: 400,
-    ROW_HEIGHT: 54
+    ROW_HEIGHT: 54,
   },
 
   // 表单配置
@@ -82,7 +82,7 @@ export const DEFAULT_CONFIG = {
     VALIDATE_TRIGGER: 'onChange' as const,
     LABEL_COL: { span: 6 },
     WRAPPER_COL: { span: 18 },
-    AUTO_COMPLETE: 'off'
+    AUTO_COMPLETE: 'off',
   },
 
   // 刷新配置
@@ -90,22 +90,22 @@ export const DEFAULT_CONFIG = {
     AUTO_REFRESH_INTERVAL: 30000, // 30秒
     MANUAL_REFRESH_DELAY: 1000, // 1秒
     RETRY_ATTEMPTS: 3,
-    RETRY_DELAY: 2000 // 2秒
+    RETRY_DELAY: 2000, // 2秒
   },
 
   // 超时配置
   TIMEOUT: {
     API_REQUEST: 30000, // 30秒
     FUNCTION_EXECUTION: 300000, // 5分钟
-    WEBSOCKET_CONNECTION: 60000 // 1分钟
+    WEBSOCKET_CONNECTION: 60000, // 1分钟
   },
 
   // 缓存配置
   CACHE: {
     FUNCTION_CACHE_TTL: 300000, // 5分钟
     REGISTRY_CACHE_TTL: 60000, // 1分钟
-    HISTORY_CACHE_TTL: 120000 // 2分钟
-  }
+    HISTORY_CACHE_TTL: 120000, // 2分钟
+  },
 } as const;
 
 /**
@@ -118,21 +118,21 @@ export const COLOR_THEME = {
     ERROR: '#ff4d4f',
     INFO: '#1890ff',
     PROCESSING: '#1890ff',
-    DEFAULT: '#d9d9d9'
+    DEFAULT: '#d9d9d9',
   },
 
   COVERAGE: {
     EXCELLENT: '#52c41a', // 90-100%
-    GOOD: '#73d13d',     // 80-89%
-    FAIR: '#faad14',     // 70-79%
-    POOR: '#ff4d4f'      // <70%
+    GOOD: '#73d13d', // 80-89%
+    FAIR: '#faad14', // 70-79%
+    POOR: '#ff4d4f', // <70%
   },
 
   PRIORITY: {
     HIGH: '#ff4d4f',
     MEDIUM: '#faad14',
-    LOW: '#52c41a'
-  }
+    LOW: '#52c41a',
+  },
 } as const;
 
 /**
@@ -140,19 +140,43 @@ export const COLOR_THEME = {
  */
 export const STATUS_MAPPING = {
   EXECUTION: {
-    [FUNCTION_EXECUTION_STATUS.SUCCESS]: { text: '成功', color: COLOR_THEME.STATUS.SUCCESS, icon: '✓' },
-    [FUNCTION_EXECUTION_STATUS.FAILED]: { text: '失败', color: COLOR_THEME.STATUS.ERROR, icon: '✗' },
-    [FUNCTION_EXECUTION_STATUS.RUNNING]: { text: '运行中', color: COLOR_THEME.STATUS.PROCESSING, icon: '⟳' },
-    [FUNCTION_EXECUTION_STATUS.CANCELLED]: { text: '已取消', color: COLOR_THEME.STATUS.WARNING, icon: '⊘' },
-    [FUNCTION_EXECUTION_STATUS.TIMEOUT]: { text: '超时', color: COLOR_THEME.STATUS.WARNING, icon: '⏱' },
-    [FUNCTION_EXECUTION_STATUS.PENDING]: { text: '等待中', color: COLOR_THEME.STATUS.INFO, icon: '⏸' }
+    [FUNCTION_EXECUTION_STATUS.SUCCESS]: {
+      text: '成功',
+      color: COLOR_THEME.STATUS.SUCCESS,
+      icon: '✓',
+    },
+    [FUNCTION_EXECUTION_STATUS.FAILED]: {
+      text: '失败',
+      color: COLOR_THEME.STATUS.ERROR,
+      icon: '✗',
+    },
+    [FUNCTION_EXECUTION_STATUS.RUNNING]: {
+      text: '运行中',
+      color: COLOR_THEME.STATUS.PROCESSING,
+      icon: '⟳',
+    },
+    [FUNCTION_EXECUTION_STATUS.CANCELLED]: {
+      text: '已取消',
+      color: COLOR_THEME.STATUS.WARNING,
+      icon: '⊘',
+    },
+    [FUNCTION_EXECUTION_STATUS.TIMEOUT]: {
+      text: '超时',
+      color: COLOR_THEME.STATUS.WARNING,
+      icon: '⏱',
+    },
+    [FUNCTION_EXECUTION_STATUS.PENDING]: {
+      text: '等待中',
+      color: COLOR_THEME.STATUS.INFO,
+      icon: '⏸',
+    },
   },
 
   FUNCTION: {
     [FUNCTION_STATUS.ACTIVE]: { text: '启用', color: COLOR_THEME.STATUS.SUCCESS, icon: '●' },
     [FUNCTION_STATUS.INACTIVE]: { text: '禁用', color: COLOR_THEME.STATUS.DEFAULT, icon: '○' },
     [FUNCTION_STATUS.ENABLED]: { text: '启用', color: COLOR_THEME.STATUS.SUCCESS, icon: '●' },
-    [FUNCTION_STATUS.DISABLED]: { text: '禁用', color: COLOR_THEME.STATUS.DEFAULT, icon: '○' }
+    [FUNCTION_STATUS.DISABLED]: { text: '禁用', color: COLOR_THEME.STATUS.DEFAULT, icon: '○' },
   },
 
   SERVICE: {
@@ -160,8 +184,8 @@ export const STATUS_MAPPING = {
     [SERVICE_HEALTH_STATUS.UNHEALTHY]: { text: '异常', color: COLOR_THEME.STATUS.ERROR, icon: '●' },
     [SERVICE_HEALTH_STATUS.UNKNOWN]: { text: '未知', color: COLOR_THEME.STATUS.DEFAULT, icon: '○' },
     [SERVICE_HEALTH_STATUS.ONLINE]: { text: '在线', color: COLOR_THEME.STATUS.SUCCESS, icon: '●' },
-    [SERVICE_HEALTH_STATUS.OFFLINE]: { text: '离线', color: COLOR_THEME.STATUS.ERROR, icon: '●' }
-  }
+    [SERVICE_HEALTH_STATUS.OFFLINE]: { text: '离线', color: COLOR_THEME.STATUS.ERROR, icon: '●' },
+  },
 } as const;
 
 /**
@@ -178,7 +202,7 @@ export const ERROR_MESSAGES = {
   FUNCTION_NOT_FOUND: '函数不存在',
   INVALID_PARAMS: '函数参数无效',
   EXECUTION_FAILED: '函数执行失败',
-  SERVICE_UNAVAILABLE: '服务不可用'
+  SERVICE_UNAVAILABLE: '服务不可用',
 } as const;
 
 /**
@@ -192,7 +216,7 @@ export const SUCCESS_MESSAGES = {
   SERVICE_STARTED: '服务启动成功',
   SERVICE_STOPPED: '服务停止成功',
   CONFIG_SAVED: '配置保存成功',
-  CACHE_CLEARED: '缓存清除成功'
+  CACHE_CLEARED: '缓存清除成功',
 } as const;
 
 /**
@@ -205,7 +229,7 @@ export const CONFIRM_MESSAGES = {
   STOP_SERVICE: '确定要停止此服务吗？',
   RESTART_SERVICE: '确定要重启此服务吗？',
   CLEAR_CACHE: '确定要清除缓存吗？',
-  RESET_CONFIG: '确定要重置配置吗？'
+  RESET_CONFIG: '确定要重置配置吗？',
 } as const;
 
 /**
@@ -218,7 +242,7 @@ export const REGEX_PATTERNS = {
   SEMVER: /^v?\d+\.\d+\.\d+.*$/,
   EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   IP_ADDRESS: /^(\d{1,3}\.){3}\d{1,3}$/,
-  URL: /^https?:\/\/.+/
+  URL: /^https?:\/\/.+/,
 } as const;
 
 /**
@@ -233,7 +257,7 @@ export const KEYBOARD_SHORTCUTS = {
   COPY: 'Ctrl+C',
   PASTE: 'Ctrl+V',
   UNDO: 'Ctrl+Z',
-  REDO: 'Ctrl+Y'
+  REDO: 'Ctrl+Y',
 } as const;
 
 /**
@@ -244,5 +268,5 @@ export const STORAGE_KEYS = {
   FUNCTION_SEARCH_HISTORY: 'croupier_function_search_history',
   RECENT_FUNCTIONS: 'croupier_recent_functions',
   TABLE_SETTINGS: 'croupier_table_settings',
-  FILTER_STATE: 'croupier_filter_state'
+  FILTER_STATE: 'croupier_filter_state',
 } as const;

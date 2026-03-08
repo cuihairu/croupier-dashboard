@@ -33,43 +33,62 @@ export default () => {
       setLoading(false);
     }
   };
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    reload();
+  }, []);
 
   const columns: ProColumns<PendingRow>[] = [
     { title: '函数ID', dataIndex: 'function_id', width: 280, copyable: true, ellipsis: true },
-    { title: '名称(zh)', dataIndex: ['display_name','zh'], width: 220, ellipsis: true },
-    { title: '摘要(zh)', dataIndex: ['summary','zh'], width: 320, ellipsis: true },
+    { title: '名称(zh)', dataIndex: ['display_name', 'zh'], width: 220, ellipsis: true },
+    { title: '摘要(zh)', dataIndex: ['summary', 'zh'], width: 320, ellipsis: true },
     {
-      title: '建议权限', dataIndex: 'suggested_permissions', width: 320, render: (_, r) => (
+      title: '建议权限',
+      dataIndex: 'suggested_permissions',
+      width: 320,
+      render: (_, r) => (
         <Space size="small">
           <span>verbs:</span>
-          {(r.suggested_permissions?.verbs || []).map(v => <Tag key={v}>{v}</Tag>)}
+          {(r.suggested_permissions?.verbs || []).map((v) => (
+            <Tag key={v}>{v}</Tag>
+          ))}
           <span>scopes:</span>
-          {(r.suggested_permissions?.scopes || []).map(s => <Tag key={s}>{s}</Tag>)}
+          {(r.suggested_permissions?.scopes || []).map((s) => (
+            <Tag key={s}>{s}</Tag>
+          ))}
         </Space>
-      )
+      ),
     },
     {
       title: '操作',
       valueType: 'option',
       render: (_, r) => [
-        <a key="publish" onClick={async () => {
-          try {
-            await publish(r.function_id);
-            message.success('已发布到覆盖配置');
-            reload();
-          } catch (e: any) {
-            message.error(e?.message || '发布失败');
-          }
-        }}>发布</a>
-      ]
-    }
+        <a
+          key="publish"
+          onClick={async () => {
+            try {
+              await publish(r.function_id);
+              message.success('已发布到覆盖配置');
+              reload();
+            } catch (e: any) {
+              message.error(e?.message || '发布失败');
+            }
+          }}
+        >
+          发布
+        </a>,
+      ],
+    },
   ];
 
   return (
-    <PageContainer title="待审核（发布到覆盖配置）" extra={[
-      <Button key="refresh" onClick={reload}>刷新</Button>
-    ]}>
+    <PageContainer
+      title="待审核（发布到覆盖配置）"
+      extra={[
+        <Button key="refresh" onClick={reload}>
+          刷新
+        </Button>,
+      ]}
+    >
       <ProTable<PendingRow>
         rowKey="function_id"
         loading={loading}

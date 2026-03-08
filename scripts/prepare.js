@@ -11,7 +11,12 @@ if (!fs.existsSync(gitDir)) {
 
 try {
   // Use local husky binary to avoid shell-specific syntax.
-  const huskyBin = path.join(process.cwd(), 'node_modules', '.bin', process.platform === 'win32' ? 'husky.cmd' : 'husky');
+  const huskyBin = path.join(
+    process.cwd(),
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'husky.cmd' : 'husky',
+  );
   execSync(`${huskyBin} install`, { stdio: 'inherit' });
 } catch (err) {
   // eslint-disable-next-line no-console

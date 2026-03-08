@@ -23,4 +23,3 @@ export function getMessage(): MessageInstance | undefined {
 export function getNotification(): NotificationInstance | undefined {
   return appApi?.notification;
 }
-

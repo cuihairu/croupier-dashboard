@@ -1,5 +1,19 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Table, Tag, Badge, Space, Typography, Button, Tooltip, Statistic, Row, Col, Alert, Progress } from 'antd';
+import {
+  Card,
+  Table,
+  Tag,
+  Badge,
+  Space,
+  Typography,
+  Button,
+  Tooltip,
+  Statistic,
+  Row,
+  Col,
+  Alert,
+  Progress,
+} from 'antd';
 import {
   ClusterOutlined,
   ReloadOutlined,
@@ -8,7 +22,7 @@ import {
   CloseCircleOutlined,
   InfoCircleOutlined,
   ApiOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { getRegistryServices } from '@/services/api';
 
@@ -56,7 +70,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
   showStats = true,
   showHealthCheck = true,
   onServiceClick,
-  onRefresh
+  onRefresh,
 }) => {
   const [services, setServices] = useState<RegistryService[]>([]);
   const [stats, setStats] = useState<RegistryStats | null>(null);
@@ -76,12 +90,13 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
 
       // Calculate statistics
       const totalServices = serviceList.length;
-      const healthyServices = serviceList.filter(s => s.status === 'healthy').length;
-      const unhealthyServices = serviceList.filter(s => s.status === 'unhealthy').length;
+      const healthyServices = serviceList.filter((s) => s.status === 'healthy').length;
+      const unhealthyServices = serviceList.filter((s) => s.status === 'unhealthy').length;
       const totalFunctions = serviceList.reduce((sum, s) => sum + (s.functions_count || 0), 0);
 
-      const games = new Set(serviceList.map(s => s.game_id).filter(Boolean));
-      const coveragePercentage = totalServices > 0 ? Math.round((healthyServices / totalServices) * 100) : 0;
+      const games = new Set(serviceList.map((s) => s.game_id).filter(Boolean));
+      const coveragePercentage =
+        totalServices > 0 ? Math.round((healthyServices / totalServices) * 100) : 0;
 
       setStats({
         total_services: totalServices,
@@ -89,7 +104,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
         unhealthy_services: unhealthyServices,
         total_functions: totalFunctions,
         total_games: games.size,
-        coverage_percentage: coveragePercentage
+        coverage_percentage: coveragePercentage,
       });
 
       onRefresh?.(serviceList);
@@ -121,7 +136,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
     const statusConfig = {
       healthy: { status: 'success' as const, text: '健康' },
       unhealthy: { status: 'error' as const, text: '异常' },
-      unknown: { status: 'default' as const, text: '未知' }
+      unknown: { status: 'default' as const, text: '未知' },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.unknown;
@@ -130,9 +145,12 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'healthy': return '#52c41a';
-      case 'unhealthy': return '#ff4d4f';
-      default: return '#d9d9d9';
+      case 'healthy':
+        return '#52c41a';
+      case 'unhealthy':
+        return '#ff4d4f';
+      default:
+        return '#d9d9d9';
     }
   };
 
@@ -149,10 +167,11 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
   };
 
   const processedServices = useMemo(() => {
-    return services.map(service => ({
+    return services.map((service) => ({
       ...service,
       lastSeenText: formatLastSeen(service.last_seen),
-      healthPercentage: service.status === 'healthy' ? 100 : service.status === 'unhealthy' ? 0 : 50
+      healthPercentage:
+        service.status === 'healthy' ? 100 : service.status === 'unhealthy' ? 0 : 50,
     }));
   }, [services]);
 
@@ -164,9 +183,13 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
       render: (_, record: RegistryService) => (
         <Space direction="vertical" size="small">
           {getStatusBadge(record.status)}
-          {!compact && record.version && <Tag size="small" color="blue">{record.version}</Tag>}
+          {!compact && record.version && (
+            <Tag size="small" color="blue">
+              {record.version}
+            </Tag>
+          )}
         </Space>
-      )
+      ),
     },
     {
       title: '服务ID',
@@ -182,45 +205,46 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
         >
           {record.service_id}
         </Button>
-      )
+      ),
     },
     {
       title: '地址',
       dataIndex: 'addr',
       width: 250,
       ellipsis: true,
-      copyable: true
+      copyable: true,
     },
     {
       title: '函数数量',
       dataIndex: 'functions_count',
       width: 100,
-      render: (count: number) => (
-        <Tag color={count > 0 ? 'green' : 'default'}>
-          {count || 0}
-        </Tag>
-      ),
-      sorter: (a: RegistryService, b: RegistryService) => (a.functions_count || 0) - (b.functions_count || 0)
+      render: (count: number) => <Tag color={count > 0 ? 'green' : 'default'}>{count || 0}</Tag>,
+      sorter: (a: RegistryService, b: RegistryService) =>
+        (a.functions_count || 0) - (b.functions_count || 0),
     },
-    ...(compact ? [] : [{
-      title: '游戏环境',
-      dataIndex: 'game_id',
-      width: 120,
-      render: (_: any, record: RegistryService) => (
-        <Space direction="vertical" size="small">
-          {record.game_id && <Tag color="geekblue">{record.game_id}</Tag>}
-          {record.env && <Tag color="orange">{record.env}</Tag>}
-        </Space>
-      )
-    }]),
+    ...(compact
+      ? []
+      : [
+          {
+            title: '游戏环境',
+            dataIndex: 'game_id',
+            width: 120,
+            render: (_: any, record: RegistryService) => (
+              <Space direction="vertical" size="small">
+                {record.game_id && <Tag color="geekblue">{record.game_id}</Tag>}
+                {record.env && <Tag color="orange">{record.env}</Tag>}
+              </Space>
+            ),
+          },
+        ]),
     {
       title: '最后心跳',
       dataIndex: 'last_seen',
       width: 150,
       render: (_, record: RegistryService) => (
         <Text type="secondary">{formatLastSeen(record.last_seen)}</Text>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -245,31 +269,36 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
               />
             </Col>
             <Col span={6}>
-              <Statistic
-                title="总函数数"
-                value={stats.total_functions}
-                prefix={<ApiOutlined />}
-              />
+              <Statistic title="总函数数" value={stats.total_functions} prefix={<ApiOutlined />} />
             </Col>
             <Col span={6}>
-              <Statistic
-                title="游戏数"
-                value={stats.total_games}
-                prefix={<DatabaseOutlined />}
-              />
+              <Statistic title="游戏数" value={stats.total_games} prefix={<DatabaseOutlined />} />
             </Col>
           </Row>
 
           {/* Health Progress */}
           {showHealthCheck && (
             <div style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                }}
+              >
                 <Text strong>服务健康状况</Text>
                 <Text>{stats.coverage_percentage}%</Text>
               </div>
               <Progress
                 percent={stats.coverage_percentage}
-                status={stats.coverage_percentage >= 90 ? 'success' : stats.coverage_percentage >= 70 ? 'normal' : 'exception'}
+                status={
+                  stats.coverage_percentage >= 90
+                    ? 'success'
+                    : stats.coverage_percentage >= 70
+                    ? 'normal'
+                    : 'exception'
+                }
                 strokeColor={{
                   '0%': '#108ee9',
                   '100%': '#87d068',
@@ -312,12 +341,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
                 自动刷新: {refreshInterval / 1000}秒
               </Text>
             )}
-            <Button
-              size="small"
-              icon={<ReloadOutlined />}
-              onClick={fetchData}
-              loading={loading}
-            >
+            <Button size="small" icon={<ReloadOutlined />} onClick={fetchData} loading={loading}>
               刷新
             </Button>
           </Space>
@@ -333,7 +357,7 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
             pageSize: compact ? 5 : 10,
             showSizeChanger: !compact,
             showQuickJumper: !compact,
-            showTotal: compact ? false : (total) => `共 ${total} 个服务`
+            showTotal: compact ? false : (total) => `共 ${total} 个服务`,
           }}
           scroll={compact ? undefined : { x: 1000 }}
           rowClassName={(record) => {
@@ -348,7 +372,9 @@ export const RegistryViewer: React.FC<RegistryViewerProps> = ({
         <Card size="default">
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
             <ClusterOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
-            <Title level={4} type="secondary">暂无注册服务</Title>
+            <Title level={4} type="secondary">
+              暂无注册服务
+            </Title>
             <Paragraph type="secondary">
               当前没有可用的服务注册信息。请检查服务是否正常运行并成功注册到注册中心。
             </Paragraph>

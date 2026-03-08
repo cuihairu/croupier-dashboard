@@ -1,4 +1,4 @@
-import { request } from "@umijs/max";
+import { request } from '@umijs/max';
 
 export type GameEnvMeta = {
   env: string;
@@ -53,23 +53,19 @@ function normalizeGame(g: any): Game {
     status: g?.status ?? g?.Status,
     created_at: g?.created_at ?? g?.CreatedAt,
     updated_at: g?.updated_at ?? g?.UpdatedAt,
-    enabled:
-      typeof g?.enabled === "boolean" ? g.enabled : Boolean(g?.Enabled ?? true),
+    enabled: typeof g?.enabled === 'boolean' ? g.enabled : Boolean(g?.Enabled ?? true),
     color: g?.color ?? g?.Color,
     envs: Array.isArray(g?.envs) ? g.envs : undefined,
     envMeta: normalizeEnvMeta(g?.envMeta ?? g?.env_meta),
   };
-  if (
-    (!normalized.envs || normalized.envs.length === 0) &&
-    Array.isArray(normalized.envMeta)
-  ) {
+  if ((!normalized.envs || normalized.envs.length === 0) && Array.isArray(normalized.envMeta)) {
     normalized.envs = normalized.envMeta.map((env) => env.env);
   }
   return normalized;
 }
 
 export async function listGamesMeta() {
-  const res = await request<any>("/api/v1/games");
+  const res = await request<any>('/api/v1/games');
   const payload = res?.data?.games ?? res?.games;
   const games = Array.isArray(payload) ? payload.map(normalizeGame) : [];
   return { games } as { games: Game[] };
@@ -77,15 +73,15 @@ export async function listGamesMeta() {
 
 // Only games allowed by current user's scope (empty scope => all games)
 export async function listMyGames() {
-  const res = await request<any>("/api/v1/profile/games");
+  const res = await request<any>('/api/v1/profile/games');
   const payload = res?.games ?? res?.data?.games;
   const games = Array.isArray(payload) ? payload.map(normalizeGame) : [];
   return { games } as { games: Game[] };
 }
 
 export async function upsertGame(g: Game) {
-  return request<{ id: number } | void>("/api/v1/games", {
-    method: "POST",
+  return request<{ id: number } | void>('/api/v1/games', {
+    method: 'POST',
     data: {
       name: g.name,
       aliasName: g.alias_name,
@@ -96,12 +92,12 @@ export async function upsertGame(g: Game) {
 }
 
 export async function deleteGame(id: number) {
-  return request<void>(`/api/v1/games/${id}`, { method: "DELETE" });
+  return request<void>(`/api/v1/games/${id}`, { method: 'DELETE' });
 }
 
-export async function updateGame(id: number, g: Pick<Game, "alias_name" | "description">) {
+export async function updateGame(id: number, g: Pick<Game, 'alias_name' | 'description'>) {
   return request<void>(`/api/v1/games/${id}`, {
-    method: "PUT",
+    method: 'PUT',
     data: {
       aliasName: g.alias_name,
       description: g.description,

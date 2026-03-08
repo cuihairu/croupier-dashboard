@@ -7,11 +7,24 @@ import { normalizeApiUrl, API_V1_PREFIX } from './utils/api';
 
 // Defer message/notification to avoid calling during render (React 18 concurrent mode)
 function defer(fn: () => void) {
-  try { setTimeout(fn, 0); } catch { /* no-op */ }
+  try {
+    setTimeout(fn, 0);
+  } catch {
+    /* no-op */
+  }
 }
-function msgError(text: string) { const api = getMessage(); if (api) defer(() => api.error(text)); }
-function msgWarn(text: string) { const api = getMessage(); if (api) defer(() => api.warning(text)); }
-function msgInfo(text: string) { const api = getMessage(); if (api) defer(() => api.info(text)); }
+function msgError(text: string) {
+  const api = getMessage();
+  if (api) defer(() => api.error(text));
+}
+function msgWarn(text: string) {
+  const api = getMessage();
+  if (api) defer(() => api.warning(text));
+}
+function msgInfo(text: string) {
+  const api = getMessage();
+  if (api) defer(() => api.info(text));
+}
 function notiOpen(message: string | number | undefined, description?: string) {
   const api = getNotification();
   if (api) defer(() => api.open({ message, description } as any));
@@ -48,7 +61,12 @@ export const errorConfig: RequestConfig = {
       if (r && Object.prototype.hasOwnProperty.call(r, 'success') && r.success === false) {
         const error: any = new Error(r.errorMessage || 'Request failed');
         error.name = 'BizError';
-        error.info = { errorCode: r.errorCode, errorMessage: r.errorMessage, showType: r.showType, data: r.data };
+        error.info = {
+          errorCode: r.errorCode,
+          errorMessage: r.errorMessage,
+          showType: r.showType,
+          data: r.data,
+        };
         throw error;
       }
     },
@@ -65,11 +83,16 @@ export const errorConfig: RequestConfig = {
       }
       // Silence expected 401s during boot/login for current-user + messages endpoints
       if (status === 401 && url) {
-        if (url.includes(`${API_V1_PREFIX}/users/current`) || url.includes(`${API_V1_PREFIX}/messages`)) {
+        if (
+          url.includes(`${API_V1_PREFIX}/users/current`) ||
+          url.includes(`${API_V1_PREFIX}/messages`)
+        ) {
           return;
         }
         // token 失效：跳转登录
-        try { localStorage.removeItem('token'); } catch {}
+        try {
+          localStorage.removeItem('token');
+        } catch {}
         msgWarn('登录已过期，请重新登录');
         history.push('/user/login');
         return;
@@ -79,16 +102,44 @@ export const errorConfig: RequestConfig = {
       if (payload && typeof payload === 'object' && (payload.code || payload.message)) {
         const code = String(payload.code || '');
         let message = String(payload.message || '');
-        const zh: Record<string,string> = {
-          unauthorized:'未授权', forbidden:'无权限', bad_request:'请求参数无效', internal_error:'服务器内部错误',
-          not_found:'资源不存在', unavailable:'服务不可用', conflict:'资源冲突', rate_limited:'请求过于频繁',
-          method_not_allowed:'方法不被允许', not_implemented:'未实现', bad_gateway:'上游服务错误', request_too_large:'请求体过大',
+        const zh: Record<string, string> = {
+          unauthorized: '未授权',
+          forbidden: '无权限',
+          bad_request: '请求参数无效',
+          internal_error: '服务器内部错误',
+          not_found: '资源不存在',
+          unavailable: '服务不可用',
+          conflict: '资源冲突',
+          rate_limited: '请求过于频繁',
+          method_not_allowed: '方法不被允许',
+          not_implemented: '未实现',
+          bad_gateway: '上游服务错误',
+          request_too_large: '请求体过大',
         };
-        const generic = new Set(['', 'unauthorized','forbidden','bad request','internal error','not found','service unavailable','conflict','too many login attempts','method not allowed','not implemented','bad gateway','request too large','invalid payload']);
-        if (!message || generic.has(message.toLowerCase())) message = zh[code] || message || '请求失败';
-        if (status === 401) msgWarn(message); else msgError(message);
+        const generic = new Set([
+          '',
+          'unauthorized',
+          'forbidden',
+          'bad request',
+          'internal error',
+          'not found',
+          'service unavailable',
+          'conflict',
+          'too many login attempts',
+          'method not allowed',
+          'not implemented',
+          'bad gateway',
+          'request too large',
+          'invalid payload',
+        ]);
+        if (!message || generic.has(message.toLowerCase()))
+          message = zh[code] || message || '请求失败';
+        if (status === 401) msgWarn(message);
+        else msgError(message);
         if (code === 'unauthorized') {
-          try { localStorage.removeItem('token'); } catch {}
+          try {
+            localStorage.removeItem('token');
+          } catch {}
           history.push('/user/login');
         } else if (code === 'forbidden') {
           if (history.location?.pathname !== '/403') history.push('/403');
@@ -111,7 +162,7 @@ export const errorConfig: RequestConfig = {
               msgError(errorMessage as any);
               break;
             case ErrorShowType.NOTIFICATION:
-              notiOpen(String(errorCode||''), errorMessage);
+              notiOpen(String(errorCode || ''), errorMessage);
               break;
             case ErrorShowType.REDIRECT:
               // 根据错误类型决定跳转目标

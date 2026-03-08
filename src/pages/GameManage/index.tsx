@@ -1,5 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Form, Input, Button, Space, AutoComplete, Modal, Popconfirm, Tag, message } from 'antd';
+import {
+  Card,
+  Table,
+  Form,
+  Input,
+  Button,
+  Space,
+  AutoComplete,
+  Modal,
+  Popconfirm,
+  Tag,
+  message,
+} from 'antd';
 import { listGamesMeta, upsertGame, deleteGame, updateGame, type Game } from '@/services/api';
 
 const GAME_ID_PATTERN = /^[A-Za-z0-9_@-]+$/;
@@ -82,9 +94,16 @@ export default function GameManagePage() {
               { pattern: GAME_ID_PATTERN, message: '仅支持字母、数字和 _ - @' },
               {
                 validator: async (_, value) => {
-                  const next = String(value || '').trim().toLowerCase();
+                  const next = String(value || '')
+                    .trim()
+                    .toLowerCase();
                   if (!next) return;
-                  const exists = (data || []).some((item) => String(item.name || '').trim().toLowerCase() === next);
+                  const exists = (data || []).some(
+                    (item) =>
+                      String(item.name || '')
+                        .trim()
+                        .toLowerCase() === next,
+                  );
                   if (exists) {
                     throw new Error('game_id 已存在');
                   }
@@ -96,8 +115,12 @@ export default function GameManagePage() {
             <AutoComplete
               style={{ width: 240 }}
               placeholder="e.g. default | mygame"
-              options={[...new Set((data || []).map((d) => d.name).filter(Boolean))].map((g) => ({ value: g! }))}
-              filterOption={(inputValue, option) => (option?.value || '').toLowerCase().includes(inputValue.toLowerCase())}
+              options={[...new Set((data || []).map((d) => d.name).filter(Boolean))].map((g) => ({
+                value: g!,
+              }))}
+              filterOption={(inputValue, option) =>
+                (option?.value || '').toLowerCase().includes(inputValue.toLowerCase())
+              }
             />
           </Form.Item>
           <Form.Item name="alias_name" label="alias">
@@ -107,7 +130,9 @@ export default function GameManagePage() {
             <Input style={{ width: 260 }} placeholder="描述（可选）" />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" onClick={onAdd} loading={submitting}>Add</Button>
+            <Button type="primary" onClick={onAdd} loading={submitting}>
+              Add
+            </Button>
           </Form.Item>
         </Form>
         <Table
@@ -117,7 +142,11 @@ export default function GameManagePage() {
           pagination={false}
           columns={[
             { title: 'ID', dataIndex: 'id', width: 80 },
-            { title: 'game_id', dataIndex: 'name', render: (v: string) => <Tag color="blue">{v}</Tag> },
+            {
+              title: 'game_id',
+              dataIndex: 'name',
+              render: (v: string) => <Tag color="blue">{v}</Tag>,
+            },
             { title: 'alias', dataIndex: 'alias_name' },
             { title: 'description', dataIndex: 'description' },
             {
@@ -125,7 +154,9 @@ export default function GameManagePage() {
               width: 120,
               render: (_, row) => (
                 <Space>
-                  <Button size="small" onClick={() => onEdit(row)}>Edit</Button>
+                  <Button size="small" onClick={() => onEdit(row)}>
+                    Edit
+                  </Button>
                   <Popconfirm
                     title={`Delete game "${row.name}"?`}
                     onConfirm={async () => {
@@ -137,7 +168,10 @@ export default function GameManagePage() {
                         return;
                       }
                       if (!row.id) {
-                        Modal.warning({ title: '无法删除', content: '该游戏缺少 ID，无法调用删除接口。' });
+                        Modal.warning({
+                          title: '无法删除',
+                          content: '该游戏缺少 ID，无法调用删除接口。',
+                        });
                         return;
                       }
                       await deleteGame(row.id);
@@ -145,7 +179,9 @@ export default function GameManagePage() {
                       notifyGamesChanged();
                     }}
                   >
-                    <Button danger size="small" disabled={(data || []).length <= 1}>Delete</Button>
+                    <Button danger size="small" disabled={(data || []).length <= 1}>
+                      Delete
+                    </Button>
                   </Popconfirm>
                 </Space>
               ),

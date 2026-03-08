@@ -1,14 +1,7 @@
 import { Footer } from '@/components';
 import { createSession } from '@/services/api';
-import {
-  LockOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import {
-  LoginForm,
-  ProFormCheckbox,
-  ProFormText,
-} from '@ant-design/pro-components';
+import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-components';
 import { FormattedMessage, history, SelectLang, useIntl, useModel, Helmet } from '@umijs/max';
 import { Alert, Modal } from 'antd';
 import { getMessage } from '@/utils/antdApp';
@@ -106,7 +99,9 @@ const Login: React.FC = () => {
       // RESTful: 创建会话
       const res = await createSession({ username: values.username, password: values.password });
       localStorage.setItem('token', res.token);
-      getMessage()?.success(intl.formatMessage({ id: 'pages.login.success', defaultMessage: '登录成功！' }));
+      getMessage()?.success(
+        intl.formatMessage({ id: 'pages.login.success', defaultMessage: '登录成功！' }),
+      );
       await fetchUserInfo();
       const urlParams = new URL(window.location.href).searchParams;
       history.push(urlParams.get('redirect') || '/');
@@ -223,16 +218,16 @@ const Login: React.FC = () => {
             <ProFormCheckbox noStyle name="autoLogin">
               <FormattedMessage id="pages.login.rememberMe" defaultMessage="自动登录" />
             </ProFormCheckbox>
-            <a
-              style={{ float: 'right' }}
-              onClick={() => setForgotOpen(true)}
-            >
+            <a style={{ float: 'right' }} onClick={() => setForgotOpen(true)}>
               <FormattedMessage id="pages.login.forgotPassword" defaultMessage="忘记密码" />
             </a>
           </div>
         </LoginForm>
         <Modal
-          title={intl.formatMessage({ id: 'pages.login.forgotPassword', defaultMessage: '忘记密码' })}
+          title={intl.formatMessage({
+            id: 'pages.login.forgotPassword',
+            defaultMessage: '忘记密码',
+          })}
           open={forgotOpen}
           onCancel={() => setForgotOpen(false)}
           onOk={() => setForgotOpen(false)}

@@ -7,7 +7,7 @@ import { fetchAnalyticsRetention } from '@/services/api/analytics';
 export default function AnalyticsRetentionPage() {
   const [loading, setLoading] = useState(false);
   const [range, setRange] = useState<any>(null);
-  const [cohort, setCohort] = useState<'signup'|'first_active'>('signup');
+  const [cohort, setCohort] = useState<'signup' | 'first_active'>('signup');
   const [data, setData] = useState<any>({ cohorts: [] });
 
   const load = async () => {
@@ -18,12 +18,16 @@ export default function AnalyticsRetentionPage() {
       if (range && range[1]) params.end = range[1].toISOString();
       const r = await fetchAnalyticsRetention(params);
       setData(r || { cohorts: [] });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
-  useEffect(()=>{ load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   // 处理后端返回的数据结构
-  const rowsData = (data?.cohorts || []).map((c:any, idx:number) => {
+  const rowsData = (data?.cohorts || []).map((c: any, idx: number) => {
     // retention 数组格式: [Day1, Day3, Day7, Day14, Day30]
     const retention = c.retention || [];
     return {
@@ -40,62 +44,81 @@ export default function AnalyticsRetentionPage() {
 
   return (
     <PageContainer>
-      <Card title="留存分析" extra={
-        <Space>
-          <Select value={cohort} onChange={setCohort as any} options={[{label:'按注册',value:'signup'},{label:'按首次活跃',value:'first_active'}]} />
-          <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
-          <Button type="primary" onClick={load}>查询</Button>
-          <Button onClick={async ()=>{
-            const rows = [['cohort','users','d1','d3','d7','d14','d30']].concat(
-              rowsData.map(r=>[r.cohort,r.users,r.d1,r.d3,r.d7,r.d14,r.d30])
-            );
-            await exportToXLSX('retention.csv', [{ sheet:'retention', rows }]);
-          }}>导出 CSV</Button>
-        </Space>
-      }>
-        <Table loading={loading} dataSource={rowsData} pagination={{ pageSize: 10 }}
+      <Card
+        title="留存分析"
+        extra={
+          <Space>
+            <Select
+              value={cohort}
+              onChange={setCohort as any}
+              options={[
+                { label: '按注册', value: 'signup' },
+                { label: '按首次活跃', value: 'first_active' },
+              ]}
+            />
+            <DatePicker.RangePicker value={range as any} onChange={setRange as any} />
+            <Button type="primary" onClick={load}>
+              查询
+            </Button>
+            <Button
+              onClick={async () => {
+                const rows = [['cohort', 'users', 'd1', 'd3', 'd7', 'd14', 'd30']].concat(
+                  rowsData.map((r) => [r.cohort, r.users, r.d1, r.d3, r.d7, r.d14, r.d30]),
+                );
+                await exportToXLSX('retention.csv', [{ sheet: 'retention', rows }]);
+              }}
+            >
+              导出 CSV
+            </Button>
+          </Space>
+        }
+      >
+        <Table
+          loading={loading}
+          dataSource={rowsData}
+          pagination={{ pageSize: 10 }}
           columns={[
-            { title:'Cohort', dataIndex:'cohort', key: 'cohort' },
+            { title: 'Cohort', dataIndex: 'cohort', key: 'cohort' },
             {
-              title:'用户数',
-              dataIndex:'users',
+              title: '用户数',
+              dataIndex: 'users',
               key: 'users',
-              render: (v: number) => v?.toLocaleString() || 0
+              render: (v: number) => v?.toLocaleString() || 0,
             },
             {
-              title:'D1',
-              dataIndex:'d1',
+              title: 'D1',
+              dataIndex: 'd1',
               key: 'd1',
-              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
-              sorter: (a: any, b: any) => (a.d1 || 0) - (b.d1 || 0)
+              render: (v: number) => (v != null ? `${(v * 100).toFixed(2)}%` : '-'),
+              sorter: (a: any, b: any) => (a.d1 || 0) - (b.d1 || 0),
             },
             {
-              title:'D3',
-              dataIndex:'d3',
+              title: 'D3',
+              dataIndex: 'd3',
               key: 'd3',
-              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
-              sorter: (a: any, b: any) => (a.d3 || 0) - (b.d3 || 0)
+              render: (v: number) => (v != null ? `${(v * 100).toFixed(2)}%` : '-'),
+              sorter: (a: any, b: any) => (a.d3 || 0) - (b.d3 || 0),
             },
             {
-              title:'D7',
-              dataIndex:'d7',
+              title: 'D7',
+              dataIndex: 'd7',
               key: 'd7',
-              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
-              sorter: (a: any, b: any) => (a.d7 || 0) - (b.d7 || 0)
+              render: (v: number) => (v != null ? `${(v * 100).toFixed(2)}%` : '-'),
+              sorter: (a: any, b: any) => (a.d7 || 0) - (b.d7 || 0),
             },
             {
-              title:'D14',
-              dataIndex:'d14',
+              title: 'D14',
+              dataIndex: 'd14',
               key: 'd14',
-              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
-              sorter: (a: any, b: any) => (a.d14 || 0) - (b.d14 || 0)
+              render: (v: number) => (v != null ? `${(v * 100).toFixed(2)}%` : '-'),
+              sorter: (a: any, b: any) => (a.d14 || 0) - (b.d14 || 0),
             },
             {
-              title:'D30',
-              dataIndex:'d30',
+              title: 'D30',
+              dataIndex: 'd30',
               key: 'd30',
-              render: (v: number) => v != null ? `${(v * 100).toFixed(2)}%` : '-',
-              sorter: (a: any, b: any) => (a.d30 || 0) - (b.d30 || 0)
+              render: (v: number) => (v != null ? `${(v * 100).toFixed(2)}%` : '-'),
+              sorter: (a: any, b: any) => (a.d30 || 0) - (b.d30 || 0),
             },
           ]}
         />

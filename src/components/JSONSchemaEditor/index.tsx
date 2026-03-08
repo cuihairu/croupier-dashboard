@@ -15,7 +15,7 @@ import {
   List,
   Modal,
   Dropdown,
-  Menu
+  Menu,
 } from 'antd';
 import {
   PlusOutlined,
@@ -28,7 +28,7 @@ import {
   FunctionOutlined,
   AppstoreOutlined,
   DownOutlined,
-  FileTextOutlined
+  FileTextOutlined,
 } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import type { FormInstance } from 'antd/es/form';
@@ -45,29 +45,53 @@ const SCHEMA_TEMPLATES: Record<string, any> = {
     properties: {
       id: { type: 'string', title: 'Player ID', description: 'Unique player identifier' },
       name: { type: 'string', title: 'Name', description: 'Player display name' },
-      level: { type: 'integer', title: 'Level', description: 'Player level', minimum: 1, default: 1 },
-      experience: { type: 'number', title: 'Experience', description: 'Total experience points', default: 0 },
+      level: {
+        type: 'integer',
+        title: 'Level',
+        description: 'Player level',
+        minimum: 1,
+        default: 1,
+      },
+      experience: {
+        type: 'number',
+        title: 'Experience',
+        description: 'Total experience points',
+        default: 0,
+      },
       coins: { type: 'integer', title: 'Coins', description: 'In-game currency', default: 0 },
       gems: { type: 'integer', title: 'Gems', description: 'Premium currency', default: 0 },
-      isVip: { type: 'boolean', title: 'VIP Status', description: 'Whether player has VIP', default: false },
+      isVip: {
+        type: 'boolean',
+        title: 'VIP Status',
+        description: 'Whether player has VIP',
+        default: false,
+      },
       lastLogin: { type: 'string', title: 'Last Login', format: 'date-time' },
       serverId: { type: 'string', title: 'Server ID', description: 'Home server identifier' },
     },
-    required: ['id', 'name']
+    required: ['id', 'name'],
   },
   item: {
     type: 'object',
     properties: {
       id: { type: 'string', title: 'Item ID', description: 'Unique item identifier' },
       name: { type: 'string', title: 'Name', description: 'Item name' },
-      type: { type: 'string', title: 'Type', enum: ['weapon', 'armor', 'consumable', 'material', 'special'] },
-      rarity: { type: 'string', title: 'Rarity', enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'] },
+      type: {
+        type: 'string',
+        title: 'Type',
+        enum: ['weapon', 'armor', 'consumable', 'material', 'special'],
+      },
+      rarity: {
+        type: 'string',
+        title: 'Rarity',
+        enum: ['common', 'uncommon', 'rare', 'epic', 'legendary'],
+      },
       level: { type: 'integer', title: 'Required Level', minimum: 1, default: 1 },
       price: { type: 'number', title: 'Price', description: 'Base price in coins', minimum: 0 },
       stackable: { type: 'boolean', title: 'Stackable', default: false },
       maxStack: { type: 'integer', title: 'Max Stack Size', minimum: 1, default: 99 },
     },
-    required: ['id', 'name', 'type']
+    required: ['id', 'name', 'type'],
   },
   guild: {
     type: 'object',
@@ -76,12 +100,17 @@ const SCHEMA_TEMPLATES: Record<string, any> = {
       name: { type: 'string', title: 'Guild Name', description: 'Display name' },
       leader: { type: 'string', title: 'Leader ID', description: 'Guild leader player ID' },
       level: { type: 'integer', title: 'Guild Level', minimum: 1, default: 1 },
-      members: { type: 'array', title: 'Member List', description: 'Array of member IDs', items: { type: 'string' } },
+      members: {
+        type: 'array',
+        title: 'Member List',
+        description: 'Array of member IDs',
+        items: { type: 'string' },
+      },
       maxMembers: { type: 'integer', title: 'Max Members', minimum: 1, default: 50 },
       description: { type: 'string', title: 'Description', description: 'Guild description' },
       created: { type: 'string', title: 'Created At', format: 'date-time' },
     },
-    required: ['id', 'name', 'leader']
+    required: ['id', 'name', 'leader'],
   },
   basic: {
     type: 'object',
@@ -91,8 +120,8 @@ const SCHEMA_TEMPLATES: Record<string, any> = {
       description: { type: 'string', title: 'Description', description: 'Detailed description' },
       active: { type: 'boolean', title: 'Active', default: true },
     },
-    required: ['id', 'name']
-  }
+    required: ['id', 'name'],
+  },
 };
 
 interface PropertyConfig {
@@ -317,7 +346,7 @@ const InlinePropertyEditor: React.FC<{
               onChange={(additionalProperties) => {
                 updateConfig({
                   additionalProperties,
-                  ...(additionalProperties ? {} : { additionalProperties: false })
+                  ...(additionalProperties ? {} : { additionalProperties: false }),
                 });
               }}
               checkedChildren="Additional Properties"
@@ -359,8 +388,8 @@ const ObjectPropertyEditor: React.FC<{
       [newPropertyName]: {
         type: 'string',
         title: newPropertyName,
-        description: ''
-      }
+        description: '',
+      },
     });
     setNewPropertyName('');
   };
@@ -369,13 +398,13 @@ const ObjectPropertyEditor: React.FC<{
     const newProperties = { ...properties };
     delete newProperties[property];
     onChange(newProperties);
-    onRequiredChange(required.filter(p => p !== property));
+    onRequiredChange(required.filter((p) => p !== property));
   };
 
   const handleUpdateProperty = (property: string, config: PropertyConfig) => {
     onChange({
       ...properties,
-      [property]: config
+      [property]: config,
     });
   };
 
@@ -400,10 +429,19 @@ const ObjectPropertyEditor: React.FC<{
               header={
                 <Space>
                   <strong>{property}</strong>
-                  <Tag color={config.type === 'string' ? 'blue' :
-                        config.type === 'number' ? 'green' :
-                        config.type === 'boolean' ? 'orange' :
-                        config.type === 'array' ? 'purple' : 'geekblue'}>
+                  <Tag
+                    color={
+                      config.type === 'string'
+                        ? 'blue'
+                        : config.type === 'number'
+                        ? 'green'
+                        : config.type === 'boolean'
+                        ? 'orange'
+                        : config.type === 'array'
+                        ? 'purple'
+                        : 'geekblue'
+                    }
+                  >
                     {config.type}
                   </Tag>
                   {required.includes(property) && <Tag color="red">Required</Tag>}
@@ -430,11 +468,16 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [jsonError, setJsonError] = useState<string>('');
   const buildSchema = (input?: any) => {
-    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length === 0) {
+    if (
+      !input ||
+      typeof input !== 'object' ||
+      Array.isArray(input) ||
+      Object.keys(input).length === 0
+    ) {
       return {
         type: 'object',
         properties: {},
-        required: []
+        required: [],
       };
     }
     return input;
@@ -446,10 +489,13 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
     setJsonError('');
   }, [value]);
 
-  const handleVisualChange = useCallback((newData: any) => {
-    setSchemaData(newData);
-    onChange?.(newData);
-  }, [onChange]);
+  const handleVisualChange = useCallback(
+    (newData: any) => {
+      setSchemaData(newData);
+      onChange?.(newData);
+    },
+    [onChange],
+  );
 
   const handleCodeChange = (jsonString: string) => {
     try {
@@ -463,20 +509,22 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
   };
 
   const addCommonProperty = (type: string, preset?: any) => {
-    const propName = `new${type.charAt(0).toUpperCase() + type.slice(1)}${Object.keys(schemaData.properties || {}).length + 1}`;
+    const propName = `new${type.charAt(0).toUpperCase() + type.slice(1)}${
+      Object.keys(schemaData.properties || {}).length + 1
+    }`;
     const newProperty: PropertyConfig = {
       type: type as PropertyConfig['type'],
       title: propName,
       description: `A ${type} property`,
-      ...(preset || {})
+      ...(preset || {}),
     };
 
     handleVisualChange({
       ...schemaData,
       properties: {
         ...schemaData.properties,
-        [propName]: newProperty
-      }
+        [propName]: newProperty,
+      },
     });
   };
 
@@ -487,7 +535,7 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
       handleVisualChange({
         type: 'object',
         properties: { ...template.properties },
-        required: [...(template.required || [])]
+        required: [...(template.required || [])],
       });
       Modal.success({
         title: 'Template Loaded',
@@ -501,28 +549,16 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
       <Space direction="vertical" style={{ width: '100%' }}>
         <Space>
           <Button.Group>
-            <Button
-              icon={<FunctionOutlined />}
-              onClick={() => addCommonProperty('string')}
-            >
+            <Button icon={<FunctionOutlined />} onClick={() => addCommonProperty('string')}>
               Add String
             </Button>
-            <Button
-              icon={<AppstoreOutlined />}
-              onClick={() => addCommonProperty('number')}
-            >
+            <Button icon={<AppstoreOutlined />} onClick={() => addCommonProperty('number')}>
               Add Number
             </Button>
-            <Button
-              icon={<SettingOutlined />}
-              onClick={() => addCommonProperty('boolean')}
-            >
+            <Button icon={<SettingOutlined />} onClick={() => addCommonProperty('boolean')}>
               Add Boolean
             </Button>
-            <Button
-              icon={<AppstoreOutlined />}
-              onClick={() => addCommonProperty('array')}
-            >
+            <Button icon={<AppstoreOutlined />} onClick={() => addCommonProperty('array')}>
               Add Array
             </Button>
           </Button.Group>
@@ -532,24 +568,30 @@ export default function JSONSchemaEditor({ value, onChange }: JSONSchemaEditorPr
             overlay={
               <Menu>
                 <Menu.Item onClick={() => loadTemplate('player')}>
-                  <Space><FunctionOutlined /> Player Entity</Space>
+                  <Space>
+                    <FunctionOutlined /> Player Entity
+                  </Space>
                 </Menu.Item>
                 <Menu.Item onClick={() => loadTemplate('item')}>
-                  <Space><AppstoreOutlined /> Item Entity</Space>
+                  <Space>
+                    <AppstoreOutlined /> Item Entity
+                  </Space>
                 </Menu.Item>
                 <Menu.Item onClick={() => loadTemplate('guild')}>
-                  <Space><SettingOutlined /> Guild Entity</Space>
+                  <Space>
+                    <SettingOutlined /> Guild Entity
+                  </Space>
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item onClick={() => loadTemplate('basic')}>
-                  <Space><FileTextOutlined /> Basic Entity</Space>
+                  <Space>
+                    <FileTextOutlined /> Basic Entity
+                  </Space>
                 </Menu.Item>
               </Menu>
             }
           >
-            <Button icon={<FileTextOutlined />}>
-              Load Template
-            </Button>
+            <Button icon={<FileTextOutlined />}>Load Template</Button>
           </Dropdown>
 
           <div style={{ marginLeft: 'auto' }}>

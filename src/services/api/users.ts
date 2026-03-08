@@ -9,7 +9,7 @@ export {
   deleteAdmin as deleteUser,
   resetAdminPassword as setUserPassword,
   getAdminGames as listUserGames,
-  updateAdminGames as setUserGames
+  updateAdminGames as setUserGames,
 } from './permissions';
 
 // 获取用户游戏环境的兼容函数（已弃用，使用 listUserGames）

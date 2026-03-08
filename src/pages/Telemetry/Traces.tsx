@@ -66,7 +66,8 @@ export default function TracesPage() {
             <div>
               <div>请配置外部追踪系统并从这里跳转：</div>
               <div style={{ marginTop: 4 }}>
-                <Text code>CROUPIER_GRAFANA_EXPLORE_URL</Text> / <Text code>CROUPIER_JAEGER_URL</Text>
+                <Text code>CROUPIER_GRAFANA_EXPLORE_URL</Text> /{' '}
+                <Text code>CROUPIER_JAEGER_URL</Text>
               </div>
             </div>
           }
@@ -88,11 +89,7 @@ export default function TracesPage() {
             >
               打开 Grafana Explore
             </Button>
-            <Button
-              icon={<LinkOutlined />}
-              onClick={openJaegerTrace}
-              disabled={!jaegerTraceUrl}
-            >
+            <Button icon={<LinkOutlined />} onClick={openJaegerTrace} disabled={!jaegerTraceUrl}>
               在 Jaeger 中打开
             </Button>
           </Space>

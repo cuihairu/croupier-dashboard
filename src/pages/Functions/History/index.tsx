@@ -1,6 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
-import { App, Button, Space, Tag, Badge, Drawer, Descriptions, Tooltip, Card, Statistic, Row, Col, Select, DatePicker } from 'antd';
+import {
+  App,
+  Button,
+  Space,
+  Tag,
+  Badge,
+  Drawer,
+  Descriptions,
+  Tooltip,
+  Card,
+  Statistic,
+  Row,
+  Col,
+  Select,
+  DatePicker,
+} from 'antd';
 import {
   ReloadOutlined,
   EyeOutlined,
@@ -11,7 +26,14 @@ import {
   StopOutlined,
   LoadingOutlined,
 } from '@ant-design/icons';
-import { listFunctionCalls, getFunctionCallDetail, rerunFunctionCall, getFunctionCallStats, type FunctionCallItem, type FunctionCallStatsResponse } from '@/services/api/function-calls';
+import {
+  listFunctionCalls,
+  getFunctionCallDetail,
+  rerunFunctionCall,
+  getFunctionCallStats,
+  type FunctionCallItem,
+  type FunctionCallStatsResponse,
+} from '@/services/api/function-calls';
 import dayjs from 'dayjs';
 
 const { RangePicker } = DatePicker;
@@ -79,7 +101,9 @@ export default () => {
 
     // 自动刷新运行中的任务
     timerRef.current = setInterval(() => {
-      const hasRunning = dataSource.some(call => call.status === 'running' || call.status === 'pending');
+      const hasRunning = dataSource.some(
+        (call) => call.status === 'running' || call.status === 'pending',
+      );
       if (hasRunning) {
         fetchData();
         fetchStats();
@@ -161,7 +185,7 @@ export default () => {
       title: '状态',
       dataIndex: 'status',
       width: 100,
-      filters: Object.keys(statusConfig).map(key => ({
+      filters: Object.keys(statusConfig).map((key) => ({
         text: statusConfig[key].text,
         value: key,
       })),
@@ -230,7 +254,9 @@ export default () => {
           <Tooltip title={record.error_msg}>
             <span style={{ color: '#ff4d4f' }}>{record.error_msg}</span>
           </Tooltip>
-        ) : '-',
+        ) : (
+          '-'
+        ),
     },
     {
       title: '操作',
@@ -246,7 +272,9 @@ export default () => {
             onClick={() => handleViewDetail(record)}
           />
         </Tooltip>,
-        (record.status === 'failed' || record.status === 'timeout' || record.status === 'cancelled') && (
+        (record.status === 'failed' ||
+          record.status === 'timeout' ||
+          record.status === 'cancelled') && (
           <Tooltip key="rerun" title="重新执行">
             <Button
               type="link"
@@ -265,7 +293,14 @@ export default () => {
       title="函数调用历史"
       subTitle="查看和管理函数调用记录"
       extra={[
-        <Button key="refresh" icon={<ReloadOutlined />} onClick={() => { fetchData(); fetchStats(); }}>
+        <Button
+          key="refresh"
+          icon={<ReloadOutlined />}
+          onClick={() => {
+            fetchData();
+            fetchStats();
+          }}
+        >
           刷新
         </Button>,
       ]}
@@ -290,28 +325,17 @@ export default () => {
           </Col>
           <Col span={4}>
             <Card>
-              <Statistic
-                title="失败"
-                value={stats.failed}
-                valueStyle={{ color: '#ff4d4f' }}
-              />
+              <Statistic title="失败" value={stats.failed} valueStyle={{ color: '#ff4d4f' }} />
             </Card>
           </Col>
           <Col span={4}>
             <Card>
-              <Statistic
-                title="运行中"
-                value={stats.running}
-                valueStyle={{ color: '#1890ff' }}
-              />
+              <Statistic title="运行中" value={stats.running} valueStyle={{ color: '#1890ff' }} />
             </Card>
           </Col>
           <Col span={4}>
             <Card>
-              <Statistic
-                title="平均耗时"
-                value={formatDuration(stats.avg_duration_ms)}
-              />
+              <Statistic title="平均耗时" value={formatDuration(stats.avg_duration_ms)} />
             </Card>
           </Col>
           <Col span={4}>
@@ -358,7 +382,7 @@ export default () => {
               setCurrentPage(1);
             }}
           >
-            {Object.keys(statusConfig).map(key => (
+            {Object.keys(statusConfig).map((key) => (
               <Option key={key} value={key}>
                 {statusConfig[key].text}
               </Option>
@@ -395,11 +419,15 @@ export default () => {
         {selectedCall && (
           <Card>
             <Descriptions column={2} bordered size="small">
-              <Descriptions.Item label="ID" span={2}>{selectedCall.id}</Descriptions.Item>
+              <Descriptions.Item label="ID" span={2}>
+                {selectedCall.id}
+              </Descriptions.Item>
               <Descriptions.Item label="任务ID" span={2}>
                 <Space>
                   <span>{selectedCall.job_id}</span>
-                  {(selectedCall.status === 'failed' || selectedCall.status === 'timeout' || selectedCall.status === 'cancelled') && (
+                  {(selectedCall.status === 'failed' ||
+                    selectedCall.status === 'timeout' ||
+                    selectedCall.status === 'cancelled') && (
                     <Button
                       type="primary"
                       size="small"
@@ -411,24 +439,42 @@ export default () => {
                   )}
                 </Space>
               </Descriptions.Item>
-              <Descriptions.Item label="函数ID" span={2}>{selectedCall.function_id}</Descriptions.Item>
+              <Descriptions.Item label="函数ID" span={2}>
+                {selectedCall.function_id}
+              </Descriptions.Item>
               <Descriptions.Item label="状态">
                 <Badge
                   status={(statusConfig[selectedCall.status]?.color || 'default') as any}
                   text={statusConfig[selectedCall.status]?.text || selectedCall.status}
                 />
               </Descriptions.Item>
-              <Descriptions.Item label="重试次数">{selectedCall.retry_count || 0}</Descriptions.Item>
+              <Descriptions.Item label="重试次数">
+                {selectedCall.retry_count || 0}
+              </Descriptions.Item>
               <Descriptions.Item label="游戏ID">{selectedCall.game_id || '-'}</Descriptions.Item>
               <Descriptions.Item label="环境">{selectedCall.env || '-'}</Descriptions.Item>
-              <Descriptions.Item label="Agent ID" span={2}>{selectedCall.agent_id || '-'}</Descriptions.Item>
-              <Descriptions.Item label="服务 ID" span={2}>{selectedCall.service_id || '-'}</Descriptions.Item>
+              <Descriptions.Item label="Agent ID" span={2}>
+                {selectedCall.agent_id || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="服务 ID" span={2}>
+                {selectedCall.service_id || '-'}
+              </Descriptions.Item>
               <Descriptions.Item label="执行人">{selectedCall.actor_id || '-'}</Descriptions.Item>
-              <Descriptions.Item label="执行人类型">{selectedCall.actor_type || '-'}</Descriptions.Item>
-              <Descriptions.Item label="开始时间" span={2}>{formatTime(selectedCall.started_at)}</Descriptions.Item>
-              <Descriptions.Item label="结束时间" span={2}>{formatTime(selectedCall.finished_at)}</Descriptions.Item>
-              <Descriptions.Item label="持续时间">{formatDuration(selectedCall.duration_ms)}</Descriptions.Item>
-              <Descriptions.Item label="创建时间" span={2}>{formatTime(selectedCall.created_at)}</Descriptions.Item>
+              <Descriptions.Item label="执行人类型">
+                {selectedCall.actor_type || '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label="开始时间" span={2}>
+                {formatTime(selectedCall.started_at)}
+              </Descriptions.Item>
+              <Descriptions.Item label="结束时间" span={2}>
+                {formatTime(selectedCall.finished_at)}
+              </Descriptions.Item>
+              <Descriptions.Item label="持续时间">
+                {formatDuration(selectedCall.duration_ms)}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间" span={2}>
+                {formatTime(selectedCall.created_at)}
+              </Descriptions.Item>
               {selectedCall.error_msg && (
                 <Descriptions.Item label="错误信息" span={2}>
                   <span style={{ color: '#ff4d4f' }}>{selectedCall.error_msg}</span>
@@ -437,9 +483,17 @@ export default () => {
             </Descriptions>
 
             {/* 请求数据 */}
-            {(selectedCall.payload && Object.keys(selectedCall.payload).length > 0) && (
+            {selectedCall.payload && Object.keys(selectedCall.payload).length > 0 && (
               <Card size="small" title="请求数据" style={{ marginTop: 16 }}>
-                <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, maxHeight: 200, overflow: 'auto' }}>
+                <pre
+                  style={{
+                    background: '#f5f5f5',
+                    padding: 8,
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflow: 'auto',
+                  }}
+                >
                   {JSON.stringify(selectedCall.payload, null, 2)}
                 </pre>
               </Card>
@@ -448,7 +502,15 @@ export default () => {
             {/* 响应数据 */}
             {selectedCall.result && Object.keys(selectedCall.result).length > 0 && (
               <Card size="small" title="响应数据" style={{ marginTop: 16 }}>
-                <pre style={{ background: '#f5f5f5', padding: 8, borderRadius: 4, maxHeight: 200, overflow: 'auto' }}>
+                <pre
+                  style={{
+                    background: '#f5f5f5',
+                    padding: 8,
+                    borderRadius: 4,
+                    maxHeight: 200,
+                    overflow: 'auto',
+                  }}
+                >
                   {JSON.stringify(selectedCall.result, null, 2)}
                 </pre>
               </Card>

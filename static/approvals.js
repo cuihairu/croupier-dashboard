@@ -14,15 +14,19 @@
     if (fid) qs.set('function_id', fid);
     if (gid) qs.set('game_id', gid);
     if (env) qs.set('env', env);
-    qs.set('page', page); qs.set('size', size);
+    qs.set('page', page);
+    qs.set('size', size);
     const resp = await fetch(api('/api/approvals?' + qs.toString()), {
-      headers: authHdr()
+      headers: authHdr(),
     });
-    if (!resp.ok) { alert('list failed: ' + (await resp.text())); return; }
+    if (!resp.ok) {
+      alert('list failed: ' + (await resp.text()));
+      return;
+    }
     const data = await resp.json();
     const tbody = $('tbl').querySelector('tbody');
     tbody.innerHTML = '';
-    (data.approvals || []).forEach(a => {
+    (data.approvals || []).forEach((a) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${a.CreatedAt || ''}</td>
@@ -34,8 +38,12 @@
         <td>${a.Route || ''}</td>
         <td class="row-actions">
           <button data-id="${a.ID}" data-act="view">View</button>
-          ${a.State === 'pending' ? `<button data-id="${a.ID}" data-act="approve">Approve</button>
-          <button data-id="${a.ID}" data-act="reject">Reject</button>` : ''}
+          ${
+            a.State === 'pending'
+              ? `<button data-id="${a.ID}" data-act="approve">Approve</button>
+          <button data-id="${a.ID}" data-act="reject">Reject</button>`
+              : ''
+          }
         </td>`;
       tbody.appendChild(tr);
     });
@@ -43,12 +51,17 @@
 
   function authHdr() {
     const tok = $('jwt').value.trim();
-    return tok ? { 'Authorization': 'Bearer ' + tok } : {};
+    return tok ? { Authorization: 'Bearer ' + tok } : {};
   }
 
   async function view(id) {
-    const resp = await fetch(api('/api/approvals/get?id=' + encodeURIComponent(id)), { headers: authHdr() });
-    if (!resp.ok) { alert('get failed: ' + (await resp.text())); return; }
+    const resp = await fetch(api('/api/approvals/get?id=' + encodeURIComponent(id)), {
+      headers: authHdr(),
+    });
+    if (!resp.ok) {
+      alert('get failed: ' + (await resp.text()));
+      return;
+    }
     const d = await resp.json();
     $('detail').textContent = JSON.stringify(d, null, 2);
     $('preview').textContent = d.payload_preview || '';
@@ -58,26 +71,39 @@
     if (!confirm('Approve ' + id + '?')) return;
     const otp = $('otp').value.trim();
     const resp = await fetch(api('/api/approvals/approve'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr() },
-      body: JSON.stringify({ id, otp })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHdr() },
+      body: JSON.stringify({ id, otp }),
     });
-    if (!resp.ok) { alert('approve failed: ' + (await resp.text())); return; }
-    alert('approved'); await list(); await view(id);
+    if (!resp.ok) {
+      alert('approve failed: ' + (await resp.text()));
+      return;
+    }
+    alert('approved');
+    await list();
+    await view(id);
   }
 
   async function reject(id) {
     const reason = prompt('Reject reason?') || '';
     const resp = await fetch(api('/api/approvals/reject'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHdr() },
-      body: JSON.stringify({ id, reason })
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHdr() },
+      body: JSON.stringify({ id, reason }),
     });
-    if (!resp.ok) { alert('reject failed: ' + (await resp.text())); return; }
-    alert('rejected'); await list(); await view(id);
+    if (!resp.ok) {
+      alert('reject failed: ' + (await resp.text()));
+      return;
+    }
+    alert('rejected');
+    await list();
+    await view(id);
   }
 
   $('load').addEventListener('click', list);
   $('tbl').addEventListener('click', (e) => {
-    const btn = e.target.closest('button'); if (!btn) return;
+    const btn = e.target.closest('button');
+    if (!btn) return;
     const id = btn.getAttribute('data-id');
     const act = btn.getAttribute('data-act');
     if (act === 'view') view(id);

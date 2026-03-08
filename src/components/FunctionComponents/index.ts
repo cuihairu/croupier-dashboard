@@ -13,7 +13,7 @@ export type {
   JSONSchema,
   JSONSchemaProperty,
   FormUISchema,
-  FunctionFormRendererProps
+  FunctionFormRendererProps,
 } from './FunctionFormRenderer';
 
 export { default as FunctionCallHistory } from './FunctionCallHistory';
@@ -23,9 +23,7 @@ export { default as RegistryViewer } from './RegistryViewer';
 export type { RegistryService, RegistryStats, RegistryViewerProps } from './RegistryViewer';
 
 // Re-export commonly used types for convenience
-export type {
-  FunctionDescriptor
-} from '@/services/api';
+export type { FunctionDescriptor } from '@/services/api';
 
 // Component utilities
 export * from './utils/validators';

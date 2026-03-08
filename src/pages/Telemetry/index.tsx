@@ -1,6 +1,27 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Card, Row, Col, Statistic, Table, Space, Button, Tag, Typography, Alert, App, Spin, Progress } from 'antd';
-import { LineChartOutlined, ApiOutlined, FireOutlined, UserOutlined, DollarOutlined, BugOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Table,
+  Space,
+  Button,
+  Tag,
+  Typography,
+  Alert,
+  App,
+  Spin,
+  Progress,
+} from 'antd';
+import {
+  LineChartOutlined,
+  ApiOutlined,
+  FireOutlined,
+  UserOutlined,
+  DollarOutlined,
+  BugOutlined,
+} from '@ant-design/icons';
 import { useModel } from '@umijs/max';
 import GameSelector from '@/components/GameSelector';
 
@@ -27,7 +48,9 @@ const telemetryAPI = {
     for (let i = 0; i < limit; i++) {
       traces.push({
         traceId: `trace_${Math.random().toString(36).substring(7)}`,
-        operationName: ['session.start', 'level.complete', 'purchase.attempt', 'match.start'][Math.floor(Math.random() * 4)],
+        operationName: ['session.start', 'level.complete', 'purchase.attempt', 'match.start'][
+          Math.floor(Math.random() * 4)
+        ],
         duration: Math.floor(Math.random() * 500 + 50),
         status: Math.random() > 0.9 ? 'error' : 'success',
         timestamp: new Date(Date.now() - Math.random() * 3600000).toISOString(),
@@ -51,7 +74,9 @@ const telemetryAPI = {
 
 export default function TelemetryPage() {
   const { message } = App.useApp();
-  const [gameId, setGameId] = useState<string | undefined>(localStorage.getItem('game_id') || undefined);
+  const [gameId, setGameId] = useState<string | undefined>(
+    localStorage.getItem('game_id') || undefined,
+  );
   const [env, setEnv] = useState<string | undefined>(localStorage.getItem('env') || undefined);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState<any>({});
@@ -108,7 +133,11 @@ export default function TelemetryPage() {
       title: 'Trace ID',
       dataIndex: 'traceId',
       key: 'traceId',
-      render: (traceId: string) => <Text code copyable>{traceId}</Text>,
+      render: (traceId: string) => (
+        <Text code copyable>
+          {traceId}
+        </Text>
+      ),
     },
     {
       title: 'Operation',
@@ -133,9 +162,7 @@ export default function TelemetryPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => (
-        <Tag color={status === 'success' ? 'green' : 'red'}>
-          {status.toUpperCase()}
-        </Tag>
+        <Tag color={status === 'success' ? 'green' : 'red'}>{status.toUpperCase()}</Tag>
       ),
     },
     {
@@ -179,7 +206,9 @@ export default function TelemetryPage() {
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           <div>
-            <Text>Game: <b>{gameId || '-'}</b> / Env: <b>{env || '-'}</b></Text>
+            <Text>
+              Game: <b>{gameId || '-'}</b> / Env: <b>{env || '-'}</b>
+            </Text>
           </div>
 
           {/* 系统健康状态 */}
@@ -320,9 +349,7 @@ export default function TelemetryPage() {
               <Button href="/telemetry/dashboards" target="_blank">
                 Grafana仪表板
               </Button>
-              <Button onClick={() => message.info('导出功能开发中')}>
-                导出数据
-              </Button>
+              <Button onClick={() => message.info('导出功能开发中')}>导出数据</Button>
             </Space>
           </Card>
         </Space>

@@ -15,7 +15,7 @@ import {
   Dropdown,
   Menu,
   Empty,
-  Modal
+  Modal,
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,7 +25,7 @@ import {
   QuestionCircleOutlined,
   FormOutlined,
   EyeInvisibleOutlined,
-  DownOutlined
+  DownOutlined,
 } from '@ant-design/icons';
 import { useIntl } from '@umijs/max';
 import { jsonParse } from '@/utils/json';
@@ -90,7 +90,7 @@ const WIDGET_OPTIONS = {
   url: { label: 'URL', icon: 'link' },
   phone: { label: 'Phone', icon: 'phone' },
   treeSelect: { label: 'Tree Select', icon: 'apartment' },
-  cascader: { label: 'Cascader', icon: 'fork' }
+  cascader: { label: 'Cascader', icon: 'fork' },
 };
 
 // Field Editor Component
@@ -111,12 +111,7 @@ const FieldEditor: React.FC<{
     <Card size="small" style={{ marginBottom: 8 }}>
       <Space direction="vertical" style={{ width: '100%' }}>
         <Space wrap>
-          <Input
-            placeholder="Field Name"
-            value={field}
-            readOnly
-            style={{ width: 150 }}
-          />
+          <Input placeholder="Field Name" value={field} readOnly style={{ width: 150 }} />
           <Select
             placeholder="Widget"
             value={config.widget || ''}
@@ -222,7 +217,9 @@ const FieldEditor: React.FC<{
         )}
 
         {/* Enum values for select widgets */}
-        {(config.widget === 'select' || config.widget === 'radio' || config.widget === 'multiselect') && (
+        {(config.widget === 'select' ||
+          config.widget === 'radio' ||
+          config.widget === 'multiselect') && (
           <Space wrap>
             <span>Options:</span>
             <Button
@@ -233,15 +230,8 @@ const FieldEditor: React.FC<{
                   title: 'Add Option',
                   content: (
                     <div style={{ marginTop: 16 }}>
-                      <Input
-                        placeholder="Value"
-                        id="enum-value"
-                        style={{ marginBottom: 8 }}
-                      />
-                      <Input
-                        placeholder="Label"
-                        id="enum-label"
-                      />
+                      <Input placeholder="Value" id="enum-value" style={{ marginBottom: 8 }} />
+                      <Input placeholder="Label" id="enum-label" />
                     </div>
                   ),
                   onOk: () => {
@@ -252,10 +242,10 @@ const FieldEditor: React.FC<{
                       const newEnumNames = [...(config.enumNames || []), labelInput.value];
                       updateConfig({
                         enum: newEnum,
-                        enumNames: newEnumNames
+                        enumNames: newEnumNames,
                       });
                     }
-                  }
+                  },
                 });
               }}
             >
@@ -272,7 +262,7 @@ const FieldEditor: React.FC<{
                   newEnumNames.splice(index, 1);
                   updateConfig({
                     enum: newEnum.length > 0 ? newEnum : undefined,
-                    enumNames: newEnumNames.length > 0 ? newEnumNames : undefined
+                    enumNames: newEnumNames.length > 0 ? newEnumNames : undefined,
                   });
                 }}
               >
@@ -284,12 +274,7 @@ const FieldEditor: React.FC<{
 
         {/* Help text */}
         {config.description && (
-          <Alert
-            message={config.description}
-            type="info"
-            size="small"
-            showIcon={false}
-          />
+          <Alert message={config.description} type="info" size="small" showIcon={false} />
         )}
       </Space>
     </Card>
@@ -301,10 +286,15 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [jsonError, setJsonError] = useState<string>('');
   const buildUISchema = (input?: any) => {
-    if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length === 0) {
+    if (
+      !input ||
+      typeof input !== 'object' ||
+      Array.isArray(input) ||
+      Object.keys(input).length === 0
+    ) {
       return {
         type: 'object',
-        properties: {}
+        properties: {},
       };
     }
     return input;
@@ -316,10 +306,13 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     setJsonError('');
   }, [value]);
 
-  const handleVisualChange = useCallback((newData: any) => {
-    setUiSchemaData(newData);
-    onChange?.(newData);
-  }, [onChange]);
+  const handleVisualChange = useCallback(
+    (newData: any) => {
+      setUiSchemaData(newData);
+      onChange?.(newData);
+    },
+    [onChange],
+  );
 
   const handleCodeChange = (jsonString: string) => {
     try {
@@ -332,62 +325,76 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     }
   };
 
-  const updateConfig = useCallback((property: string, config: FieldConfig) => {
-    handleVisualChange({
-      ...uiSchemaData,
-      properties: {
-        ...uiSchemaData.properties,
-        [property]: config
-      }
-    });
-  }, [uiSchemaData, handleVisualChange]);
+  const updateConfig = useCallback(
+    (property: string, config: FieldConfig) => {
+      handleVisualChange({
+        ...uiSchemaData,
+        properties: {
+          ...uiSchemaData.properties,
+          [property]: config,
+        },
+      });
+    },
+    [uiSchemaData, handleVisualChange],
+  );
 
-  const handleDeleteField = useCallback((field: string) => {
-    const newProperties = { ...uiSchemaData.properties };
-    delete newProperties[field];
-    handleVisualChange({
-      ...uiSchemaData,
-      properties: newProperties
-    });
-  }, [uiSchemaData, handleVisualChange]);
+  const handleDeleteField = useCallback(
+    (field: string) => {
+      const newProperties = { ...uiSchemaData.properties };
+      delete newProperties[field];
+      handleVisualChange({
+        ...uiSchemaData,
+        properties: newProperties,
+      });
+    },
+    [uiSchemaData, handleVisualChange],
+  );
 
   const addCommonField = (type: string) => {
-    const propName = `new${type.charAt(0).toUpperCase() + type.slice(1)}${Object.keys(uiSchemaData.properties || {}).length + 1}`;
+    const propName = `new${type.charAt(0).toUpperCase() + type.slice(1)}${
+      Object.keys(uiSchemaData.properties || {}).length + 1
+    }`;
     const fieldConfig: FieldConfig = {
       type: type,
       title: propName,
       description: `A ${type} field`,
-      widget: type === 'array' ? 'multiselect' : type === 'boolean' ? 'switch' : type
+      widget: type === 'array' ? 'multiselect' : type === 'boolean' ? 'switch' : type,
     };
 
     handleVisualChange({
       ...uiSchemaData,
       properties: {
         ...uiSchemaData.properties,
-        [propName]: fieldConfig
-      }
+        [propName]: fieldConfig,
+      },
     });
   };
 
   // Add field from JSON Schema suggestion
   const addFieldFromSchema = (field: string, schemaType: string) => {
-    const widget = schemaType === 'string' ? 'input' :
-                   schemaType === 'number' || schemaType === 'integer' ? 'number' :
-                   schemaType === 'boolean' ? 'switch' :
-                   schemaType === 'array' ? 'multiselect' : 'input';
+    const widget =
+      schemaType === 'string'
+        ? 'input'
+        : schemaType === 'number' || schemaType === 'integer'
+        ? 'number'
+        : schemaType === 'boolean'
+        ? 'switch'
+        : schemaType === 'array'
+        ? 'multiselect'
+        : 'input';
 
     const fieldConfig: FieldConfig = {
       type: schemaType,
       title: field,
-      widget
+      widget,
     };
 
     handleVisualChange({
       ...uiSchemaData,
       properties: {
         ...uiSchemaData.properties,
-        [field]: fieldConfig
-      }
+        [field]: fieldConfig,
+      },
     });
   };
 
@@ -396,16 +403,22 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
 
     const existingFields = Object.keys(uiSchemaData.properties || {});
     return Object.keys(jsonSchema.properties)
-      .filter(key => !existingFields.includes(key))
-      .map(key => ({
+      .filter((key) => !existingFields.includes(key))
+      .map((key) => ({
         field: key,
         schemaType: jsonSchema.properties[key]?.type || 'string',
         suggested: {
-          widget: jsonSchema.properties[key]?.type === 'string' ? 'input' :
-                   jsonSchema.properties[key]?.type === 'number' ? 'number' :
-                   jsonSchema.properties[key]?.type === 'boolean' ? 'switch' :
-                   jsonSchema.properties[key]?.type === 'array' ? 'multiselect' : 'input'
-        }
+          widget:
+            jsonSchema.properties[key]?.type === 'string'
+              ? 'input'
+              : jsonSchema.properties[key]?.type === 'number'
+              ? 'number'
+              : jsonSchema.properties[key]?.type === 'boolean'
+              ? 'switch'
+              : jsonSchema.properties[key]?.type === 'array'
+              ? 'multiselect'
+              : 'input',
+        },
       }));
   };
 
@@ -441,15 +454,21 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
                 <Menu style={{ maxHeight: 300, overflow: 'auto' }}>
                   {getSuggestedFields().length > 0 ? (
                     getSuggestedFields().map(({ field, schemaType, suggested }) => (
-                      <Menu.Item
-                        key={field}
-                        onClick={() => addFieldFromSchema(field, schemaType)}
-                      >
+                      <Menu.Item key={field} onClick={() => addFieldFromSchema(field, schemaType)}>
                         <Space>
-                          <Tag color={schemaType === 'string' ? 'blue' :
-                                   schemaType === 'number' ? 'green' :
-                                   schemaType === 'boolean' ? 'orange' :
-                                   schemaType === 'array' ? 'purple' : 'default'}>
+                          <Tag
+                            color={
+                              schemaType === 'string'
+                                ? 'blue'
+                                : schemaType === 'number'
+                                ? 'green'
+                                : schemaType === 'boolean'
+                                ? 'orange'
+                                : schemaType === 'array'
+                                ? 'purple'
+                                : 'default'
+                            }
+                          >
                             {schemaType}
                           </Tag>
                           <span>{field}</span>

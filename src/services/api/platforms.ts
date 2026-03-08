@@ -27,7 +27,9 @@ export async function listPlatforms() {
 
 // 获取指定平台支持的方法列表
 export async function listPlatformMethods(platformName: string) {
-  return request<{ code: number; message: string; methods: string[] }>(`${BASE}/${platformName}/methods`);
+  return request<{ code: number; message: string; methods: string[] }>(
+    `${BASE}/${platformName}/methods`,
+  );
 }
 
 // 调用第三方平台 API

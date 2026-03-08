@@ -9,4 +9,3 @@ export const BRAND = {
   // Logo path or URL (served from /public or external URL)
   logo: '/logo.svg',
 };
-

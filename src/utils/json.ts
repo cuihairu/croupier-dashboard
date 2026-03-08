@@ -90,7 +90,7 @@ export function cloneDeep<T = any>(obj: T): T {
   }
 
   if (obj instanceof Array) {
-    return obj.map(item => cloneDeep(item)) as any;
+    return obj.map((item) => cloneDeep(item)) as any;
   }
 
   if (isPlainObject(obj)) {
@@ -133,7 +133,10 @@ export type JSONSchemaType = {
  * @param fallbackParams 回退的 params 对象（旧版兼容）
  * @returns 解析后的 JSON Schema 对象
  */
-export function parseInputSchema(inputSchema?: string, fallbackParams?: any): JSONSchemaType | null {
+export function parseInputSchema(
+  inputSchema?: string,
+  fallbackParams?: any,
+): JSONSchemaType | null {
   // 优先使用 input_schema
   if (inputSchema && typeof inputSchema === 'string' && inputSchema.trim()) {
     const parsed = jsonParse<JSONSchemaType | null>(inputSchema, undefined);
@@ -280,7 +283,7 @@ function formatFieldLabel(fieldName: string): string {
     .replace(/_/g, ' ')
     .replace(/([A-Z])/g, ' $1')
     .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
     .trim();
 }

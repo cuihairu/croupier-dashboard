@@ -1,7 +1,7 @@
 /**
  * 用户管理页面示例
  * 演示如何添加新的权限管理功能
- * 
+ *
  * 需要在以下文件中进行配置:
  * 1. config/routes.ts - 添加路由
  * 2. src/access.ts - 添加权限检查
@@ -45,7 +45,7 @@ export default function UsersPage() {
   const [data, setData] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  
+
   // 权限检查
   const { initialState } = useModel('@@initialState');
   const roles = useMemo(() => {
@@ -75,11 +75,22 @@ export default function UsersPage() {
 
   // 权限检查
   if (!canRead) {
-    return <Card title="Users"><span>No permission</span></Card>;
+    return (
+      <Card title="Users">
+        <span>No permission</span>
+      </Card>
+    );
   }
 
   return (
-    <Card title="Users" extra={<Button type="primary" disabled={!canWrite}>Add</Button>}>
+    <Card
+      title="Users"
+      extra={
+        <Button type="primary" disabled={!canWrite}>
+          Add
+        </Button>
+      }
+    >
       <Table
         rowKey="id"
         loading={loading}
@@ -92,7 +103,9 @@ export default function UsersPage() {
             render: (roles: string[]) => (
               <Space size={4}>
                 {(roles || []).map((r) => (
-                  <Tag key={r} color="blue">{r}</Tag>
+                  <Tag key={r} color="blue">
+                    {r}
+                  </Tag>
                 ))}
               </Space>
             ),

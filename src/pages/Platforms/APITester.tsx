@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Select, Input, Button, Card, Space, Alert, Spin, Typography, Divider, Tag } from 'antd';
+import {
+  Form,
+  Select,
+  Input,
+  Button,
+  Card,
+  Space,
+  Alert,
+  Spin,
+  Typography,
+  Divider,
+  Tag,
+} from 'antd';
 import { PlayCircleOutlined, LoadingOutlined } from '@ant-design/icons';
 import type { PlatformInfo } from '@/services/api/platforms';
 import { callPlatform, listPlatformMethods } from '@/services/api/platforms';
@@ -26,7 +38,14 @@ const methodTemplates: Record<string, any> = {
   server_list: { product_code: '' },
   product_list: {},
   role_info: { product_code: '', user_id: '', server_id: '' },
-  order_list: { product_code: '', user_id: '', start_time: '', end_time: '', page: 1, page_size: 20 },
+  order_list: {
+    product_code: '',
+    user_id: '',
+    start_time: '',
+    end_time: '',
+    page: 1,
+    page_size: 20,
+  },
   day_report: { product_code: '', date: '' },
   day_hour_report: { product_code: '', date: '' },
   user_live: { product_code: '', date: '', start_date: '', end_date: '' },
@@ -68,13 +87,26 @@ const methodDescriptions: Record<string, string> = {
 };
 
 const methodsByCategory: Record<string, string[]> = {
-  '基础数据': ['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'],
-  '运营报表': ['day_report', 'day_hour_report', 'user_live', 'channel_days_report', 'channel_report'],
-  '广告管理': ['ad_report', 'media_app_list', 'ad_plan_group_list', 'package_version_list', 'ad_pages_list', 'create_ad_plan', 'update_ad_plan', 'ad_plan_list'],
-  '其他': ['user_lost_list', 'push_message'],
+  基础数据: ['channel_list', 'server_list', 'product_list', 'role_info', 'order_list'],
+  运营报表: ['day_report', 'day_hour_report', 'user_live', 'channel_days_report', 'channel_report'],
+  广告管理: [
+    'ad_report',
+    'media_app_list',
+    'ad_plan_group_list',
+    'package_version_list',
+    'ad_pages_list',
+    'create_ad_plan',
+    'update_ad_plan',
+    'ad_plan_list',
+  ],
+  其他: ['user_lost_list', 'push_message'],
 };
 
-export default function APITester({ platforms, selectedPlatform, onPlatformChange }: APITesterProps) {
+export default function APITester({
+  platforms,
+  selectedPlatform,
+  onPlatformChange,
+}: APITesterProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [calling, setCalling] = useState(false);
@@ -82,14 +114,14 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const currentPlatform = platforms.find(p => p.name === selectedPlatform);
+  const currentPlatform = platforms.find((p) => p.name === selectedPlatform);
 
   // 加载平台方法列表
   useEffect(() => {
     if (selectedPlatform) {
       setLoading(true);
       listPlatformMethods(selectedPlatform)
-        .then(r => {
+        .then((r) => {
           setAvailableMethods(r?.methods || []);
         })
         .catch(() => {
@@ -163,12 +195,16 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
         <Space direction="vertical" style={{ width: '100%' }} size="large">
           {/* 平台选择 */}
           <Card size="small" title="选择平台">
-            <Form.Item name="platform" label="平台" rules={[{ required: true, message: '请选择平台' }]}>
+            <Form.Item
+              name="platform"
+              label="平台"
+              rules={[{ required: true, message: '请选择平台' }]}
+            >
               <Select
                 placeholder="请选择平台"
                 value={selectedPlatform}
                 onChange={onPlatformChange}
-                options={platforms.map(p => ({
+                options={platforms.map((p) => ({
                   label: p.name === 'quicksdk' ? 'QuickSDK' : p.name,
                   value: p.name,
                 }))}
@@ -181,8 +217,8 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
                   <span>
                     <Tag color={currentPlatform.enabled ? 'green' : 'default'}>
                       {currentPlatform.enabled ? '已启用' : '未启用'}
-                    </Tag>
-                    {' '}支持 {currentPlatform.methods?.length || 0} 个 API 方法
+                    </Tag>{' '}
+                    支持 {currentPlatform.methods?.length || 0} 个 API 方法
                   </span>
                 }
                 type={currentPlatform.enabled ? 'info' : 'warning'}
@@ -198,7 +234,11 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
                 <Spin />
               ) : (
                 <>
-                  <Form.Item name="method" label="方法" rules={[{ required: true, message: '请选择方法' }]}>
+                  <Form.Item
+                    name="method"
+                    label="方法"
+                    rules={[{ required: true, message: '请选择方法' }]}
+                  >
                     <Select
                       placeholder="请选择要调用的方法"
                       onChange={handleMethodChange}
@@ -206,15 +246,18 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
                       optionFilterProp="label"
                     >
                       {Object.entries(methodsByCategory).map(([category, methods]) => {
-                        const categoryMethods = methods.filter(m => availableMethods.includes(m));
+                        const categoryMethods = methods.filter((m) => availableMethods.includes(m));
                         if (categoryMethods.length === 0) return null;
                         return (
                           <Select.OptGroup key={category} label={category}>
-                            {categoryMethods.map(method => (
+                            {categoryMethods.map((method) => (
                               <Select.Option key={method} value={method} label={method}>
                                 <Space>
                                   <span>{method}</span>
-                                  <Tag color={availableMethods.includes(method) ? 'green' : 'default'} size="small">
+                                  <Tag
+                                    color={availableMethods.includes(method) ? 'green' : 'default'}
+                                    size="small"
+                                  >
                                     API
                                   </Tag>
                                 </Space>
@@ -291,19 +334,25 @@ export default function APITester({ platforms, selectedPlatform, onPlatformChang
               ) : (
                 <div>
                   <Alert
-                    message={<Tag color="success" icon="✓">调用成功</Tag>}
+                    message={
+                      <Tag color="success" icon="✓">
+                        调用成功
+                      </Tag>
+                    }
                     type="success"
                     showIcon={false}
                     style={{ marginBottom: 12 }}
                   />
-                  <pre style={{
-                    background: '#f5f5f5',
-                    padding: 12,
-                    borderRadius: 4,
-                    overflow: 'auto',
-                    maxHeight: 400,
-                    fontSize: 12,
-                  }}>
+                  <pre
+                    style={{
+                      background: '#f5f5f5',
+                      padding: 12,
+                      borderRadius: 4,
+                      overflow: 'auto',
+                      maxHeight: 400,
+                      fontSize: 12,
+                    }}
+                  >
                     {JSON.stringify(response, null, 2)}
                   </pre>
                 </div>

@@ -1,5 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Timeline, Badge, Tag, Space, Typography, Button, Drawer, Descriptions, Card, Empty, Tooltip } from 'antd';
+import {
+  Timeline,
+  Badge,
+  Tag,
+  Space,
+  Typography,
+  Button,
+  Drawer,
+  Descriptions,
+  Card,
+  Empty,
+  Tooltip,
+} from 'antd';
 import {
   PlayCircleOutlined,
   CheckCircleOutlined,
@@ -7,7 +19,7 @@ import {
   ClockCircleOutlined,
   EyeOutlined,
   ReloadOutlined,
-  RedoOutlined
+  RedoOutlined,
 } from '@ant-design/icons';
 import { listFunctionCalls, rerunFunctionCall } from '@/services/api';
 
@@ -57,7 +69,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
   compact = false,
   onRefresh,
   onViewDetail,
-  onRerun
+  onRerun,
 }) => {
   const [calls, setCalls] = useState<FunctionCall[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,7 +94,9 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
     }
   };
 
-  useEffect(() => { fetchCalls(); }, [functionId, userId, gameId, limit]);
+  useEffect(() => {
+    fetchCalls();
+  }, [functionId, userId, gameId, limit]);
 
   const handleRefresh = () => {
     fetchCalls();
@@ -105,21 +119,31 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'success': return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-      case 'failed': return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
-      case 'running': return <PlayCircleOutlined style={{ color: '#1890ff' }} />;
-      case 'cancelled': return <ClockCircleOutlined style={{ color: '#faad14' }} />;
-      default: return <ClockCircleOutlined style={{ color: '#d9d9d9' }} />;
+      case 'success':
+        return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
+      case 'failed':
+        return <CloseCircleOutlined style={{ color: '#ff4d4f' }} />;
+      case 'running':
+        return <PlayCircleOutlined style={{ color: '#1890ff' }} />;
+      case 'cancelled':
+        return <ClockCircleOutlined style={{ color: '#faad14' }} />;
+      default:
+        return <ClockCircleOutlined style={{ color: '#d9d9d9' }} />;
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'success': return '成功';
-      case 'failed': return '失败';
-      case 'running': return '运行中';
-      case 'cancelled': return '已取消';
-      default: return '未知';
+      case 'success':
+        return '成功';
+      case 'failed':
+        return '失败';
+      case 'running':
+        return '运行中';
+      case 'cancelled':
+        return '已取消';
+      default:
+        return '未知';
     }
   };
 
@@ -128,10 +152,13 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
       success: { status: 'success' as const, text: '成功' },
       failed: { status: 'error' as const, text: '失败' },
       running: { status: 'processing' as const, text: '运行中' },
-      cancelled: { status: 'warning' as const, text: '已取消' }
+      cancelled: { status: 'warning' as const, text: '已取消' },
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || { status: 'default' as const, text: '未知' };
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      status: 'default' as const,
+      text: '未知',
+    };
     return <Badge {...config} />;
   };
 
@@ -159,10 +186,7 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
   if (calls.length === 0 && !loading) {
     return (
       <Card size={compact ? 'small' : 'default'}>
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description="暂无调用记录"
-        >
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无调用记录">
           {showRefresh && (
             <Button icon={<ReloadOutlined />} onClick={handleRefresh}>
               刷新
@@ -196,9 +220,15 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
             <Timeline.Item
               key={call.id}
               dot={getStatusIcon(call.status)}
-              color={call.status === 'success' ? 'green' : call.status === 'failed' ? 'red' : 'blue'}
+              color={
+                call.status === 'success' ? 'green' : call.status === 'failed' ? 'red' : 'blue'
+              }
             >
-              <Card size="small" style={{ marginBottom: 8, cursor: 'pointer' }} onClick={() => handleViewDetail(call)}>
+              <Card
+                size="small"
+                style={{ marginBottom: 8, cursor: 'pointer' }}
+                onClick={() => handleViewDetail(call)}
+              >
                 <Space direction="vertical" style={{ width: '100%' }}>
                   <Space style={{ justifyContent: 'space-between', width: '100%' }}>
                     <Space>
@@ -272,18 +302,10 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
                 <Descriptions.Item label="状态">
                   {getStatusBadge(selectedCall.status)}
                 </Descriptions.Item>
-                <Descriptions.Item label="用户">
-                  {selectedCall.user || '-'}
-                </Descriptions.Item>
-                <Descriptions.Item label="开始时间">
-                  {selectedCall.startedText}
-                </Descriptions.Item>
-                <Descriptions.Item label="结束时间">
-                  {selectedCall.completedText}
-                </Descriptions.Item>
-                <Descriptions.Item label="执行时长">
-                  {selectedCall.durationText}
-                </Descriptions.Item>
+                <Descriptions.Item label="用户">{selectedCall.user || '-'}</Descriptions.Item>
+                <Descriptions.Item label="开始时间">{selectedCall.startedText}</Descriptions.Item>
+                <Descriptions.Item label="结束时间">{selectedCall.completedText}</Descriptions.Item>
+                <Descriptions.Item label="执行时长">{selectedCall.durationText}</Descriptions.Item>
                 {selectedCall.job_id && (
                   <Descriptions.Item label="任务ID">
                     <Text code>{selectedCall.job_id}</Text>
@@ -314,7 +336,14 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
             {/* Request Payload */}
             {selectedCall.payload && (
               <Card title="请求参数" size="small">
-                <pre style={{ backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: '12px' }}>
+                <pre
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: 12,
+                    borderRadius: 4,
+                    fontSize: '12px',
+                  }}
+                >
                   {JSON.stringify(selectedCall.payload, null, 2)}
                 </pre>
               </Card>
@@ -323,7 +352,14 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
             {/* Response Result */}
             {selectedCall.result && (
               <Card title="执行结果" size="small">
-                <pre style={{ backgroundColor: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: '12px' }}>
+                <pre
+                  style={{
+                    backgroundColor: '#f5f5f5',
+                    padding: 12,
+                    borderRadius: 4,
+                    fontSize: '12px',
+                  }}
+                >
                   {JSON.stringify(selectedCall.result, null, 2)}
                 </pre>
               </Card>
@@ -339,7 +375,11 @@ export const FunctionCallHistory: React.FC<FunctionCallHistoryProps> = ({
             {/* Actions */}
             <Space>
               {onRerun && selectedCall.status === 'failed' && (
-                <Button type="primary" icon={<RedoOutlined />} onClick={() => handleRerun(selectedCall)}>
+                <Button
+                  type="primary"
+                  icon={<RedoOutlined />}
+                  onClick={() => handleRerun(selectedCall)}
+                >
                   重新运行
                 </Button>
               )}

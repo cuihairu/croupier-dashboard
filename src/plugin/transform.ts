@@ -25,7 +25,10 @@ export function getByPath(obj: any, expr: string): any {
   let p = expr.trim();
   if (p === '$' || p === '$.') return obj;
   if (!p.startsWith('$.')) p = '$.' + p;
-  const parts = p.replace(/^\$\.?/, '').split('.').filter(Boolean);
+  const parts = p
+    .replace(/^\$\.?/, '')
+    .split('.')
+    .filter(Boolean);
   let cur = obj;
   for (const k of parts) {
     if (cur == null) return undefined;
@@ -83,8 +86,12 @@ function applyTemplate(root: any, ctx: any, tmpl: any): any {
       return arr.map((item) => resolveValue(root, item, spec.value));
     }
     // sum/avg over array
-    if (tmpl.sum && typeof tmpl.sum === 'object') { return aggregate(root, ctx, tmpl.sum, 'sum'); }
-    if (tmpl.avg && typeof tmpl.avg === 'object') { return aggregate(root, ctx, tmpl.avg, 'avg'); }
+    if (tmpl.sum && typeof tmpl.sum === 'object') {
+      return aggregate(root, ctx, tmpl.sum, 'sum');
+    }
+    if (tmpl.avg && typeof tmpl.avg === 'object') {
+      return aggregate(root, ctx, tmpl.avg, 'avg');
+    }
     // directive nodes: number/msFromSec/mul/div/add/sub
     const dir = tryDirective(root, ctx, tmpl);
     if (dir.__isDirective) return dir.value;
@@ -112,10 +119,14 @@ function buildPredicate(root: any, where: any): ((item: any) => boolean) | null 
     return v;
   };
   switch (op) {
-    case 'eq': return (item) => evalArg(item, args[0]) === evalArg(item, args[1]);
-    case 'ne': return (item) => evalArg(item, args[0]) !== evalArg(item, args[1]);
-    case 'gt': return (item) => Number(evalArg(item, args[0])) > Number(evalArg(item, args[1]));
-    case 'lt': return (item) => Number(evalArg(item, args[0])) < Number(evalArg(item, args[1]));
+    case 'eq':
+      return (item) => evalArg(item, args[0]) === evalArg(item, args[1]);
+    case 'ne':
+      return (item) => evalArg(item, args[0]) !== evalArg(item, args[1]);
+    case 'gt':
+      return (item) => Number(evalArg(item, args[0])) > Number(evalArg(item, args[1]));
+    case 'lt':
+      return (item) => Number(evalArg(item, args[0])) < Number(evalArg(item, args[1]));
     case 'contains':
       return (item) => {
         const a = String(evalArg(item, args[0]) ?? '');
@@ -146,15 +157,19 @@ function resolveValue(root: any, ctx: any, v: any): any {
   return v;
 }
 
-function aggregate(root: any, ctx: any, spec: any, kind: 'sum'|'avg') {
+function aggregate(root: any, ctx: any, spec: any, kind: 'sum' | 'avg') {
   const path = spec?.path as string;
   const value = spec?.value;
   const arr = getByPath(ctx, path) || [];
   if (!Array.isArray(arr)) return 0;
-  let total = 0, count = 0;
+  let total = 0,
+    count = 0;
   for (const item of arr) {
     const x = Number(resolveValue(root, item, value));
-    if (!Number.isNaN(x)) { total += x; count++; }
+    if (!Number.isNaN(x)) {
+      total += x;
+      count++;
+    }
   }
   return kind === 'avg' ? (count ? total / count : 0) : total;
 }
@@ -173,36 +188,61 @@ function tryDirective(root: any, ctx: any, obj: any): { __isDirective: boolean; 
   switch (k) {
     case 'number':
       out.value = asNumber(arg);
-      out.__isDirective = true; return out;
+      out.__isDirective = true;
+      return out;
     case 'toFixed': {
-      const n = asNumber(arg?.value); const d = Number(arg?.digits);
+      const n = asNumber(arg?.value);
+      const d = Number(arg?.digits);
       const digits = Number.isNaN(d) ? 0 : d;
-      out.value = n !== undefined ? Number(n.toFixed(digits)) : undefined; out.__isDirective = true; return out;
+      out.value = n !== undefined ? Number(n.toFixed(digits)) : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'msFromSec': {
-      const n = asNumber(arg); out.value = n !== undefined ? n * 1000 : undefined; out.__isDirective = true; return out;
+      const n = asNumber(arg);
+      out.value = n !== undefined ? n * 1000 : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'isoFromMs': {
-      const n = asNumber(arg); out.value = n !== undefined ? new Date(n).toISOString() : undefined; out.__isDirective = true; return out;
+      const n = asNumber(arg);
+      out.value = n !== undefined ? new Date(n).toISOString() : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'isoFromSec': {
-      const n = asNumber(arg); out.value = n !== undefined ? new Date(n * 1000).toISOString() : undefined; out.__isDirective = true; return out;
+      const n = asNumber(arg);
+      out.value = n !== undefined ? new Date(n * 1000).toISOString() : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'mul': {
-      const n = asNumber(arg?.value); const by = Number(arg?.by);
-      out.value = n !== undefined && !Number.isNaN(by) ? n * by : undefined; out.__isDirective = true; return out;
+      const n = asNumber(arg?.value);
+      const by = Number(arg?.by);
+      out.value = n !== undefined && !Number.isNaN(by) ? n * by : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'div': {
-      const n = asNumber(arg?.value); const by = Number(arg?.by);
-      out.value = n !== undefined && !Number.isNaN(by) && by !== 0 ? n / by : undefined; out.__isDirective = true; return out;
+      const n = asNumber(arg?.value);
+      const by = Number(arg?.by);
+      out.value = n !== undefined && !Number.isNaN(by) && by !== 0 ? n / by : undefined;
+      out.__isDirective = true;
+      return out;
     }
     case 'add': {
-      const n = asNumber(arg?.a); const m = asNumber(arg?.b);
-      out.value = (n ?? 0) + (m ?? 0); out.__isDirective = true; return out;
+      const n = asNumber(arg?.a);
+      const m = asNumber(arg?.b);
+      out.value = (n ?? 0) + (m ?? 0);
+      out.__isDirective = true;
+      return out;
     }
     case 'sub': {
-      const n = asNumber(arg?.a); const m = asNumber(arg?.b);
-      out.value = (n ?? 0) - (m ?? 0); out.__isDirective = true; return out;
+      const n = asNumber(arg?.a);
+      const m = asNumber(arg?.b);
+      out.value = (n ?? 0) - (m ?? 0);
+      out.__isDirective = true;
+      return out;
     }
     default:
       return out;

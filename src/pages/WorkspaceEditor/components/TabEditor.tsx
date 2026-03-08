@@ -70,6 +70,7 @@ type QuickLayoutMode = 'list' | 'form' | 'detail' | 'form-detail';
 type OrchestratorMode = 'list' | 'form-detail' | 'split' | 'dashboard';
 type OrchestratorRole = 'list' | 'detail' | 'submit' | 'query' | 'data';
 type OrchestratorBindings = Record<OrchestratorRole, string>;
+type OrchestratorApplyMode = 'overwrite' | 'merge';
 
 export interface TabEditorProps {
   tab: TabConfig;
@@ -93,6 +94,10 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   const [orchestratorBindings, setOrchestratorBindings] = useState<OrchestratorBindings | null>(
     null,
   );
+  const [orchestratorApplyMode, setOrchestratorApplyMode] =
+    useState<OrchestratorApplyMode>('overwrite');
+  const [orchestratorUndoStack, setOrchestratorUndoStack] = useState<any[]>([]);
+  const [orchestratorRedoStack, setOrchestratorRedoStack] = useState<any[]>([]);
   const [columnForm] = Form.useForm();
   const [fieldForm] = Form.useForm();
   const { Text } = Typography;
@@ -172,10 +177,155 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       message.warning('当前函数不足，无法生成编排方案');
       return;
     }
-    onChange({ ...safeTab, layout: orchestrationPlan.layout });
-    setOrchestratorOpen(false);
-    message.success(`已应用多函数编排：${orchestratorMode}`);
+    if (invalidOrchestratorRoles.length > 0) {
+      message.warning(`存在失效角色绑定: ${invalidOrchestratorRoles.join(', ')}，请先调整`);
+      return;
+    }
+    const riskLevel = assessOrchestrationRiskLevel(
+      orchestratorApplyMode,
+      safeTab.layout as any,
+      previewNextLayout,
+      layoutDiffPreview,
+    );
+    const doApply = () => {
+      setOrchestratorUndoStack((prev) => [...prev.slice(-9), cloneLayout(safeTab.layout)]);
+      setOrchestratorRedoStack([]);
+      const nextLayout =
+        orchestratorApplyMode === 'merge'
+          ? mergeLayoutByMissing(safeTab.layout as any, orchestrationPlan.layout)
+          : orchestrationPlan.layout;
+      onChange({ ...safeTab, layout: nextLayout });
+      setOrchestratorOpen(false);
+      message.success(
+        `已应用多函数编排：${orchestratorMode}（${
+          orchestratorApplyMode === 'merge' ? '仅补空字段' : '覆盖当前'
+        }）`,
+      );
+    };
+
+    if (riskLevel === 'high') {
+      Modal.confirm({
+        title: '高风险变更确认',
+        content: '本次编排将产生高影响改动（覆盖/关键绑定变化/布局切换），确认继续应用？',
+        okText: '确认应用',
+        cancelText: '取消',
+        okButtonProps: { danger: true },
+        onOk: doApply,
+      });
+      return;
+    }
+
+    if (riskLevel === 'medium') {
+      Modal.confirm({
+        title: '变更确认',
+        content: '本次编排将更新当前布局配置，是否继续？',
+        okText: '继续',
+        cancelText: '取消',
+        onOk: doApply,
+      });
+      return;
+    }
+
+    doApply();
   };
+
+  const handleUndoOrchestration = () => {
+    if (orchestratorUndoStack.length === 0) return;
+    const previous = orchestratorUndoStack[orchestratorUndoStack.length - 1];
+    setOrchestratorUndoStack((prev) => prev.slice(0, -1));
+    setOrchestratorRedoStack((prev) => [...prev, cloneLayout(safeTab.layout)]);
+    onChange({ ...safeTab, layout: previous });
+    message.success('已撤销上一次编排变更');
+  };
+
+  const handleRedoOrchestration = () => {
+    if (orchestratorRedoStack.length === 0) return;
+    const next = orchestratorRedoStack[orchestratorRedoStack.length - 1];
+    setOrchestratorRedoStack((prev) => prev.slice(0, -1));
+    setOrchestratorUndoStack((prev) => [...prev.slice(-9), cloneLayout(safeTab.layout)]);
+    onChange({ ...safeTab, layout: next });
+    message.success('已恢复上一次撤销的编排变更');
+  };
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      // Ctrl/Cmd + Alt + Z: 撤销编排
+      if (e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndoOrchestration();
+        return;
+      }
+      // Ctrl/Cmd + Alt + Y: 重做编排
+      if (e.altKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleRedoOrchestration();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [orchestratorUndoStack, orchestratorRedoStack, safeTab.layout]);
+
+  React.useEffect(() => {
+    // 发生外部布局改动时，清理重做栈，避免重做到过期分支
+    if (orchestratorRedoStack.length > 0) {
+      const lastRedo = orchestratorRedoStack[orchestratorRedoStack.length - 1];
+      if (JSON.stringify(lastRedo) === JSON.stringify(safeTab.layout)) {
+        return;
+      }
+      setOrchestratorRedoStack([]);
+    }
+  }, [safeTab.layout]);
+
+  const functionOptions = React.useMemo(
+    () =>
+      safeTab.functions.map((fid) => {
+        const d = descriptors.find((x) => x.id === fid);
+        return { value: fid, label: getFunctionOptionLabel(d, fid) };
+      }),
+    [safeTab.functions, descriptors],
+  );
+  const activeOrchestratorRoles = React.useMemo(
+    () => getRolesForOrchestratorMode(orchestratorMode),
+    [orchestratorMode],
+  );
+  const invalidOrchestratorRoles = React.useMemo(() => {
+    if (!orchestratorBindings) return [] as OrchestratorRole[];
+    const functionSet = new Set(safeTab.functions);
+    return activeOrchestratorRoles.filter(
+      (role) => !functionSet.has(orchestratorBindings[role]),
+    ) as OrchestratorRole[];
+  }, [orchestratorBindings, safeTab.functions, activeOrchestratorRoles]);
+  const displayedAssignments = React.useMemo(() => {
+    if (!orchestrationPlan) return [];
+    const prefixes = new Set(activeOrchestratorRoles.map((r) => `${r} -> `));
+    return orchestrationPlan.assignments.filter((line) =>
+      Array.from(prefixes).some((prefix) => line.startsWith(prefix)),
+    );
+  }, [orchestrationPlan, activeOrchestratorRoles]);
+
+  const previewNextLayout = React.useMemo(() => {
+    if (!orchestrationPlan) return null;
+    return orchestratorApplyMode === 'merge'
+      ? mergeLayoutByMissing(safeTab.layout as any, orchestrationPlan.layout)
+      : orchestrationPlan.layout;
+  }, [orchestrationPlan, orchestratorApplyMode, safeTab.layout]);
+
+  const layoutDiffPreview = React.useMemo(() => {
+    if (!previewNextLayout) return [];
+    return buildLayoutDiffPreview(safeTab.layout as any, previewNextLayout);
+  }, [previewNextLayout, safeTab.layout]);
+
+  const orchestrationRiskTips = React.useMemo(
+    () =>
+      buildOrchestrationRiskTips(
+        orchestratorApplyMode,
+        safeTab.layout as any,
+        previewNextLayout,
+        layoutDiffPreview,
+      ),
+    [orchestratorApplyMode, safeTab.layout, previewNextLayout, layoutDiffPreview],
+  );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -478,6 +628,22 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
             <Button size="small" onClick={() => setOrchestratorOpen(true)}>
               编排向导
             </Button>
+            <Button
+              size="small"
+              disabled={orchestratorUndoStack.length === 0}
+              onClick={handleUndoOrchestration}
+              title="Ctrl/Cmd + Alt + Z"
+            >
+              撤销编排
+            </Button>
+            <Button
+              size="small"
+              disabled={orchestratorRedoStack.length === 0}
+              onClick={handleRedoOrchestration}
+              title="Ctrl/Cmd + Alt + Y"
+            >
+              重做编排
+            </Button>
           </Space>
         }
       >
@@ -500,8 +666,18 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         onCancel={() => setOrchestratorOpen(false)}
         onOk={handleApplyOrchestration}
         okText="应用方案"
+        okButtonProps={{ disabled: !orchestrationPlan || invalidOrchestratorRoles.length > 0 }}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Segmented
+            block
+            value={orchestratorApplyMode}
+            onChange={(v) => setOrchestratorApplyMode(v as OrchestratorApplyMode)}
+            options={[
+              { label: '覆盖当前布局', value: 'overwrite' },
+              { label: '仅补空字段', value: 'merge' },
+            ]}
+          />
           <Segmented
             block
             value={orchestratorMode}
@@ -515,33 +691,67 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
           />
           {orchestrationPlan ? (
             <>
+              {invalidOrchestratorRoles.length > 0 && (
+                <div style={{ fontSize: 12, color: '#cf1322' }}>
+                  检测到失效角色绑定: {invalidOrchestratorRoles.join(', ')}，请重新选择或重置为推荐
+                </div>
+              )}
               <div style={{ fontSize: 12, color: '#999' }}>角色绑定（可手动调整）</div>
               <Space direction="vertical" style={{ width: '100%' }} size="small">
-                {(['list', 'detail', 'submit', 'query', 'data'] as OrchestratorRole[]).map(
-                  (role) => (
-                    <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 64 }}>{role}</div>
-                      <Select
-                        value={orchestratorBindings?.[role]}
-                        style={{ flex: 1 }}
-                        options={safeTab.functions.map((fid) => {
-                          const d = descriptors.find((x) => x.id === fid);
-                          return { value: fid, label: d?.display_name?.zh || fid };
-                        })}
-                        onChange={(v) =>
-                          setOrchestratorBindings((prev) => ({
-                            ...(prev || defaultBindings),
-                            [role]: v,
-                          }))
-                        }
-                      />
-                    </div>
-                  ),
-                )}
+                {activeOrchestratorRoles.map((role) => (
+                  <div key={role} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 64 }}>{role}</div>
+                    <Select
+                      value={orchestratorBindings?.[role]}
+                      style={{ flex: 1 }}
+                      options={functionOptions}
+                      onChange={(v) =>
+                        setOrchestratorBindings((prev) => ({
+                          ...(prev || defaultBindings),
+                          [role]: v,
+                        }))
+                      }
+                    />
+                    <Tooltip
+                      title={getFunctionMetaLine(descriptors, orchestratorBindings?.[role] || '')}
+                    >
+                      <Tag color="blue">
+                        {getFunctionShortName(descriptors, orchestratorBindings?.[role] || '')}
+                      </Tag>
+                    </Tooltip>
+                  </div>
+                ))}
               </Space>
+              <Button
+                size="small"
+                onClick={() => setOrchestratorBindings(defaultBindings)}
+                title="将角色绑定恢复为系统推荐"
+              >
+                重置为推荐
+              </Button>
               <div style={{ fontSize: 12, color: '#999' }}>函数角色分配</div>
               <div style={{ fontSize: 13 }}>
-                {orchestrationPlan.assignments.map((line) => (
+                {displayedAssignments.map((line) => (
+                  <div key={line}>{line}</div>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, color: '#999' }}>
+                方案摘要: 类型 {orchestrationPlan.layout.type}，
+                {orchestratorApplyMode === 'merge' ? '仅补全当前空字段' : '将覆盖当前 Tab 布局配置'}
+              </div>
+              {orchestrationRiskTips.length > 0 && (
+                <>
+                  <div style={{ fontSize: 12, color: '#cf1322' }}>风险提示</div>
+                  <div style={{ fontSize: 13, color: '#cf1322' }}>
+                    {orchestrationRiskTips.map((line) => (
+                      <div key={line}>{line}</div>
+                    ))}
+                  </div>
+                </>
+              )}
+              <div style={{ fontSize: 12, color: '#999' }}>变更预览</div>
+              <div style={{ fontSize: 13 }}>
+                {(layoutDiffPreview.length > 0 ? layoutDiffPreview : ['无结构变化']).map((line) => (
                   <div key={line}>{line}</div>
                 ))}
               </div>
@@ -1289,6 +1499,227 @@ function buildDefaultOrchestratorBindings(
     query: pick('query'),
     data: pick('data'),
   };
+}
+
+function getFunctionShortName(descriptors: FunctionDescriptor[], functionId: string): string {
+  const d = descriptors.find((x) => x.id === functionId);
+  return d?.display_name?.zh || d?.display_name?.en || functionId || '-';
+}
+
+function getFunctionMetaLine(descriptors: FunctionDescriptor[], functionId: string): string {
+  const d = descriptors.find((x) => x.id === functionId);
+  if (!d) return functionId || '-';
+  const op = d.operation || 'unknown';
+  const tags = (d.tags || []).slice(0, 3).join(', ') || '-';
+  return `${d.id} | operation: ${op} | tags: ${tags}`;
+}
+
+function getFunctionOptionLabel(
+  descriptor: FunctionDescriptor | undefined,
+  functionId: string,
+): string {
+  if (!descriptor) return functionId;
+  const name = descriptor.display_name?.zh || descriptor.display_name?.en || descriptor.id;
+  const op = descriptor.operation || 'unknown';
+  return `${name} (${op})`;
+}
+
+function cloneLayout(layout: any): any {
+  try {
+    return JSON.parse(JSON.stringify(layout ?? {}));
+  } catch {
+    return layout;
+  }
+}
+
+function getRolesForOrchestratorMode(mode: OrchestratorMode): OrchestratorRole[] {
+  switch (mode) {
+    case 'list':
+      return ['list'];
+    case 'form-detail':
+      return ['query', 'detail', 'submit'];
+    case 'split':
+      return ['list', 'detail'];
+    case 'dashboard':
+      return ['list', 'detail', 'data'];
+    default:
+      return ['list', 'detail', 'submit', 'query', 'data'];
+  }
+}
+
+function mergeLayoutByMissing(current: any, planned: any): any {
+  if (current === undefined || current === null || current === '') return planned;
+  if (planned === undefined || planned === null) return current;
+
+  if (Array.isArray(planned)) {
+    if (!Array.isArray(current) || current.length === 0) return planned;
+    return current;
+  }
+
+  if (typeof planned !== 'object') {
+    return current;
+  }
+
+  const base = typeof current === 'object' && !Array.isArray(current) ? current : {};
+  const result: Record<string, any> = { ...base };
+  Object.keys(planned).forEach((key) => {
+    result[key] = mergeLayoutByMissing(base[key], planned[key]);
+  });
+  return result;
+}
+
+function buildLayoutDiffPreview(current: any, next: any): string[] {
+  const entries: Array<{ line: string; priority: number }> = [];
+  collectLayoutDiff(current, next, 'layout', entries, 0, 3);
+  return entries
+    .sort((a, b) => b.priority - a.priority)
+    .map((x) => x.line)
+    .slice(0, 16);
+}
+
+function collectLayoutDiff(
+  current: any,
+  next: any,
+  path: string,
+  entries: Array<{ line: string; priority: number }>,
+  depth: number,
+  maxDepth: number,
+) {
+  if (depth > maxDepth || entries.length >= 32) return;
+  if (JSON.stringify(current) === JSON.stringify(next)) return;
+
+  if (Array.isArray(next)) {
+    const currentLen = Array.isArray(current) ? current.length : 0;
+    const nextLen = next.length;
+    if (currentLen !== nextLen) {
+      pushDiffEntry(entries, `${path}: ${currentLen} -> ${nextLen}`, path);
+    } else {
+      pushDiffEntry(entries, `${path}: 内容已更新`, path);
+    }
+    return;
+  }
+
+  if (typeof next !== 'object' || next === null) {
+    pushDiffEntry(
+      entries,
+      `${path}: ${formatDiffValue(current)} -> ${formatDiffValue(next)}`,
+      path,
+    );
+    return;
+  }
+
+  const keys = new Set<string>([
+    ...Object.keys(current && typeof current === 'object' ? current : {}),
+    ...Object.keys(next),
+  ]);
+  keys.forEach((key) => {
+    const c = current?.[key];
+    const n = next?.[key];
+    if (JSON.stringify(c) === JSON.stringify(n)) return;
+    const nextPath = `${path}.${key}`;
+    collectLayoutDiff(c, n, nextPath, entries, depth + 1, maxDepth);
+  });
+}
+
+function pushDiffEntry(
+  entries: Array<{ line: string; priority: number }>,
+  line: string,
+  path: string,
+) {
+  const p = getDiffPriority(path);
+  const normalized = p >= 100 ? `关键变更: ${line}` : line;
+  entries.push({ line: normalized, priority: p });
+}
+
+function getDiffPriority(path: string): number {
+  const keyPath = path.toLowerCase();
+  if (
+    keyPath.includes('listfunction') ||
+    keyPath.includes('queryfunction') ||
+    keyPath.includes('submitfunction') ||
+    keyPath.includes('detailfunction') ||
+    keyPath.includes('datafunction')
+  ) {
+    return 120;
+  }
+  if (keyPath.endsWith('.type') || keyPath.includes('.type')) return 90;
+  if (
+    keyPath.includes('.columns') ||
+    keyPath.includes('.fields') ||
+    keyPath.includes('.sections')
+  ) {
+    return 70;
+  }
+  return 50;
+}
+
+function buildOrchestrationRiskTips(
+  applyMode: OrchestratorApplyMode,
+  currentLayout: any,
+  nextLayout: any,
+  diffLines: string[],
+): string[] {
+  if (!nextLayout) return [];
+  const tips: string[] = [];
+  const currentType = String(currentLayout?.type || '-');
+  const nextType = String(nextLayout?.type || '-');
+
+  if (applyMode === 'overwrite') {
+    tips.push('覆盖模式会重置当前布局下的字段、列、分区与子组件配置。');
+  } else {
+    tips.push('补空模式不会覆盖已存在值，但会补齐缺失结构。');
+  }
+
+  if (currentType !== nextType) {
+    tips.push(`布局类型将变化: ${currentType} -> ${nextType}。`);
+  }
+
+  const keyDiffCount = diffLines.filter((line) => line.startsWith('关键变更:')).length;
+  if (keyDiffCount > 0) {
+    tips.push(`检测到 ${keyDiffCount} 项关键函数绑定变更，请确认函数角色映射。`);
+  }
+
+  if (diffLines.length >= 12) {
+    tips.push('本次变更项较多，建议先保存当前版本再应用。');
+  }
+  return tips.slice(0, 4);
+}
+
+function assessOrchestrationRiskLevel(
+  applyMode: OrchestratorApplyMode,
+  currentLayout: any,
+  nextLayout: any,
+  diffLines: string[],
+): 'low' | 'medium' | 'high' {
+  if (!nextLayout) return 'low';
+  const currentType = String(currentLayout?.type || '-');
+  const nextType = String(nextLayout?.type || '-');
+  const keyDiffCount = diffLines.filter((line) => line.startsWith('关键变更:')).length;
+
+  if (
+    applyMode === 'overwrite' &&
+    (currentType !== nextType || keyDiffCount >= 2 || diffLines.length >= 10)
+  ) {
+    return 'high';
+  }
+  if (
+    applyMode === 'overwrite' ||
+    currentType !== nextType ||
+    keyDiffCount > 0 ||
+    diffLines.length >= 6
+  ) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function formatDiffValue(value: any): string {
+  if (value === undefined || value === null || value === '') return '∅';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return `Array(${value.length})`;
+  if (typeof value === 'object') return 'Object';
+  return String(value);
 }
 
 function healTabLayoutWithTemplate(tab: TabConfig, descriptors: FunctionDescriptor[]): TabConfig {

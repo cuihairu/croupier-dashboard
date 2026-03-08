@@ -1,6 +1,26 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { PageContainer, ProTable, ProColumns } from '@ant-design/pro-components';
-import { App, Button, Space, Tag, Card, Badge, Tooltip, Typography, Statistic, Row, Col, Alert, Drawer, Descriptions, Timeline, Modal, Tabs, Switch, Input } from 'antd';
+import {
+  App,
+  Button,
+  Space,
+  Tag,
+  Card,
+  Badge,
+  Tooltip,
+  Typography,
+  Statistic,
+  Row,
+  Col,
+  Alert,
+  Drawer,
+  Descriptions,
+  Timeline,
+  Modal,
+  Tabs,
+  Switch,
+  Input,
+} from 'antd';
 import {
   ClusterOutlined,
   ReloadOutlined,
@@ -11,7 +31,7 @@ import {
   BugOutlined,
   HistoryOutlined,
   SettingOutlined,
-  EyeOutlined
+  EyeOutlined,
 } from '@ant-design/icons';
 import { getFunctionInstances, getFunctionDetail } from '@/services/api';
 
@@ -88,7 +108,9 @@ export default () => {
   const [debugResult, setDebugResult] = useState<any>(null);
   const [debugLoading, setDebugLoading] = useState(false);
   const [logsVisible, setLogsVisible] = useState(false);
-  const [logsData, setLogsData] = useState<Array<{ timestamp: string; level: string; message: string }>>([]);
+  const [logsData, setLogsData] = useState<
+    Array<{ timestamp: string; level: string; message: string }>
+  >([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -127,7 +149,9 @@ export default () => {
       });
 
       const totalFunctions = functionsMap.size;
-      const coveredFunctions = Array.from(functionsMap.values()).filter(count => count > 0).length;
+      const coveredFunctions = Array.from(functionsMap.values()).filter(
+        (count) => count > 0,
+      ).length;
 
       const functionsByCategory: Record<string, number> = {};
       categoryMap.forEach((count, category) => {
@@ -142,12 +166,13 @@ export default () => {
       setCoverage({
         total_functions: totalFunctions,
         covered_functions: coveredFunctions,
-        coverage_percentage: totalFunctions > 0 ? Math.round((coveredFunctions / totalFunctions) * 100) : 0,
+        coverage_percentage:
+          totalFunctions > 0 ? Math.round((coveredFunctions / totalFunctions) * 100) : 0,
         total_instances: res?.instances?.length || 0,
         active_instances: activeCount,
         inactive_instances: inactiveCount,
         functions_by_category: functionsByCategory,
-        instances_by_game: instancesByGame
+        instances_by_game: instancesByGame,
       });
     } catch (e: any) {
       message.error(e?.message || '加载失败');
@@ -156,29 +181,43 @@ export default () => {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Process data for display
   const processedData = useMemo(() => {
-    return instances.map(instance => ({
+    return instances.map((instance) => ({
       ...instance,
-      statusColor: instance.healthy || instance.status === 'running' ? 'success' : instance.status === 'error' ? 'error' : 'default',
-      statusText: instance.healthy || instance.status === 'running' ? '运行中' : instance.status === 'error' ? '错误' : '停止',
-      lastSeen: instance.last_heartbeat || instance.last_seen ?
-        new Date(instance.last_heartbeat || instance.last_seen || '').toLocaleString('zh-CN') : '未知'
+      statusColor:
+        instance.healthy || instance.status === 'running'
+          ? 'success'
+          : instance.status === 'error'
+          ? 'error'
+          : 'default',
+      statusText:
+        instance.healthy || instance.status === 'running'
+          ? '运行中'
+          : instance.status === 'error'
+          ? '错误'
+          : '停止',
+      lastSeen:
+        instance.last_heartbeat || instance.last_seen
+          ? new Date(instance.last_heartbeat || instance.last_seen || '').toLocaleString('zh-CN')
+          : '未知',
     }));
   }, [instances]);
 
   // Get unique functions for filter
   const functionFilters = useMemo(() => {
-    const functions = [...new Set(instances.map(instance => instance.function_id))];
-    return functions.map(funcId => ({ text: funcId, value: funcId }));
+    const functions = [...new Set(instances.map((instance) => instance.function_id))];
+    return functions.map((funcId) => ({ text: funcId, value: funcId }));
   }, [instances]);
 
   // Get unique games for filter
   const gameFilters = useMemo(() => {
-    const games = [...new Set(instances.map(instance => instance.game_id).filter(Boolean))];
-    return games.map(game => ({ text: game, value: game }));
+    const games = [...new Set(instances.map((instance) => instance.game_id).filter(Boolean))];
+    return games.map((game) => ({ text: game, value: game }));
   }, [instances]);
 
   const fetchInstanceDetail = async (instance: FunctionInstance) => {
@@ -197,18 +236,45 @@ export default () => {
           success_calls: Math.floor(Math.random() * 900),
           failed_calls: Math.floor(Math.random() * 100),
           avg_duration: Math.floor(Math.random() * 500) + 50,
-          last_call: new Date(Date.now() - Math.random() * 3600000).toISOString()
+          last_call: new Date(Date.now() - Math.random() * 3600000).toISOString(),
         },
         recentCalls: [
-          { id: '1', status: 'success', started_at: new Date(Date.now() - 300000).toISOString(), duration: 234 },
-          { id: '2', status: 'success', started_at: new Date(Date.now() - 900000).toISOString(), duration: 189 },
-          { id: '3', status: 'failed', started_at: new Date(Date.now() - 1800000).toISOString(), duration: 0 },
+          {
+            id: '1',
+            status: 'success',
+            started_at: new Date(Date.now() - 300000).toISOString(),
+            duration: 234,
+          },
+          {
+            id: '2',
+            status: 'success',
+            started_at: new Date(Date.now() - 900000).toISOString(),
+            duration: 189,
+          },
+          {
+            id: '3',
+            status: 'failed',
+            started_at: new Date(Date.now() - 1800000).toISOString(),
+            duration: 0,
+          },
         ],
         logs: [
-          { timestamp: new Date(Date.now() - 60000).toISOString(), level: 'info', message: 'Function executed successfully' },
-          { timestamp: new Date(Date.now() - 120000).toISOString(), level: 'debug', message: 'Processing request with params: {...}' },
-          { timestamp: new Date(Date.now() - 300000).toISOString(), level: 'info', message: 'New registration received' },
-        ]
+          {
+            timestamp: new Date(Date.now() - 60000).toISOString(),
+            level: 'info',
+            message: 'Function executed successfully',
+          },
+          {
+            timestamp: new Date(Date.now() - 120000).toISOString(),
+            level: 'debug',
+            message: 'Processing request with params: {...}',
+          },
+          {
+            timestamp: new Date(Date.now() - 300000).toISOString(),
+            level: 'info',
+            message: 'New registration received',
+          },
+        ],
       });
     } catch (e: any) {
       message.error(e?.message || '加载详情失败');
@@ -223,11 +289,31 @@ export default () => {
 
     // Simulated logs - in production, fetch from backend
     setLogsData([
-      { timestamp: new Date(Date.now() - 10000).toISOString(), level: 'INFO', message: `Processing function ${instance.function_id}` },
-      { timestamp: new Date(Date.now() - 8000).toISOString(), level: 'DEBUG', message: `Agent ${instance.agent_id} heartbeat received` },
-      { timestamp: new Date(Date.now() - 5000).toISOString(), level: 'INFO', message: 'Request parameters validated' },
-      { timestamp: new Date(Date.now() - 3000).toISOString(), level: 'INFO', message: 'Function execution completed successfully' },
-      { timestamp: new Date(Date.now() - 1000).toISOString(), level: 'DEBUG', message: `Response sent to client (${instance.addr})` },
+      {
+        timestamp: new Date(Date.now() - 10000).toISOString(),
+        level: 'INFO',
+        message: `Processing function ${instance.function_id}`,
+      },
+      {
+        timestamp: new Date(Date.now() - 8000).toISOString(),
+        level: 'DEBUG',
+        message: `Agent ${instance.agent_id} heartbeat received`,
+      },
+      {
+        timestamp: new Date(Date.now() - 5000).toISOString(),
+        level: 'INFO',
+        message: 'Request parameters validated',
+      },
+      {
+        timestamp: new Date(Date.now() - 3000).toISOString(),
+        level: 'INFO',
+        message: 'Function execution completed successfully',
+      },
+      {
+        timestamp: new Date(Date.now() - 1000).toISOString(),
+        level: 'DEBUG',
+        message: `Response sent to client (${instance.addr})`,
+      },
     ]);
   };
 
@@ -247,7 +333,7 @@ export default () => {
       }
 
       // Simulated debug call - in production, call backend debug API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       setDebugResult({
         success: true,
@@ -257,10 +343,10 @@ export default () => {
           response: {
             code: 0,
             message: 'OK',
-            data: { example: 'result' }
-          }
+            data: { example: 'result' },
+          },
         },
-        warnings: []
+        warnings: [],
       });
       message.success('调试执行成功');
     } catch (e: any) {
@@ -282,7 +368,7 @@ export default () => {
           <ClusterOutlined />
           <Text code>{record.agent_id}</Text>
         </Space>
-      )
+      ),
     },
     {
       title: 'Service ID',
@@ -290,14 +376,14 @@ export default () => {
       width: 200,
       copyable: true,
       ellipsis: true,
-      render: (_, record) => <Text code>{record.service_id}</Text>
+      render: (_, record) => <Text code>{record.service_id}</Text>,
     },
     {
       title: '地址',
       dataIndex: 'addr',
       width: 200,
       ellipsis: true,
-      copyable: true
+      copyable: true,
     },
     {
       title: '函数ID',
@@ -305,13 +391,17 @@ export default () => {
       width: 250,
       filters: functionFilters,
       onFilter: (value, record) => record.function_id === value,
-      render: (_, record) => <Text code copyable>{record.function_id}</Text>
+      render: (_, record) => (
+        <Text code copyable>
+          {record.function_id}
+        </Text>
+      ),
     },
     {
       title: '版本',
       dataIndex: 'version',
       width: 100,
-      render: (_, record) => <Tag color="blue">{record.version || '-'}</Tag>
+      render: (_, record) => <Tag color="blue">{record.version || '-'}</Tag>,
     },
     {
       title: 'Game/Env',
@@ -324,7 +414,7 @@ export default () => {
           <Tag color="purple">{record.game_id || '-'}</Tag>
           <Tag>{record.env || '-'}</Tag>
         </Space>
-      )
+      ),
     },
     {
       title: '状态',
@@ -333,24 +423,39 @@ export default () => {
       filters: [
         { text: '运行中', value: 'running' },
         { text: '停止', value: 'stopped' },
-        { text: '错误', value: 'error' }
+        { text: '错误', value: 'error' },
       ],
       onFilter: (value, record) => record.status === value,
       render: (_, record) => (
         <Badge
-          status={record.healthy || record.status === 'running' ? 'success' : record.status === 'error' ? 'error' : 'default'}
-          text={record.healthy || record.status === 'running' ? '运行中' : record.status === 'error' ? '错误' : '停止'}
+          status={
+            record.healthy || record.status === 'running'
+              ? 'success'
+              : record.status === 'error'
+              ? 'error'
+              : 'default'
+          }
+          text={
+            record.healthy || record.status === 'running'
+              ? '运行中'
+              : record.status === 'error'
+              ? '错误'
+              : '停止'
+          }
         />
-      )
+      ),
     },
     {
       title: '最后心跳',
       dataIndex: 'last_heartbeat',
       width: 180,
       render: (_, record) => (
-        <Text type="secondary">{record.last_heartbeat || record.last_seen ?
-          new Date(record.last_heartbeat || record.last_seen || '').toLocaleString('zh-CN') : '未知'}</Text>
-      )
+        <Text type="secondary">
+          {record.last_heartbeat || record.last_seen
+            ? new Date(record.last_heartbeat || record.last_seen || '').toLocaleString('zh-CN')
+            : '未知'}
+        </Text>
+      ),
     },
     {
       title: '操作',
@@ -387,8 +492,8 @@ export default () => {
             />
           </Tooltip>
         </Space>
-      )
-    }
+      ),
+    },
   ];
 
   return (
@@ -398,7 +503,7 @@ export default () => {
       extra={[
         <Button key="refresh" icon={<ReloadOutlined />} onClick={fetchData}>
           刷新
-        </Button>
+        </Button>,
       ]}
     >
       {/* Coverage Statistics */}
@@ -426,8 +531,12 @@ export default () => {
                 value={coverage.coverage_percentage}
                 suffix="%"
                 valueStyle={{
-                  color: coverage.coverage_percentage >= 80 ? '#3f8600' :
-                         coverage.coverage_percentage >= 60 ? '#fa8c16' : '#cf1322'
+                  color:
+                    coverage.coverage_percentage >= 80
+                      ? '#3f8600'
+                      : coverage.coverage_percentage >= 60
+                      ? '#fa8c16'
+                      : '#cf1322',
                 }}
               />
             </Col>
@@ -480,12 +589,14 @@ export default () => {
 
       {/* Instances Table */}
       <ProTable<FunctionInstance>
-        rowKey={(record) => [
-          record.agent_id,
-          record.service_id || record.provider_id || '',
-          record.function_id,
-          record.addr,
-        ].join('|')}
+        rowKey={(record) =>
+          [
+            record.agent_id,
+            record.service_id || record.provider_id || '',
+            record.function_id,
+            record.addr,
+          ].join('|')
+        }
         loading={loading}
         columns={columns}
         dataSource={processedData}
@@ -493,11 +604,11 @@ export default () => {
           pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 个实例`
+          showTotal: (total) => `共 ${total} 个实例`,
         }}
         search={{
           filterType: 'light',
-          labelWidth: 'auto'
+          labelWidth: 'auto',
         }}
         dateFormatter="string"
         headerTitle="实例列表"
@@ -505,12 +616,12 @@ export default () => {
           type: 'checkbox',
           onChange: (selectedRowKeys, selectedRows) => {
             console.log('selectedRowKeys: ', selectedRowKeys, 'selectedRows: ', selectedRows);
-          }
+          },
         }}
         toolBarRender={() => [
           <Button key="refresh" icon={<ReloadOutlined />} onClick={fetchData}>
             刷新数据
-          </Button>
+          </Button>,
         ]}
       />
 
@@ -529,21 +640,33 @@ export default () => {
             items={[
               {
                 key: 'overview',
-                label: <span><InfoCircleOutlined /> 概览</span>,
+                label: (
+                  <span>
+                    <InfoCircleOutlined /> 概览
+                  </span>
+                ),
                 children: (
                   <>
                     <Descriptions title="实例信息" bordered column={2} size="small">
                       <Descriptions.Item label="Agent ID" span={2}>
-                        <Text code copyable>{instanceDetail.instance.agent_id}</Text>
+                        <Text code copyable>
+                          {instanceDetail.instance.agent_id}
+                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="Service ID" span={2}>
-                        <Text code copyable>{instanceDetail.instance.service_id}</Text>
+                        <Text code copyable>
+                          {instanceDetail.instance.service_id}
+                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="函数ID" span={2}>
-                        <Text code copyable>{instanceDetail.instance.function_id}</Text>
+                        <Text code copyable>
+                          {instanceDetail.instance.function_id}
+                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="地址" span={2}>
-                        <Text code copyable>{instanceDetail.instance.addr}</Text>
+                        <Text code copyable>
+                          {instanceDetail.instance.addr}
+                        </Text>
                       </Descriptions.Item>
                       <Descriptions.Item label="版本">
                         <Tag color="blue">{instanceDetail.instance.version || '-'}</Tag>
@@ -561,25 +684,41 @@ export default () => {
                         {instanceDetail.instance.env || '-'}
                       </Descriptions.Item>
                       <Descriptions.Item label="最后心跳" span={2}>
-                        {instanceDetail.instance.last_heartbeat || instanceDetail.instance.last_seen || '-'}
+                        {instanceDetail.instance.last_heartbeat ||
+                          instanceDetail.instance.last_seen ||
+                          '-'}
                       </Descriptions.Item>
                     </Descriptions>
 
                     {instanceDetail.metrics && (
                       <>
-                        <Title level={5} style={{ marginTop: 24 }}>调用指标</Title>
+                        <Title level={5} style={{ marginTop: 24 }}>
+                          调用指标
+                        </Title>
                         <Row gutter={16}>
                           <Col span={6}>
                             <Statistic title="总调用" value={instanceDetail.metrics.total_calls} />
                           </Col>
                           <Col span={6}>
-                            <Statistic title="成功" value={instanceDetail.metrics.success_calls} valueStyle={{ color: '#3f8600' }} />
+                            <Statistic
+                              title="成功"
+                              value={instanceDetail.metrics.success_calls}
+                              valueStyle={{ color: '#3f8600' }}
+                            />
                           </Col>
                           <Col span={6}>
-                            <Statistic title="失败" value={instanceDetail.metrics.failed_calls} valueStyle={{ color: '#cf1322' }} />
+                            <Statistic
+                              title="失败"
+                              value={instanceDetail.metrics.failed_calls}
+                              valueStyle={{ color: '#cf1322' }}
+                            />
                           </Col>
                           <Col span={6}>
-                            <Statistic title="平均耗时" value={instanceDetail.metrics.avg_duration} suffix="ms" />
+                            <Statistic
+                              title="平均耗时"
+                              value={instanceDetail.metrics.avg_duration}
+                              suffix="ms"
+                            />
                           </Col>
                         </Row>
                       </>
@@ -587,29 +726,41 @@ export default () => {
 
                     {instanceDetail.recentCalls && instanceDetail.recentCalls.length > 0 && (
                       <>
-                        <Title level={5} style={{ marginTop: 24 }}>最近调用</Title>
+                        <Title level={5} style={{ marginTop: 24 }}>
+                          最近调用
+                        </Title>
                         <Timeline
-                          items={instanceDetail.recentCalls.map(call => ({
+                          items={instanceDetail.recentCalls.map((call) => ({
                             color: call.status === 'success' ? 'green' : 'red',
                             children: (
                               <div>
-                                <Text>{call.id} - <Tag color={call.status === 'success' ? 'success' : 'error'}>{call.status}</Tag></Text>
+                                <Text>
+                                  {call.id} -{' '}
+                                  <Tag color={call.status === 'success' ? 'success' : 'error'}>
+                                    {call.status}
+                                  </Tag>
+                                </Text>
                                 <br />
                                 <Text type="secondary" style={{ fontSize: 12 }}>
-                                  {new Date(call.started_at).toLocaleString('zh-CN')} - {call.duration}ms
+                                  {new Date(call.started_at).toLocaleString('zh-CN')} -{' '}
+                                  {call.duration}ms
                                 </Text>
                               </div>
-                            )
+                            ),
                           }))}
                         />
                       </>
                     )}
                   </>
-                )
+                ),
               },
               {
                 key: 'logs',
-                label: <span><HistoryOutlined /> 日志</span>,
+                label: (
+                  <span>
+                    <HistoryOutlined /> 日志
+                  </span>
+                ),
                 children: (
                   <div>
                     <Button
@@ -620,16 +771,28 @@ export default () => {
                       查看完整日志
                     </Button>
                     {instanceDetail.logs?.map((log, idx) => (
-                      <div key={idx} style={{ marginBottom: 8, padding: '8px 12px', background: '#fafafa', borderRadius: 4 }}>
+                      <div
+                        key={idx}
+                        style={{
+                          marginBottom: 8,
+                          padding: '8px 12px',
+                          background: '#fafafa',
+                          borderRadius: 4,
+                        }}
+                      >
                         <Text type="secondary" style={{ fontSize: 12 }}>
                           {new Date(log.timestamp).toLocaleString('zh-CN')}
                         </Text>
                         <Tag
                           size="small"
                           color={
-                            log.level === 'error' ? 'error' :
-                            log.level === 'warn' ? 'warning' :
-                            log.level === 'debug' ? 'default' : 'success'
+                            log.level === 'error'
+                              ? 'error'
+                              : log.level === 'warn'
+                              ? 'warning'
+                              : log.level === 'debug'
+                              ? 'default'
+                              : 'success'
                           }
                           style={{ marginLeft: 8 }}
                         >
@@ -639,11 +802,15 @@ export default () => {
                       </div>
                     ))}
                   </div>
-                )
+                ),
               },
               {
                 key: 'debug',
-                label: <span><BugOutlined /> 调试</span>,
+                label: (
+                  <span>
+                    <BugOutlined /> 调试
+                  </span>
+                ),
                 children: (
                   <div>
                     <Alert
@@ -663,8 +830,8 @@ export default () => {
                       打开调试面板
                     </Button>
                   </div>
-                )
-              }
+                ),
+              },
             ]}
           />
         )}
@@ -680,33 +847,54 @@ export default () => {
           <Button key="close" onClick={() => setLogsVisible(false)}>
             关闭
           </Button>,
-          <Button key="export" onClick={() => {
-            const text = logsData.map(l => `[${l.timestamp}] [${l.level}] ${l.message}`).join('\n');
-            const blob = new Blob([text], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `instance-logs-${selectedInstance?.agent_id}-${Date.now()}.log`;
-            a.click();
-            URL.revokeObjectURL(url);
-            message.success('日志已导出');
-          }}>
+          <Button
+            key="export"
+            onClick={() => {
+              const text = logsData
+                .map((l) => `[${l.timestamp}] [${l.level}] ${l.message}`)
+                .join('\n');
+              const blob = new Blob([text], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `instance-logs-${selectedInstance?.agent_id}-${Date.now()}.log`;
+              a.click();
+              URL.revokeObjectURL(url);
+              message.success('日志已导出');
+            }}
+          >
             导出日志
-          </Button>
+          </Button>,
         ]}
       >
-        <div style={{ maxHeight: 400, overflow: 'auto', background: '#1e1e1e', padding: 12, borderRadius: 4 }}>
+        <div
+          style={{
+            maxHeight: 400,
+            overflow: 'auto',
+            background: '#1e1e1e',
+            padding: 12,
+            borderRadius: 4,
+          }}
+        >
           {logsData.map((log, idx) => (
             <div key={idx} style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 12 }}>
-              <span style={{ color: '#6b7280' }}>[{new Date(log.timestamp).toLocaleString('zh-CN')}]</span>
-              <span style={{
-                color:
-                  log.level === 'ERROR' ? '#ef4444' :
-                  log.level === 'WARN' ? '#f59e0b' :
-                  log.level === 'DEBUG' ? '#8b5cf6' : '#10b981',
-                marginLeft: 8,
-                marginRight: 8
-              }}>
+              <span style={{ color: '#6b7280' }}>
+                [{new Date(log.timestamp).toLocaleString('zh-CN')}]
+              </span>
+              <span
+                style={{
+                  color:
+                    log.level === 'ERROR'
+                      ? '#ef4444'
+                      : log.level === 'WARN'
+                      ? '#f59e0b'
+                      : log.level === 'DEBUG'
+                      ? '#8b5cf6'
+                      : '#10b981',
+                  marginLeft: 8,
+                  marginRight: 8,
+                }}
+              >
                 [{log.level}]
               </span>
               <span style={{ color: '#e5e7eb' }}>{log.message}</span>
@@ -725,22 +913,12 @@ export default () => {
           <Button key="cancel" onClick={() => setDebugVisible(false)}>
             取消
           </Button>,
-          <Button
-            key="dryRun"
-            onClick={executeDebug}
-            loading={debugLoading}
-          >
+          <Button key="dryRun" onClick={executeDebug} loading={debugLoading}>
             试运行
           </Button>,
-          <Button
-            key="execute"
-            type="primary"
-            danger
-            onClick={executeDebug}
-            loading={debugLoading}
-          >
+          <Button key="execute" type="primary" danger onClick={executeDebug} loading={debugLoading}>
             执行
-          </Button>
+          </Button>,
         ]}
       >
         <Space direction="vertical" style={{ width: '100%' }} size="large">
@@ -774,16 +952,18 @@ export default () => {
           {debugResult && (
             <div>
               <Text strong>执行结果:</Text>
-              <pre style={{
-                marginTop: 8,
-                padding: 12,
-                background: debugResult.success ? '#f6ffed' : '#fff2f0',
-                border: `1px solid ${debugResult.success ? '#b7eb8f' : '#ffccc7'}`,
-                borderRadius: 4,
-                fontSize: 12,
-                maxHeight: 200,
-                overflow: 'auto'
-              }}>
+              <pre
+                style={{
+                  marginTop: 8,
+                  padding: 12,
+                  background: debugResult.success ? '#f6ffed' : '#fff2f0',
+                  border: `1px solid ${debugResult.success ? '#b7eb8f' : '#ffccc7'}`,
+                  borderRadius: 4,
+                  fontSize: 12,
+                  maxHeight: 200,
+                  overflow: 'auto',
+                }}
+              >
                 {JSON.stringify(debugResult, null, 2)}
               </pre>
             </div>

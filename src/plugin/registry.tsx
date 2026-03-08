@@ -10,7 +10,11 @@ const renderers: Record<string, Renderer> = {};
 
 // Default JSON view renderer
 const JsonView: Renderer = ({ data, options }) => {
-  return <pre style={{ whiteSpace: 'pre-wrap' }}>{typeof data === 'string' ? data : JSON.stringify(data, null, 2)}</pre>;
+  return (
+    <pre style={{ whiteSpace: 'pre-wrap' }}>
+      {typeof data === 'string' ? data : JSON.stringify(data, null, 2)}
+    </pre>
+  );
 };
 
 // Text view renderer
@@ -28,14 +32,17 @@ const TableView: Renderer = ({ data }) => {
   if (!Array.isArray(data) || data.length === 0) {
     return <div>No data</div>;
   }
-  
+
   const headers = Object.keys(data[0]);
   return (
     <table style={{ borderCollapse: 'collapse', width: '100%' }}>
       <thead>
         <tr>
-          {headers.map(header => (
-            <th key={header} style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}>
+          {headers.map((header) => (
+            <th
+              key={header}
+              style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left' }}
+            >
               {header}
             </th>
           ))}
@@ -44,7 +51,7 @@ const TableView: Renderer = ({ data }) => {
       <tbody>
         {data.map((row, index) => (
           <tr key={index}>
-            {headers.map(header => (
+            {headers.map((header) => (
               <td key={header} style={{ border: '1px solid #ddd', padding: '8px' }}>
                 {String(row[header] ?? '')}
               </td>
@@ -75,7 +82,7 @@ export function registerBuiltins(): void {
   renderers['number.view'] = NumberView;
   renderers['table.view'] = TableView;
   renderers['table.basic'] = TableView;
-  
+
   // Aliases for backward compatibility
   renderers['json'] = JsonView;
   renderers['text'] = TextView;
@@ -95,7 +102,9 @@ async function importPluginModule(url: string): Promise<any> {
 }
 
 function normalizePluginPath(path: string): string {
-  const p = String(path || '').trim().replace(/\\/g, '/');
+  const p = String(path || '')
+    .trim()
+    .replace(/\\/g, '/');
   return p.startsWith('/') ? p.slice(1) : p;
 }
 
@@ -103,7 +112,9 @@ function extractPackPlugins(packsResponse: any): PackPluginEntry[] {
   const packs: any[] =
     (packsResponse?.packs && Array.isArray(packsResponse.packs) && packsResponse.packs) ||
     (packsResponse?.packages && Array.isArray(packsResponse.packages) && packsResponse.packages) ||
-    (packsResponse?.manifest?.packs && Array.isArray(packsResponse.manifest.packs) && packsResponse.manifest.packs) ||
+    (packsResponse?.manifest?.packs &&
+      Array.isArray(packsResponse.manifest.packs) &&
+      packsResponse.manifest.packs) ||
     [];
 
   const plugins: PackPluginEntry[] = [];
@@ -145,7 +156,12 @@ export async function loadPackPlugins(): Promise<void> {
       plugins.map(async (p) => {
         const token = localStorage.getItem('token');
         const mod = await importPluginModule(
-          buildPackPluginUrl({ pack: p.packId, path: p.path, v: p.updatedAt, token: token || undefined }),
+          buildPackPluginUrl({
+            pack: p.packId,
+            path: p.path,
+            v: p.updatedAt,
+            token: token || undefined,
+          }),
         );
         const reg = mod?.default || mod?.register || mod;
         if (typeof reg === 'function') {

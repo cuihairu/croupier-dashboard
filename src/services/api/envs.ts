@@ -15,14 +15,25 @@ export async function listGameEnvs(gameId: number) {
   return { envs };
 }
 
-export async function addGameEnv(gameId: number, env: string, description?: string, color?: string) {
+export async function addGameEnv(
+  gameId: number,
+  env: string,
+  description?: string,
+  color?: string,
+) {
   return request<void>(`/api/v1/games/${gameId}/envs`, {
     method: 'POST',
     data: { name: env, type: description || color || '' },
   });
 }
 
-export async function updateGameEnv(gameId: number, oldEnv: string, env?: string, description?: string, color?: string) {
+export async function updateGameEnv(
+  gameId: number,
+  oldEnv: string,
+  env?: string,
+  description?: string,
+  color?: string,
+) {
   return request<void>(`/api/v1/games/${gameId}/envs/${encodeURIComponent(oldEnv)}`, {
     method: 'PUT',
     data: { name: env, type: description || color || '' },

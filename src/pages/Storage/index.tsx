@@ -158,7 +158,7 @@ export default function StoragePage() {
   // 返回上级目录
   const handleGoBack = () => {
     if (currentPrefix) {
-      const parts = currentPrefix.split('/').filter(p => p);
+      const parts = currentPrefix.split('/').filter((p) => p);
       parts.pop(); // 移除当前目录
       const newPrefix = parts.join('/');
       setCurrentPrefix(newPrefix ? newPrefix + '/' : '');
@@ -169,19 +169,33 @@ export default function StoragePage() {
   const breadcrumbItems = React.useMemo(() => {
     const items = [
       {
-        title: <span style={{ cursor: 'pointer', color: '#1890ff' }} onClick={() => setCurrentPrefix('')}>根目录</span>,
+        title: (
+          <span
+            style={{ cursor: 'pointer', color: '#1890ff' }}
+            onClick={() => setCurrentPrefix('')}
+          >
+            根目录
+          </span>
+        ),
       },
     ];
 
     if (currentPrefix) {
-      const parts = currentPrefix.split('/').filter(p => p);
+      const parts = currentPrefix.split('/').filter((p) => p);
       let buildPath = '';
       parts.forEach((part, index) => {
         buildPath += part + '/';
         // 使用闭包捕获当前的 buildPath 值
         const currentPath = buildPath;
         items.push({
-          title: <span style={{ cursor: 'pointer', color: '#1890ff' }} onClick={() => setCurrentPrefix(currentPath)}>{part}</span>,
+          title: (
+            <span
+              style={{ cursor: 'pointer', color: '#1890ff' }}
+              onClick={() => setCurrentPrefix(currentPath)}
+            >
+              {part}
+            </span>
+          ),
         });
       });
     }
@@ -241,7 +255,7 @@ export default function StoragePage() {
             const data = JSON.parse(xhr.responseText);
 
             // 更新成功统计
-            setUploadStats(prev => ({
+            setUploadStats((prev) => ({
               ...prev,
               success: prev.success + 1,
             }));
@@ -258,7 +272,7 @@ export default function StoragePage() {
 
             // 失败立即提示并记录
             message.error(`${filePath} 上传失败: ${errorMsg}`);
-            setUploadStats(prev => ({
+            setUploadStats((prev) => ({
               ...prev,
               failed: prev.failed + 1,
               failedFiles: [...prev.failedFiles, filePath],
@@ -267,7 +281,7 @@ export default function StoragePage() {
             onError?.(new Error(errorMsg));
           } catch {
             message.error(`${filePath} 上传失败`);
-            setUploadStats(prev => ({
+            setUploadStats((prev) => ({
               ...prev,
               failed: prev.failed + 1,
               failedFiles: [...prev.failedFiles, filePath],
@@ -280,7 +294,7 @@ export default function StoragePage() {
       // 监听上传错误
       xhr.addEventListener('error', () => {
         message.error(`${filePath} 上传失败: 网络错误`);
-        setUploadStats(prev => ({
+        setUploadStats((prev) => ({
           ...prev,
           failed: prev.failed + 1,
           failedFiles: [...prev.failedFiles, filePath],
@@ -295,8 +309,10 @@ export default function StoragePage() {
       }
       xhr.send(formData);
     } catch (error) {
-      message.error(`${file.name} 上传失败: ${error instanceof Error ? error.message : '未知错误'}`);
-      setUploadStats(prev => ({
+      message.error(
+        `${file.name} 上传失败: ${error instanceof Error ? error.message : '未知错误'}`,
+      );
+      setUploadStats((prev) => ({
         ...prev,
         failed: prev.failed + 1,
         failedFiles: [...prev.failedFiles, file.name],
@@ -308,7 +324,7 @@ export default function StoragePage() {
   // 检查所有上传是否完成
   const checkAllUploadsComplete = () => {
     const allFiles = [...fileUploadList, ...dirUploadList];
-    const completedCount = allFiles.filter(f => f.status === 'done').length;
+    const completedCount = allFiles.filter((f) => f.status === 'done').length;
 
     if (completedCount === allFiles.length && allFiles.length > 0) {
       // 所有上传完成，显示汇总
@@ -323,7 +339,11 @@ export default function StoragePage() {
           } else {
             message.warning(
               `上传完成：成功 ${success} 个，失败 ${failed} 个` +
-              (failedFiles.length > 0 ? `\n失败文件：${failedFiles.slice(0, 3).join(', ')}${failedFiles.length > 3 ? '...' : ''}` : '')
+                (failedFiles.length > 0
+                  ? `\n失败文件：${failedFiles.slice(0, 3).join(', ')}${
+                      failedFiles.length > 3 ? '...' : ''
+                    }`
+                  : ''),
             );
           }
 
@@ -531,11 +551,7 @@ export default function StoragePage() {
       key: 'size',
       width: 120,
       render: (size, record) =>
-        record.isDirectory ? (
-          <span>-</span>
-        ) : (
-          <Tag color="blue">{formatFileSize(size)}</Tag>
-        ),
+        record.isDirectory ? <span>-</span> : <Tag color="blue">{formatFileSize(size)}</Tag>,
     },
     {
       title: '修改时间',
@@ -571,7 +587,9 @@ export default function StoragePage() {
           )}
           <Popconfirm
             title="确认删除"
-            description={record.isDirectory ? "确定要删除这个目录及其所有内容吗？" : "确定要删除这个文件吗？"}
+            description={
+              record.isDirectory ? '确定要删除这个目录及其所有内容吗？' : '确定要删除这个文件吗？'
+            }
             onConfirm={() => handleDelete(record.key)}
             okText="确定"
             cancelText="取消"
@@ -584,18 +602,11 @@ export default function StoragePage() {
   ];
 
   return (
-    <PageContainer
-      title="对象存储管理"
-      subTitle="管理上传到对象存储的文件资源"
-    >
+    <PageContainer title="对象存储管理" subTitle="管理上传到对象存储的文件资源">
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col span={6}>
           <Card>
-            <Statistic
-              title="总文件数"
-              value={files.length}
-              prefix={<FileOutlined />}
-            />
+            <Statistic title="总文件数" value={files.length} prefix={<FileOutlined />} />
           </Card>
         </Col>
         <Col span={6}>
@@ -623,9 +634,7 @@ export default function StoragePage() {
             </Button>
           )}
           {/* 调试信息：显示当前路径 */}
-          {currentPrefix && (
-            <Tag color="blue">当前目录: {currentPrefix || '(根)'}</Tag>
-          )}
+          {currentPrefix && <Tag color="blue">当前目录: {currentPrefix || '(根)'}</Tag>}
         </Space>
       </Card>
 
@@ -655,10 +664,7 @@ export default function StoragePage() {
           >
             上传文件
           </Button>
-          <Button
-            icon={<FolderAddOutlined />}
-            onClick={() => setCreateDirVisible(true)}
-          >
+          <Button icon={<FolderAddOutlined />} onClick={() => setCreateDirVisible(true)}>
             新建目录
           </Button>
           {selectedKeys.length > 0 && (
@@ -713,18 +719,20 @@ export default function StoragePage() {
           loadFiles(); // 关闭时刷新列表
         }}
         footer={
-          <Button onClick={() => {
-            setUploadVisible(false);
-            setFileUploadList([]);
-            setDirUploadList([]);
-            setUploadStats({
-              total: 0,
-              success: 0,
-              failed: 0,
-              failedFiles: [],
-            });
-            loadFiles(); // 关闭时刷新列表
-          }}>
+          <Button
+            onClick={() => {
+              setUploadVisible(false);
+              setFileUploadList([]);
+              setDirUploadList([]);
+              setUploadStats({
+                total: 0,
+                success: 0,
+                failed: 0,
+                failedFiles: [],
+              });
+              loadFiles(); // 关闭时刷新列表
+            }}
+          >
             完成
           </Button>
         }
@@ -736,27 +744,24 @@ export default function StoragePage() {
             <div style={{ padding: '12px', background: '#f5f5f5', borderRadius: '4px' }}>
               <Space direction="vertical" style={{ width: '100%' }} size="small">
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <Text>总文件数: {fileUploadList.length + dirUploadList.length}</Text>
                   <Text>
-                    总文件数: {fileUploadList.length + dirUploadList.length}
+                    已完成:{' '}
+                    {fileUploadList.filter((f) => f.status === 'done').length +
+                      dirUploadList.filter((f) => f.status === 'done').length}{' '}
+                    / {fileUploadList.length + dirUploadList.length}
                   </Text>
-                  <Text>
-                    已完成: {
-                      fileUploadList.filter(f => f.status === 'done').length +
-                      dirUploadList.filter(f => f.status === 'done').length
-                    } / {fileUploadList.length + dirUploadList.length}
-                  </Text>
-                  {uploadStats.failed > 0 && (
-                    <Text type="danger">
-                      失败: {uploadStats.failed}
-                    </Text>
-                  )}
+                  {uploadStats.failed > 0 && <Text type="danger">失败: {uploadStats.failed}</Text>}
                 </div>
                 <Progress
-                  percent={Math.round(
-                    ((fileUploadList.filter(f => f.status === 'done').length +
-                      dirUploadList.filter(f => f.status === 'done').length) /
-                    (fileUploadList.length + dirUploadList.length)) * 100
-                  ) || 0}
+                  percent={
+                    Math.round(
+                      ((fileUploadList.filter((f) => f.status === 'done').length +
+                        dirUploadList.filter((f) => f.status === 'done').length) /
+                        (fileUploadList.length + dirUploadList.length)) *
+                        100,
+                    ) || 0
+                  }
                   status={uploadStats.failed > 0 ? 'exception' : 'active'}
                 />
               </Space>
@@ -783,7 +788,7 @@ export default function StoragePage() {
               }}
             >
               <p className="ant-upload-drag-icon">
-              <CloudUploadOutlined style={{ fontSize: 48 }} />
+                <CloudUploadOutlined style={{ fontSize: 48 }} />
               </p>
               <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
               <p className="ant-upload-hint">
@@ -816,9 +821,7 @@ export default function StoragePage() {
                 <FolderOutlined style={{ fontSize: 48 }} />
               </p>
               <p className="ant-upload-text">点击或拖拽文件夹到此区域上传</p>
-              <p className="ant-upload-hint">
-                支持整个文件夹上传，将保持原有的文件夹结构。
-              </p>
+              <p className="ant-upload-hint">支持整个文件夹上传，将保持原有的文件夹结构。</p>
             </Upload.Dragger>
           </div>
         </Space>

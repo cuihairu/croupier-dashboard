@@ -89,7 +89,7 @@ export const formatFunctionStatus = (status: string): string => {
     running: '运行中',
     stopped: '已停止',
     error: '错误',
-    pending: '等待中'
+    pending: '等待中',
   };
   return statusMap[status] || status;
 };
@@ -104,7 +104,7 @@ export const formatExecutionStatus = (status: string): string => {
     running: '运行中',
     cancelled: '已取消',
     timeout: '超时',
-    pending: '等待中'
+    pending: '等待中',
   };
   return statusMap[status] || status;
 };
@@ -118,7 +118,7 @@ export const formatServiceStatus = (status: string): string => {
     unhealthy: '异常',
     unknown: '未知',
     online: '在线',
-    offline: '离线'
+    offline: '离线',
   };
   return statusMap[status] || status;
 };

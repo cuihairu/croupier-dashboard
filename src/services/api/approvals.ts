@@ -34,4 +34,3 @@ export async function approveApproval(data: { id: string; otp?: string }) {
 export async function rejectApproval(data: { id: string; reason: string }) {
   return request<void>('/api/approvals/reject', { method: 'POST', data });
 }
-

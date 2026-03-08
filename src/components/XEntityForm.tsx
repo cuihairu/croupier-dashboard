@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Divider, Button, Space, Typography, App, Tabs, Alert, Card } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  Divider,
+  Button,
+  Space,
+  Typography,
+  App,
+  Tabs,
+  Alert,
+  Card,
+} from 'antd';
 import type { FormInstance } from 'antd/es/form';
 import FormRender from 'form-render';
-import { CheckCircleOutlined, ExclamationCircleOutlined, EditOutlined, CodeOutlined, FormOutlined } from '@ant-design/icons';
+import {
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  EditOutlined,
+  CodeOutlined,
+  FormOutlined,
+} from '@ant-design/icons';
 import JSONSchemaEditor from '@/components/JSONSchemaEditor';
 import UISchemaEditor from '@/components/UISchemaEditor';
 
@@ -167,13 +185,11 @@ export default function XEntityForm<T = any>({
       };
 
       await onSubmit(entityData);
-      message.success(
-        successMessage || `${isEditing ? 'Updated' : 'Created'} successfully`
-      );
+      message.success(successMessage || `${isEditing ? 'Updated' : 'Created'} successfully`);
       onCancel();
     } catch (error: any) {
       message.error(
-        error?.message || failureMessage || `Failed to ${isEditing ? 'update' : 'create'}`
+        error?.message || failureMessage || `Failed to ${isEditing ? 'update' : 'create'}`,
       );
     } finally {
       setLoading(false);
@@ -183,11 +199,13 @@ export default function XEntityForm<T = any>({
   // Build footer buttons
   const footerButtons = [
     ...extraFooterButtons,
-    ...(onValidate ? [
-      <Button key="validate" onClick={handleValidate} loading={loading}>
-        {validateButtonText}
-      </Button>
-    ] : []),
+    ...(onValidate
+      ? [
+          <Button key="validate" onClick={handleValidate} loading={loading}>
+            {validateButtonText}
+          </Button>,
+        ]
+      : []),
     <Button key="cancel" onClick={onCancel}>
       {cancelButtonText}
     </Button>,
@@ -209,9 +227,10 @@ export default function XEntityForm<T = any>({
     return data;
   };
   const previewSchema = schemaData && typeof schemaData === 'object' ? schemaData : {};
-  const previewSchemaProperties = previewSchema?.properties && typeof previewSchema.properties === 'object'
-    ? previewSchema.properties
-    : {};
+  const previewSchemaProperties =
+    previewSchema?.properties && typeof previewSchema.properties === 'object'
+      ? previewSchema.properties
+      : {};
   const hasPreviewFields = Object.keys(previewSchemaProperties || {}).length > 0;
   const previewUISchema = resolveUISchema(uiSchemaData);
 
@@ -227,7 +246,9 @@ export default function XEntityForm<T = any>({
       <Form form={form} layout="vertical">
         {basicFields.map((field) => {
           const { name, label, required, type = 'input', placeholder, rules = [] } = field;
-          const fieldRules = required ? [{ required: true, message: `Please enter ${label.toLowerCase()}` }, ...rules] : rules;
+          const fieldRules = required
+            ? [{ required: true, message: `Please enter ${label.toLowerCase()}` }, ...rules]
+            : rules;
 
           let inputComponent;
           switch (type) {
@@ -272,12 +293,7 @@ export default function XEntityForm<T = any>({
                     JSON Schema
                   </span>
                 ),
-                children: (
-                  <JSONSchemaEditor
-                    value={schemaData}
-                    onChange={setSchemaData}
-                  />
-                ),
+                children: <JSONSchemaEditor value={schemaData} onChange={setSchemaData} />,
               },
               {
                 key: 'ui',
@@ -354,9 +370,13 @@ export default function XEntityForm<T = any>({
           <Space direction="vertical" style={{ width: '100%' }}>
             <Text>
               {validationResult.valid ? (
-                <><CheckCircleOutlined style={{ color: 'green' }} /> Valid</>
+                <>
+                  <CheckCircleOutlined style={{ color: 'green' }} /> Valid
+                </>
               ) : (
-                <><ExclamationCircleOutlined style={{ color: 'orange' }} /> Invalid</>
+                <>
+                  <ExclamationCircleOutlined style={{ color: 'orange' }} /> Invalid
+                </>
               )}
             </Text>
             {validationResult.errors?.length && (
@@ -364,7 +384,9 @@ export default function XEntityForm<T = any>({
                 <Text type="danger">Errors:</Text>
                 <ul>
                   {validationResult.errors.map((error, idx) => (
-                    <li key={idx}><Text type="danger">{error}</Text></li>
+                    <li key={idx}>
+                      <Text type="danger">{error}</Text>
+                    </li>
                   ))}
                 </ul>
               </div>
@@ -374,7 +396,9 @@ export default function XEntityForm<T = any>({
                 <Text type="warning">Warnings:</Text>
                 <ul>
                   {validationResult.warnings.map((warning, idx) => (
-                    <li key={idx}><Text type="warning">{warning}</Text></li>
+                    <li key={idx}>
+                      <Text type="warning">{warning}</Text>
+                    </li>
                   ))}
                 </ul>
               </div>

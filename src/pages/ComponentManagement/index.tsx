@@ -1,5 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Tabs, Badge, Space, Button, Dropdown, Modal, Form, Input, message, Select } from 'antd';
+import {
+  Card,
+  Tabs,
+  Badge,
+  Space,
+  Button,
+  Dropdown,
+  Modal,
+  Form,
+  Input,
+  message,
+  Select,
+} from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import {
   FunctionOutlined,
@@ -8,7 +20,7 @@ import {
   MonitorOutlined,
   SettingOutlined,
   PlusOutlined,
-  ApartmentOutlined
+  ApartmentOutlined,
 } from '@ant-design/icons';
 import { useModel, useIntl } from '@umijs/max';
 import FunctionWorkspace from './components/FunctionWorkspace';
@@ -67,7 +79,7 @@ export default function ComponentManagement() {
     runningJobs: 0,
     availablePackages: 0,
     connectedAgents: 0,
-    virtualObjects: 0
+    virtualObjects: 0,
   });
   const refreshTimer = React.useRef<NodeJS.Timeout>();
   const mounted = React.useRef(true);
@@ -98,7 +110,7 @@ export default function ComponentManagement() {
         runningJobs: 0,
         availablePackages: 0,
         connectedAgents: 0,
-        virtualObjects: 0
+        virtualObjects: 0,
       });
       return;
     }
@@ -116,7 +128,9 @@ export default function ComponentManagement() {
       const entityCount = Array.isArray(entities) ? entities.length : 0;
       const descriptorList = Array.isArray(descriptors) ? descriptors : [];
       const packCount =
-        packs?.packages && Array.isArray(packs.packages) ? packs.packages.length : packs?.counts?.descriptors || 0;
+        packs?.packages && Array.isArray(packs.packages)
+          ? packs.packages.length
+          : packs?.counts?.descriptors || 0;
       const connectedAgents =
         registry?.agents && Array.isArray(registry.agents)
           ? registry.agents.filter((a: any) => a?.connected ?? a?.Healthy ?? a?.healthy).length
@@ -150,7 +164,7 @@ export default function ComponentManagement() {
         runningJobs: 0,
         availablePackages: 0,
         connectedAgents: 0,
-        virtualObjects: 0
+        virtualObjects: 0,
       });
     }
   };
@@ -179,7 +193,10 @@ export default function ComponentManagement() {
       } else if (actionModal.key === 'createVirtualObject') {
         const game_id = localStorage.getItem('game_id') || undefined;
         const env = localStorage.getItem('env') || undefined;
-        await createEntity({ name: values.objectName, description: values.description }, { game_id, env });
+        await createEntity(
+          { name: values.objectName, description: values.description },
+          { game_id, env },
+        );
         message.success('虚拟对象已创建');
         await loadStats();
       } else if (actionModal.key === 'exportConfig') {
@@ -338,11 +355,7 @@ export default function ComponentManagement() {
     <Space>
       {title}
       {count !== undefined && (
-        <Badge
-          count={count}
-          style={{ backgroundColor: color || '#1890ff' }}
-          overflowCount={999}
-        />
+        <Badge count={count} style={{ backgroundColor: color || '#1890ff' }} overflowCount={999} />
       )}
     </Space>
   );
@@ -361,7 +374,9 @@ export default function ComponentManagement() {
             <GameSelector />
             <Dropdown menu={quickActionsMenu} placement="bottomRight" trigger={['click']}>
               <Button icon={<SettingOutlined />}>
-                {intl.formatMessage({ id: 'pages.component.management.quick.actions' } || '快速操作')}
+                {intl.formatMessage(
+                  { id: 'pages.component.management.quick.actions' } || '快速操作',
+                )}
               </Button>
             </Dropdown>
           </Space>
@@ -374,7 +389,9 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>
               {stats.totalFunctions}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.total.functions' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.total.functions' })}
+            </div>
           </div>
         </Card.Grid>
 
@@ -383,7 +400,9 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
               {stats.activeFunctions}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.active.functions' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.active.functions' })}
+            </div>
           </div>
         </Card.Grid>
 
@@ -392,7 +411,9 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#faad14' }}>
               {stats.runningJobs}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.running.jobs' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.running.jobs' })}
+            </div>
           </div>
         </Card.Grid>
 
@@ -401,7 +422,9 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
               {stats.availablePackages}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.available.packages' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.available.packages' })}
+            </div>
           </div>
         </Card.Grid>
 
@@ -410,7 +433,9 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#13c2c2' }}>
               {stats.connectedAgents}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.connected.agents' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.connected.agents' })}
+            </div>
           </div>
         </Card.Grid>
 
@@ -419,14 +444,24 @@ export default function ComponentManagement() {
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#eb2f96' }}>
               {stats.virtualObjects}
             </div>
-            <div style={{ color: '#666' }}>{intl.formatMessage({ id: 'pages.component.management.virtual.objects' })}</div>
+            <div style={{ color: '#666' }}>
+              {intl.formatMessage({ id: 'pages.component.management.virtual.objects' })}
+            </div>
           </div>
         </Card.Grid>
       </Card>
 
       {unauthorized && (
-        <Card style={{ marginTop: 16 }} type="inner" styles={{ header: { fontWeight: 600 } }} title="未授权" variant="bordered">
-          <p>无法访问部分接口（如注册表、组件包列表），已停止自动刷新。请登录或联系管理员获取权限。</p>
+        <Card
+          style={{ marginTop: 16 }}
+          type="inner"
+          styles={{ header: { fontWeight: 600 } }}
+          title="未授权"
+          variant="bordered"
+        >
+          <p>
+            无法访问部分接口（如注册表、组件包列表），已停止自动刷新。请登录或联系管理员获取权限。
+          </p>
         </Card>
       )}
 
@@ -441,37 +476,45 @@ export default function ComponentManagement() {
             {
               key: 'workspace',
               icon: <FunctionOutlined />,
-              label: renderTabTitle("组件工作台", stats.activeFunctions, '#52c41a'),
+              label: renderTabTitle('组件工作台', stats.activeFunctions, '#52c41a'),
               children: (
                 <div style={{ padding: 24 }}>
                   <FunctionWorkspace />
                 </div>
               ),
             },
-            ...(canViewRegistry ? [{
-              key: 'registry',
-              icon: <DatabaseOutlined />,
-              label: renderTabTitle("注册表", stats.connectedAgents, '#13c2c2'),
-              children: (
-                <div style={{ padding: 24 }}>
-                  <RegistryDashboard />
-                </div>
-              ),
-            }] : []),
-            ...(canManagePackages ? [{
-              key: 'packages',
-              icon: <AppstoreOutlined />,
-              label: renderTabTitle("组件包", stats.availablePackages, '#722ed1'),
-              children: (
-                <div style={{ padding: 24 }}>
-                  <PackageCenter />
-                </div>
-              ),
-            }] : []),
+            ...(canViewRegistry
+              ? [
+                  {
+                    key: 'registry',
+                    icon: <DatabaseOutlined />,
+                    label: renderTabTitle('注册表', stats.connectedAgents, '#13c2c2'),
+                    children: (
+                      <div style={{ padding: 24 }}>
+                        <RegistryDashboard />
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
+            ...(canManagePackages
+              ? [
+                  {
+                    key: 'packages',
+                    icon: <AppstoreOutlined />,
+                    label: renderTabTitle('组件包', stats.availablePackages, '#722ed1'),
+                    children: (
+                      <div style={{ padding: 24 }}>
+                        <PackageCenter />
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
             {
               key: 'monitor',
               icon: <MonitorOutlined />,
-              label: renderTabTitle("执行监控", stats.runningJobs, '#faad14'),
+              label: renderTabTitle('执行监控', stats.runningJobs, '#faad14'),
               children: (
                 <div style={{ padding: 24 }}>
                   <ExecutionMonitor />
@@ -481,7 +524,7 @@ export default function ComponentManagement() {
             {
               key: 'virtual-objects',
               icon: <ApartmentOutlined />,
-              label: renderTabTitle("虚拟对象", stats.virtualObjects, '#eb2f96'),
+              label: renderTabTitle('虚拟对象', stats.virtualObjects, '#eb2f96'),
               children: (
                 <div style={{ padding: 24 }}>
                   <VirtualObjectManager />

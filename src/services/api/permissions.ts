@@ -48,9 +48,16 @@ export type RoleRecord = {
 
 // === 权限管理 API ===
 
-export async function listPermissions(params?: { page?: number; pageSize?: number; category?: string; resource?: string }) {
+export async function listPermissions(params?: {
+  page?: number;
+  pageSize?: number;
+  category?: string;
+  resource?: string;
+}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-  const resp = await request<ApiResponse<{ items: PermissionRecord[]; total: number; page: number; pageSize: number }>>('/api/v1/permissions', {
+  const resp = await request<
+    ApiResponse<{ items: PermissionRecord[]; total: number; page: number; pageSize: number }>
+  >('/api/v1/permissions', {
     params,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
@@ -86,9 +93,17 @@ export type AdminGame = {
   envs: string[];
 };
 
-export async function listAdmins(params?: { page?: number; pageSize?: number; search?: string; role?: string; status?: number }) {
+export async function listAdmins(params?: {
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  role?: string;
+  status?: number;
+}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-  const resp = await request<ApiResponse<{ items: AdminRecord[]; total: number; page: number; pageSize: number }>>('/api/v1/admin', {
+  const resp = await request<
+    ApiResponse<{ items: AdminRecord[]; total: number; page: number; pageSize: number }>
+  >('/api/v1/admin', {
     params,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
@@ -101,7 +116,7 @@ export async function createAdmin(body: {
   nickname?: string;
   email?: string;
   phone?: string;
-  roles: string[]
+  roles: string[];
 }) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
   const resp = await request<ApiResponse<AdminRecord>>('/api/v1/admin', {
@@ -121,13 +136,16 @@ export async function getAdmin(id: number) {
   return unwrap(resp);
 }
 
-export async function updateAdmin(id: number, body: {
-  nickname?: string;
-  email?: string;
-  phone?: string;
-  roles?: string[];
-  status?: number
-}) {
+export async function updateAdmin(
+  id: number,
+  body: {
+    nickname?: string;
+    email?: string;
+    phone?: string;
+    roles?: string[];
+    status?: number;
+  },
+) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
   const resp = await request<ApiResponse<AdminRecord>>(`/api/v1/admin/${id}`, {
     method: 'PUT',
@@ -156,9 +174,16 @@ export async function resetAdminPassword(id: number, newPassword: string) {
 
 // === 角色管理 API ===
 
-export async function listRoles(params?: { page?: number; pageSize?: number; category?: string; search?: string }) {
+export async function listRoles(params?: {
+  page?: number;
+  pageSize?: number;
+  category?: string;
+  search?: string;
+}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-  const resp = await request<ApiResponse<{ items: RoleRecord[]; total: number; page: number; pageSize: number }>>('/api/v1/roles', {
+  const resp = await request<
+    ApiResponse<{ items: RoleRecord[]; total: number; page: number; pageSize: number }>
+  >('/api/v1/roles', {
     params,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
@@ -189,12 +214,15 @@ export async function getRole(id: number) {
   return unwrap(resp);
 }
 
-export async function updateRole(id: number, body: {
-  name?: string;
-  description?: string;
-  category?: string;
-  permissions?: string[];
-}) {
+export async function updateRole(
+  id: number,
+  body: {
+    name?: string;
+    description?: string;
+    category?: string;
+    permissions?: string[];
+  },
+) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
   const resp = await request<ApiResponse<RoleRecord>>(`/api/v1/roles/${id}`, {
     method: 'PUT',
@@ -227,7 +255,9 @@ export const setRolePerms = updateRolePermissions;
 // === 权限检查 API ===
 
 export async function getUserPermissions(params?: { gameId?: string; env?: string }) {
-  const resp = await request<ApiResponse<UserPermissionsResponse>>('/api/v1/profile/permissions', { params });
+  const resp = await request<ApiResponse<UserPermissionsResponse>>('/api/v1/profile/permissions', {
+    params,
+  });
   return unwrap(resp);
 }
 
@@ -235,24 +265,31 @@ export async function checkPermission(params: {
   resource: string;
   action: string;
   gameId?: string;
-  env?: string
+  env?: string;
 }) {
-  const resp = await request<ApiResponse<{ allowed: boolean; reason?: string }>>('/api/v1/auth/check', {
-    method: 'POST',
-    data: params
-  });
+  const resp = await request<ApiResponse<{ allowed: boolean; reason?: string }>>(
+    '/api/v1/auth/check',
+    {
+      method: 'POST',
+      data: params,
+    },
+  );
   return unwrap(resp);
 }
 
-export async function batchCheckPermissions(checks: Array<{
-  resource: string;
-  action: string;
-  gameId?: string;
-  env?: string
-}>) {
-  const resp = await request<ApiResponse<{ results: Array<{ allowed: boolean; reason?: string }> }>>('/api/v1/auth/check/batch', {
+export async function batchCheckPermissions(
+  checks: Array<{
+    resource: string;
+    action: string;
+    gameId?: string;
+    env?: string;
+  }>,
+) {
+  const resp = await request<
+    ApiResponse<{ results: Array<{ allowed: boolean; reason?: string }> }>
+  >('/api/v1/auth/check/batch', {
     method: 'POST',
-    data: { checks }
+    data: { checks },
   });
   return unwrap(resp);
 }
@@ -261,14 +298,20 @@ export async function batchCheckPermissions(checks: Array<{
 
 export async function getAdminGames(adminId: number) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
-  const resp = await request<ApiResponse<{ games: AdminGame[] }>>(`/api/v1/admin/${adminId}/games`, {
-    method: 'GET',
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const resp = await request<ApiResponse<{ games: AdminGame[] }>>(
+    `/api/v1/admin/${adminId}/games`,
+    {
+      method: 'GET',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    },
+  );
   return unwrap(resp);
 }
 
-export async function updateAdminGames(adminId: number, games: Array<{ gameId: string; envs: string[] }>) {
+export async function updateAdminGames(
+  adminId: number,
+  games: Array<{ gameId: string; envs: string[] }>,
+) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
   return request<void>(`/api/v1/admin/${adminId}/games`, {
     method: 'PUT',
