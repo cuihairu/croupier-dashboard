@@ -128,8 +128,28 @@ export default function ListRenderer({ layout, objectKey, context }: ListRendere
     width: col.width,
     align: col.align,
     fixed: col.fixed,
+    ellipsis: col.ellipsis ? { showTitle: false } : undefined,
     sorter: col.sortable,
-    render: (text: any, record: any) => renderColumn(col, text, record),
+    render: (text: any, record: any) => {
+      const rendered = renderColumn(col, text, record);
+      if (!col.ellipsis) return rendered;
+      if (typeof rendered !== 'string' && typeof rendered !== 'number') return rendered;
+      const plain = String(rendered);
+      return (
+        <span
+          title={plain}
+          style={{
+            display: 'inline-block',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {plain}
+        </span>
+      );
+    },
   }));
 
   // 添加行操作列

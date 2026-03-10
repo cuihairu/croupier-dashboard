@@ -507,6 +507,9 @@ export interface ColumnConfig {
   /** 对齐方式 */
   align?: 'left' | 'center' | 'right';
 
+  /** 是否启用超长省略 */
+  ellipsis?: boolean;
+
   /** 渲染选项（如状态映射、日期格式等） */
   renderOptions?: Record<string, any>;
 }

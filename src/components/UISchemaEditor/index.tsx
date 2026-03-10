@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import {
   Card,
   Space,
+  Form,
   Button,
   Select,
   Switch,
@@ -16,12 +17,21 @@ import {
   Empty,
   Modal,
   Radio,
+  Checkbox,
+  Row,
+  Col,
+  message,
 } from 'antd';
 import {
   PlusOutlined,
   DeleteOutlined,
   QuestionCircleOutlined,
   DownOutlined,
+  CopyOutlined,
+  SnippetsOutlined,
+  UndoOutlined,
+  RedoOutlined,
+  ImportOutlined,
 } from '@ant-design/icons';
 import { jsonParse } from '@/utils/json';
 import { CodeEditor } from '@/components/MonacoDynamic';
@@ -29,6 +39,52 @@ import { CodeEditor } from '@/components/MonacoDynamic';
 const { Panel } = Collapse;
 const { TextArea } = Input;
 const { Option } = Select;
+
+function buildPreviewSeed(fields: Array<[string, FieldConfig]>) {
+  const data: Record<string, any> = {};
+  fields.forEach(([field, config]) => {
+    if (config.default !== undefined) {
+      data[field] = config.default;
+      return;
+    }
+    if (Array.isArray(config.enum) && config.enum.length > 0) {
+      data[field] = config.widget === 'multiselect' ? [config.enum[0]] : config.enum[0];
+      return;
+    }
+    const t = String(config.type || '').toLowerCase();
+    if (t === 'number' || t === 'integer') data[field] = 0;
+    else if (t === 'boolean') data[field] = false;
+    else data[field] = '';
+  });
+  return data;
+}
+
+function renderPreviewControl(config: FieldConfig) {
+  const widget = String(config.widget || config.type || 'input').toLowerCase();
+  const opts = (config.enum || []).map((value, idx) => ({
+    label: String(config.enumNames?.[idx] ?? value),
+    value,
+  }));
+  switch (widget) {
+    case 'number':
+      return <InputNumber style={{ width: '100%' }} />;
+    case 'switch':
+    case 'boolean':
+      return <Switch />;
+    case 'textarea':
+      return <TextArea rows={2} placeholder={config.placeholder} />;
+    case 'select':
+      return <Select allowClear options={opts} placeholder={config.placeholder} />;
+    case 'multiselect':
+      return <Select mode="multiple" allowClear options={opts} placeholder={config.placeholder} />;
+    case 'radio':
+      return <Radio.Group options={opts} />;
+    case 'checkbox':
+      return <Checkbox.Group options={opts} />;
+    default:
+      return <Input placeholder={config.placeholder} />;
+  }
+}
 
 interface FieldConfig {
   type?: string;
@@ -62,6 +118,12 @@ interface UISchemaEditorProps {
   value?: any;
   onChange?: (value: any) => void;
   jsonSchema?: any; // JSON Schema for validation reference
+}
+
+interface FieldClipboardPayload {
+  kind: 'ui-schema-field';
+  field: string;
+  config: FieldConfig;
 }
 
 // Widget options mapping
@@ -142,7 +204,6 @@ function parseEnumBulkInput(raw: string, mode: 'json' | 'csv') {
 const FieldEditor: React.FC<{
   field: string;
   config: FieldConfig;
-  schemaType?: string;
   onChange: (field: string, config: FieldConfig) => void;
   onDelete: (field: string) => void;
 }> = ({ field, config, onChange, onDelete }) => {
@@ -392,9 +453,23 @@ const FieldEditor: React.FC<{
 };
 
 export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchemaEditorProps) {
+  const [previewForm] = Form.useForm();
   const [activeTab, setActiveTab] = useState<'visual' | 'code'>('visual');
   const [jsonError, setJsonError] = useState<string>('');
   const [jsonErrorLine, setJsonErrorLine] = useState<number | null>(null);
+  const [fieldSearch, setFieldSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [requiredFilter, setRequiredFilter] = useState<'all' | 'required' | 'optional'>('all');
+  const [selectedFields, setSelectedFields] = useState<string[]>([]);
+  const [pasteModalOpen, setPasteModalOpen] = useState(false);
+  const [pasteFieldName, setPasteFieldName] = useState('');
+  const [pasteFieldConfig, setPasteFieldConfig] = useState<FieldConfig | null>(null);
+  const [localClipboard, setLocalClipboard] = useState<FieldClipboardPayload | null>(null);
+  const [schemaImportOpen, setSchemaImportOpen] = useState(false);
+  const [schemaImportSelection, setSchemaImportSelection] = useState<string[]>([]);
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const [lastPreviewSubmit, setLastPreviewSubmit] = useState('');
   const buildUISchema = (input?: any) => {
     if (
       !input ||
@@ -440,6 +515,35 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     monacoRef.current = monaco;
   }, []);
 
+  const cloneSchema = (schema: any) => {
+    try {
+      return JSON.parse(JSON.stringify(schema ?? { type: 'object', properties: {} }));
+    } catch {
+      return schema;
+    }
+  };
+
+  const applySchemaChange = useCallback(
+    (nextSchema: any, withHistory = true) => {
+      const prevString = JSON.stringify(uiSchemaData ?? {});
+      const nextString = JSON.stringify(nextSchema ?? {});
+      if (prevString === nextString) return;
+
+      if (withHistory) {
+        setUndoStack((prev) => [...prev.slice(-19), cloneSchema(uiSchemaData)]);
+        setRedoStack([]);
+      }
+
+      setUiSchemaData(nextSchema);
+      setJsonDraft(JSON.stringify(nextSchema, null, 2));
+      setJsonError('');
+      setJsonErrorLine(null);
+      setMonacoMarker();
+      onChange?.(nextSchema);
+    },
+    [uiSchemaData, onChange, setMonacoMarker],
+  );
+
   useEffect(() => {
     const next = buildUISchema(value);
     setUiSchemaData(next);
@@ -447,29 +551,22 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     setJsonError('');
     setJsonErrorLine(null);
     setMonacoMarker();
+    setUndoStack([]);
+    setRedoStack([]);
   }, [value]);
 
   const handleVisualChange = useCallback(
     (newData: any) => {
-      setUiSchemaData(newData);
-      setJsonDraft(JSON.stringify(newData, null, 2));
-      setJsonError('');
-      setJsonErrorLine(null);
-      setMonacoMarker();
-      onChange?.(newData);
+      applySchemaChange(newData, true);
     },
-    [onChange, setMonacoMarker],
+    [applySchemaChange],
   );
 
   const handleCodeChange = (jsonString: string) => {
     setJsonDraft(jsonString);
     try {
       const parsed = jsonParse(jsonString);
-      setUiSchemaData(parsed);
-      onChange?.(parsed);
-      setJsonError('');
-      setJsonErrorLine(null);
-      setMonacoMarker();
+      applySchemaChange(parsed, true);
     } catch (error: any) {
       const msg = error?.message || 'JSON 格式错误';
       const pos = parsePositionFromJsonError(msg);
@@ -576,6 +673,245 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
     [jsonSchema, uiSchemaData.properties],
   );
 
+  const importFieldsFromSchema = (fields: string[]) => {
+    if (!fields.length) {
+      message.warning('请先选择需要导入的字段');
+      return;
+    }
+    const nextProperties = { ...(uiSchemaData.properties || {}) };
+    fields.forEach((field) => {
+      const schemaType = jsonSchema?.properties?.[field]?.type || 'string';
+      const widget =
+        schemaType === 'string'
+          ? 'input'
+          : schemaType === 'number' || schemaType === 'integer'
+          ? 'number'
+          : schemaType === 'boolean'
+          ? 'switch'
+          : schemaType === 'array'
+          ? 'multiselect'
+          : 'input';
+      nextProperties[field] = {
+        type: schemaType,
+        title: field,
+        widget,
+      };
+    });
+    handleVisualChange({
+      ...uiSchemaData,
+      properties: nextProperties,
+    });
+    message.success(`已导入 ${fields.length} 个字段`);
+  };
+
+  const requiredSet = useMemo(
+    () => new Set<string>(Array.isArray(jsonSchema?.required) ? jsonSchema.required : []),
+    [jsonSchema],
+  );
+
+  const fieldEntries = useMemo(
+    () => Object.entries(uiSchemaData.properties || {}) as [string, FieldConfig][],
+    [uiSchemaData.properties],
+  );
+
+  useEffect(() => {
+    const current = previewForm.getFieldsValue();
+    const keys = new Set(fieldEntries.map(([field]) => field));
+    const nextValues = Object.fromEntries(
+      Object.entries(current || {}).filter(([field]) => keys.has(field)),
+    );
+    previewForm.setFieldsValue(nextValues);
+  }, [fieldEntries, previewForm]);
+
+  const fieldTypeOptions = useMemo(() => {
+    const fromSchema = fieldEntries
+      .map(([field, config]) => config.type || jsonSchema?.properties?.[field]?.type || 'string')
+      .filter(Boolean);
+    return Array.from(new Set(fromSchema));
+  }, [fieldEntries, jsonSchema]);
+
+  const filteredFieldEntries = useMemo(() => {
+    const keyword = fieldSearch.trim().toLowerCase();
+    return fieldEntries.filter(([field, config]) => {
+      const currentType = config.type || jsonSchema?.properties?.[field]?.type || 'string';
+      if (typeFilter && currentType !== typeFilter) return false;
+      if (requiredFilter === 'required' && !requiredSet.has(field)) return false;
+      if (requiredFilter === 'optional' && requiredSet.has(field)) return false;
+      if (!keyword) return true;
+      const text = `${field} ${config.title || ''} ${config.description || ''} ${
+        config.widget || ''
+      }`
+        .toLowerCase()
+        .trim();
+      return text.includes(keyword);
+    });
+  }, [fieldEntries, fieldSearch, typeFilter, requiredFilter, requiredSet, jsonSchema]);
+
+  const handleFillPreviewDemo = () => {
+    previewForm.setFieldsValue(buildPreviewSeed(fieldEntries));
+    message.success('已填充示例数据');
+  };
+
+  useEffect(() => {
+    const exists = new Set(fieldEntries.map(([k]) => k));
+    setSelectedFields((prev) => prev.filter((field) => exists.has(field)));
+  }, [fieldEntries]);
+
+  const toggleSelectField = (field: string, checked: boolean) => {
+    setSelectedFields((prev) => {
+      if (checked) return prev.includes(field) ? prev : [...prev, field];
+      return prev.filter((x) => x !== field);
+    });
+  };
+
+  const handleBatchDelete = () => {
+    if (selectedFields.length === 0) {
+      message.warning('请先选择要删除的字段');
+      return;
+    }
+    Modal.confirm({
+      title: '确认批量删除字段？',
+      content: `将删除 ${selectedFields.length} 个字段，此操作不可撤销。`,
+      okText: '确认删除',
+      cancelText: '取消',
+      okButtonProps: { danger: true },
+      onOk: () => {
+        const toDelete = new Set(selectedFields);
+        const nextProperties = Object.fromEntries(
+          fieldEntries.filter(([field]) => !toDelete.has(field)),
+        );
+        handleVisualChange({
+          ...uiSchemaData,
+          properties: nextProperties,
+        });
+        setSelectedFields([]);
+        message.success(`已删除 ${toDelete.size} 个字段`);
+      },
+    });
+  };
+
+  const buildAvailableFieldName = (base: string) => {
+    const existing = new Set(fieldEntries.map(([field]) => field));
+    if (!existing.has(base)) return base;
+    let i = 1;
+    while (existing.has(`${base}_${i}`)) {
+      i += 1;
+    }
+    return `${base}_${i}`;
+  };
+
+  const copyFieldConfig = async (field: string, config: FieldConfig) => {
+    const payload: FieldClipboardPayload = {
+      kind: 'ui-schema-field',
+      field,
+      config,
+    };
+    setLocalClipboard(payload);
+    const text = JSON.stringify(payload, null, 2);
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      }
+      message.success(`已复制字段配置：${field}`);
+    } catch {
+      message.warning('已复制到本地缓存，浏览器未授予剪贴板权限');
+    }
+  };
+
+  const openPasteFieldModal = async () => {
+    let raw = '';
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.readText) {
+        raw = await navigator.clipboard.readText();
+      }
+    } catch {
+      raw = '';
+    }
+
+    let payload: FieldClipboardPayload | null = null;
+    if (raw) {
+      try {
+        const parsed = jsonParse(raw) as FieldClipboardPayload;
+        if (parsed?.kind === 'ui-schema-field' && parsed.field && parsed.config) {
+          payload = parsed;
+        }
+      } catch {
+        payload = null;
+      }
+    }
+    if (!payload && localClipboard) {
+      payload = localClipboard;
+    }
+    if (!payload) {
+      message.warning('剪贴板中未找到可用字段配置，请先复制字段');
+      return;
+    }
+    setPasteFieldConfig(payload.config);
+    setPasteFieldName(buildAvailableFieldName(`${payload.field}_copy`));
+    setPasteModalOpen(true);
+  };
+
+  const handleConfirmPasteField = () => {
+    if (!pasteFieldConfig) return;
+    const targetField = pasteFieldName.trim();
+    if (!targetField) {
+      message.warning('请输入字段名');
+      return;
+    }
+    const finalName = buildAvailableFieldName(targetField);
+    handleVisualChange({
+      ...uiSchemaData,
+      properties: {
+        ...uiSchemaData.properties,
+        [finalName]: pasteFieldConfig,
+      },
+    });
+    setPasteModalOpen(false);
+    setPasteFieldName('');
+    setPasteFieldConfig(null);
+    message.success(`已粘贴字段：${finalName}`);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const previous = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev.slice(-19), cloneSchema(uiSchemaData)]);
+    applySchemaChange(previous, false);
+    message.success('已撤销');
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev.slice(-19), cloneSchema(uiSchemaData)]);
+    applySchemaChange(next, false);
+    message.success('已重做');
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase() || '';
+      const editable = tag === 'input' || tag === 'textarea' || Boolean(target?.isContentEditable);
+      if (editable) return;
+
+      if (e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+        return;
+      }
+      if (e.key.toLowerCase() === 'z' && e.shiftKey) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undoStack, redoStack, uiSchemaData]);
+
   return (
     <Card>
       <Space direction="vertical" style={{ width: '100%' }}>
@@ -602,49 +938,78 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
           </Button.Group>
 
           {jsonSchema && (
-            <Dropdown
-              trigger={['click']}
-              overlay={
-                <Menu style={{ maxHeight: 300, overflow: 'auto' }}>
-                  {suggestedFields.length > 0 ? (
-                    suggestedFields.map(({ field, schemaType }) => (
-                      <Menu.Item key={field} onClick={() => addFieldFromSchema(field, schemaType)}>
-                        <Space>
-                          <Tag
-                            color={
-                              schemaType === 'string'
-                                ? 'blue'
-                                : schemaType === 'number'
-                                ? 'green'
-                                : schemaType === 'boolean'
-                                ? 'orange'
-                                : schemaType === 'array'
-                                ? 'purple'
-                                : 'default'
-                            }
-                          >
-                            {schemaType}
-                          </Tag>
-                          <span>{field}</span>
-                        </Space>
+            <>
+              <Dropdown
+                trigger={['click']}
+                overlay={
+                  <Menu style={{ maxHeight: 300, overflow: 'auto' }}>
+                    {suggestedFields.length > 0 ? (
+                      suggestedFields.map(({ field, schemaType }) => (
+                        <Menu.Item
+                          key={field}
+                          onClick={() => addFieldFromSchema(field, schemaType)}
+                        >
+                          <Space>
+                            <Tag
+                              color={
+                                schemaType === 'string'
+                                  ? 'blue'
+                                  : schemaType === 'number'
+                                  ? 'green'
+                                  : schemaType === 'boolean'
+                                  ? 'orange'
+                                  : schemaType === 'array'
+                                  ? 'purple'
+                                  : 'default'
+                              }
+                            >
+                              {schemaType}
+                            </Tag>
+                            <span>{field}</span>
+                          </Space>
+                        </Menu.Item>
+                      ))
+                    ) : (
+                      <Menu.Item disabled>
+                        <Empty description="已全部导入" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                       </Menu.Item>
-                    ))
-                  ) : (
-                    <Menu.Item disabled>
-                      <Empty description="已全部导入" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                    </Menu.Item>
-                  )}
-                </Menu>
-              }
-            >
-              <Button icon={<DownOutlined />}>
-                从 JSON Schema 导入 ({suggestedFields.length})
+                    )}
+                  </Menu>
+                }
+              >
+                <Button icon={<DownOutlined />}>
+                  从 JSON Schema 导入 ({suggestedFields.length})
+                </Button>
+              </Dropdown>
+              <Button
+                icon={<ImportOutlined />}
+                disabled={suggestedFields.length === 0}
+                onClick={() => {
+                  setSchemaImportSelection(suggestedFields.map((x) => x.field));
+                  setSchemaImportOpen(true);
+                }}
+              >
+                一键导入字段
               </Button>
-            </Dropdown>
+            </>
           )}
 
           <div style={{ marginLeft: 'auto' }}>
             <Button.Group>
+              <Button
+                icon={<UndoOutlined />}
+                disabled={undoStack.length === 0}
+                onClick={handleUndo}
+              >
+                撤销
+              </Button>
+              <Button
+                icon={<RedoOutlined />}
+                disabled={redoStack.length === 0}
+                onClick={handleRedo}
+              >
+                重做
+              </Button>
               <Button
                 type={activeTab === 'visual' ? 'primary' : 'default'}
                 onClick={() => setActiveTab('visual')}
@@ -672,31 +1037,238 @@ export default function UISchemaEditor({ value, onChange, jsonSchema }: UISchema
         {activeTab === 'visual' ? (
           <div>
             <Divider />
-            <Collapse ghost defaultActiveKey={Object.keys(uiSchemaData.properties || {})}>
-              {(Object.entries(uiSchemaData.properties || {}) as [string, FieldConfig][]).map(
-                ([field, config]) => (
-                  <Panel
-                    header={
-                      <Space>
-                        <strong>{field}</strong>
-                        <Tag>{config.type || 'string'}</Tag>
-                        {config.widget && <Tag color="blue">{config.widget}</Tag>}
-                        {config.hidden && <Tag color="gray">隐藏</Tag>}
-                        {config.readOnly && <Tag color="orange">只读</Tag>}
-                      </Space>
-                    }
-                    key={field}
-                  >
-                    <FieldEditor
-                      field={field}
-                      config={config}
-                      onChange={updateConfig}
-                      onDelete={handleDeleteField}
+            <Row gutter={16} align="top">
+              <Col xs={24} lg={14}>
+                <Space wrap style={{ marginBottom: 12, width: '100%' }}>
+                  <Input
+                    allowClear
+                    style={{ width: 260 }}
+                    placeholder="搜索字段名/标题/组件"
+                    value={fieldSearch}
+                    onChange={(e) => setFieldSearch(e.target.value)}
+                  />
+                  <Select
+                    allowClear
+                    style={{ width: 160 }}
+                    placeholder="字段类型"
+                    value={typeFilter || undefined}
+                    onChange={(v) => setTypeFilter(v || '')}
+                    options={fieldTypeOptions.map((t) => ({ label: t, value: t }))}
+                  />
+                  <Select
+                    style={{ width: 140 }}
+                    value={requiredFilter}
+                    onChange={(v) => setRequiredFilter(v)}
+                    options={[
+                      { label: '全部字段', value: 'all' },
+                      { label: '仅必填', value: 'required' },
+                      { label: '仅非必填', value: 'optional' },
+                    ]}
+                  />
+                  <Button danger disabled={selectedFields.length === 0} onClick={handleBatchDelete}>
+                    批量删除 ({selectedFields.length})
+                  </Button>
+                  <Button icon={<SnippetsOutlined />} onClick={openPasteFieldModal}>
+                    从剪贴板粘贴字段
+                  </Button>
+                </Space>
+                {filteredFieldEntries.length === 0 ? (
+                  <Empty description="未找到匹配字段" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                ) : (
+                  <Collapse ghost defaultActiveKey={filteredFieldEntries.map(([field]) => field)}>
+                    {filteredFieldEntries.map(([field, config]) => (
+                      <Panel
+                        header={
+                          <Space>
+                            <span onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedFields.includes(field)}
+                                onChange={(e) => toggleSelectField(field, e.target.checked)}
+                              />
+                            </span>
+                            <strong>{field}</strong>
+                            <Tag>{config.type || 'string'}</Tag>
+                            {config.widget && <Tag color="blue">{config.widget}</Tag>}
+                            {requiredSet.has(field) && <Tag color="red">必填</Tag>}
+                            {config.hidden && <Tag color="gray">隐藏</Tag>}
+                            {config.readOnly && <Tag color="orange">只读</Tag>}
+                            <Button
+                              type="text"
+                              size="small"
+                              icon={<CopyOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyFieldConfig(field, config);
+                              }}
+                            >
+                              复制
+                            </Button>
+                          </Space>
+                        }
+                        key={field}
+                      >
+                        <FieldEditor
+                          field={field}
+                          config={config}
+                          onChange={updateConfig}
+                          onDelete={handleDeleteField}
+                        />
+                      </Panel>
+                    ))}
+                  </Collapse>
+                )}
+              </Col>
+              <Col xs={24} lg={10}>
+                <Card
+                  size="small"
+                  title="实时预览"
+                  extra={
+                    <Space>
+                      <Button size="small" onClick={handleFillPreviewDemo}>
+                        填充示例数据
+                      </Button>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          previewForm.resetFields();
+                          setLastPreviewSubmit('');
+                        }}
+                      >
+                        清空
+                      </Button>
+                    </Space>
+                  }
+                >
+                  {fieldEntries.length === 0 ? (
+                    <Empty description="请先添加字段" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                  ) : (
+                    <Form
+                      form={previewForm}
+                      layout="vertical"
+                      onFinish={(values) => {
+                        setLastPreviewSubmit(JSON.stringify(values, null, 2));
+                        message.success('预览提交成功');
+                      }}
+                    >
+                      {fieldEntries
+                        .filter(([, config]) => !config.hidden)
+                        .map(([field, config]) => {
+                          const widget = String(config.widget || config.type || '').toLowerCase();
+                          const valuePropName =
+                            widget === 'switch' || widget === 'boolean' ? 'checked' : 'value';
+                          return (
+                            <Form.Item
+                              key={field}
+                              name={field}
+                              label={config.title || field}
+                              tooltip={config.description}
+                              required={requiredSet.has(field)}
+                              valuePropName={valuePropName}
+                            >
+                              {renderPreviewControl(config)}
+                            </Form.Item>
+                          );
+                        })}
+                      <Form.Item style={{ marginBottom: 0 }}>
+                        <Button type="primary" htmlType="submit" block>
+                          提交测试
+                        </Button>
+                      </Form.Item>
+                    </Form>
+                  )}
+                  {lastPreviewSubmit && (
+                    <Alert
+                      style={{ marginTop: 12 }}
+                      type="success"
+                      showIcon
+                      message="最近提交数据"
+                      description={<pre style={{ margin: 0 }}>{lastPreviewSubmit}</pre>}
                     />
-                  </Panel>
-                ),
+                  )}
+                </Card>
+              </Col>
+            </Row>
+            <Modal
+              title="粘贴字段配置"
+              open={pasteModalOpen}
+              onCancel={() => {
+                setPasteModalOpen(false);
+                setPasteFieldName('');
+                setPasteFieldConfig(null);
+              }}
+              onOk={handleConfirmPasteField}
+              okText="确认粘贴"
+              cancelText="取消"
+            >
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Input
+                  value={pasteFieldName}
+                  onChange={(e) => setPasteFieldName(e.target.value)}
+                  placeholder="请输入新字段名"
+                />
+                <Alert
+                  type="info"
+                  showIcon
+                  message="字段名冲突时将自动追加后缀"
+                  description="支持跨编辑器复制粘贴，剪贴板格式为 JSON。"
+                />
+              </Space>
+            </Modal>
+            <Modal
+              title="从 JSON Schema 批量导入字段"
+              open={schemaImportOpen}
+              onCancel={() => setSchemaImportOpen(false)}
+              onOk={() => {
+                importFieldsFromSchema(schemaImportSelection);
+                setSchemaImportOpen(false);
+              }}
+              okText="导入所选"
+              cancelText="取消"
+            >
+              {suggestedFields.length === 0 ? (
+                <Empty description="已全部导入" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              ) : (
+                <Space direction="vertical" style={{ width: '100%' }}>
+                  <Space>
+                    <Button
+                      size="small"
+                      onClick={() => setSchemaImportSelection(suggestedFields.map((x) => x.field))}
+                    >
+                      全选
+                    </Button>
+                    <Button size="small" onClick={() => setSchemaImportSelection([])}>
+                      清空
+                    </Button>
+                    <Tag color="blue">已选 {schemaImportSelection.length}</Tag>
+                  </Space>
+                  <div
+                    style={{
+                      maxHeight: 320,
+                      overflowY: 'auto',
+                      border: '1px solid #f0f0f0',
+                      padding: 8,
+                    }}
+                  >
+                    <Checkbox.Group
+                      style={{ width: '100%' }}
+                      value={schemaImportSelection}
+                      onChange={(v) => setSchemaImportSelection(v as string[])}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        {suggestedFields.map(({ field, schemaType }) => (
+                          <Checkbox key={field} value={field}>
+                            <Space>
+                              <strong>{field}</strong>
+                              <Tag>{schemaType}</Tag>
+                            </Space>
+                          </Checkbox>
+                        ))}
+                      </Space>
+                    </Checkbox.Group>
+                  </div>
+                </Space>
               )}
-            </Collapse>
+            </Modal>
           </div>
         ) : (
           <div>

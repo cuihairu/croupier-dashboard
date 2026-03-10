@@ -62,6 +62,22 @@ export default function ColumnEditorModal({
         <Form.Item name="width" label="列宽">
           <Input type="number" placeholder="如: 120" />
         </Form.Item>
+        <Form.Item name="fixed" label="固定方向">
+          <Select allowClear placeholder="不固定">
+            <Select.Option value="left">左固定</Select.Option>
+            <Select.Option value="right">右固定</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item name="align" label="对齐方式">
+          <Select allowClear placeholder="默认左对齐">
+            <Select.Option value="left">左对齐</Select.Option>
+            <Select.Option value="center">居中</Select.Option>
+            <Select.Option value="right">右对齐</Select.Option>
+          </Select>
+        </Form.Item>
+        <Form.Item name="ellipsis" label="超长省略" valuePropName="checked">
+          <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+        </Form.Item>
         <Form.Item name="sortable" label="可排序" valuePropName="checked">
           <Switch />
         </Form.Item>

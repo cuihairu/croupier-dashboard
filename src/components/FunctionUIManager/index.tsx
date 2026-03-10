@@ -20,7 +20,6 @@ import { ReloadOutlined } from '@ant-design/icons';
 import { history, useModel } from '@umijs/max';
 import {
   fetchFunctionUiHistory,
-  fetchFunctionUiSchema,
   listDescriptors,
   rollbackFunctionUiSchema,
   saveFunctionUiSchema,
@@ -30,6 +29,8 @@ import UISchemaEditor from '@/components/UISchemaEditor';
 import { FunctionFormRenderer, type JSONSchema } from '@/components/FunctionFormRenderer';
 import { featureFlags } from '@/config/featureFlags';
 import { fetchOptions } from '@/services/schema/async';
+import { fetchFunctionUISchemaDocument } from '@/services/schema';
+import { validateUiSchema } from '@/services/schema/validateSchema';
 import { buildUISchemaFromJSONSchema } from '@/utils/json';
 
 interface FunctionUIManagerProps {
@@ -97,7 +98,7 @@ export default function FunctionUIManager({
 
     setLoading(true);
     try {
-      const res = await fetchFunctionUiSchema(functionId);
+      const res = await fetchFunctionUISchemaDocument(functionId);
       const config = {
         schema: res?.schema,
         layout: res?.layout,
@@ -210,6 +211,11 @@ export default function FunctionUIManager({
   const handleSave = async (newUISchema: any) => {
     if (!onSave) {
       message.warning('未配置保存回调');
+      return;
+    }
+    const validation = validateUiSchema(newUISchema);
+    if (!validation.ok) {
+      message.error(validation.error || 'UI Schema 校验失败');
       return;
     }
 

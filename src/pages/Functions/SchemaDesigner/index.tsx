@@ -18,8 +18,7 @@ import { history, useParams } from '@umijs/max';
 import { CodeEditor } from '@/components/MonacoDynamic';
 import SchemaRenderer from '@/components/formily/SchemaRenderer';
 import {
-  fetchFormilySchema,
-  loadDraft,
+  fetchUnifiedFormilySchemaState,
   saveDraft,
   clearDraft,
   saveFormilySchema,
@@ -106,6 +105,8 @@ export default function SchemaDesigner() {
   const [autoApply, setAutoApply] = useState(true);
   const [previewData, setPreviewData] = useState<Record<string, any>>({});
   const [draftUpdatedAt, setDraftUpdatedAt] = useState<string | undefined>(undefined);
+  const [publishedUpdatedAt, setPublishedUpdatedAt] = useState<string | undefined>(undefined);
+  const [draftConflict, setDraftConflict] = useState(false);
   const [generatedFromParams, setGeneratedFromParams] = useState(false);
 
   const applyRaw = useCallback(
@@ -186,12 +187,11 @@ export default function SchemaDesigner() {
     if (!functionId) return;
     setLoading(true);
     try {
-      const doc = await fetchFormilySchema(functionId);
-      const draft = loadDraft(functionId);
-      let initial = (draft?.schema || doc?.schema) as any;
+      const state = await fetchUnifiedFormilySchemaState(functionId);
+      let initial = state.schema as any;
       let generated = false;
 
-      if (!initial) {
+      if (!initial || Object.keys(initial || {}).length === 0) {
         const detail = await getFunctionDetail(functionId);
         const inputSchema = parseInputSchema(detail?.input_schema, detail?.params);
         initial = generateFormilyFromJsonSchema(inputSchema);
@@ -205,13 +205,15 @@ export default function SchemaDesigner() {
       setRaw(text);
       setSchema(initial);
       setPreviewData({});
-      setDraftUpdatedAt(draft?.updatedAt);
+      setDraftUpdatedAt(state.draftUpdatedAt);
+      setPublishedUpdatedAt(state.publishedUpdatedAt);
+      setDraftConflict(state.draftConflict);
       setGeneratedFromParams(generated);
       setParseError(undefined);
       setDirty(false);
       trackSchemaEvent('schema_load', {
         functionId,
-        source: draft ? 'draft' : doc?.schema ? 'published' : generated ? 'generated' : 'empty',
+        source: generated ? 'generated' : state.source,
       });
     } catch (e: any) {
       message.error(e?.message || '加载 schema 失败');
@@ -252,7 +254,7 @@ export default function SchemaDesigner() {
               message.error(result.error);
               return;
             }
-            saveDraft(functionId, result.parsed);
+            saveDraft(functionId, result.parsed, { baseUpdatedAt: publishedUpdatedAt });
             setDraftUpdatedAt(new Date().toISOString());
             message.success('草稿已保存');
             trackSchemaEvent('schema_draft_save', { functionId });
@@ -266,6 +268,7 @@ export default function SchemaDesigner() {
           onClick={() => {
             clearDraft(functionId);
             setDraftUpdatedAt(undefined);
+            setDraftConflict(false);
             message.success('草稿已清除');
             trackSchemaEvent('schema_draft_clear', { functionId });
           }}
@@ -362,6 +365,15 @@ export default function SchemaDesigner() {
                 showIcon
                 message="已根据函数参数自动生成 UI 初稿"
                 description="当前函数还没有已发布 UI Schema；这份初稿可直接编辑并发布。"
+              />
+            )}
+            {draftConflict && (
+              <Alert
+                style={{ marginTop: 12 }}
+                type="warning"
+                showIcon
+                message="草稿可能过期"
+                description="检测到线上配置已更新，当前草稿基于旧版本生成。请发布前仔细校验差异。"
               />
             )}
             {parseError && (

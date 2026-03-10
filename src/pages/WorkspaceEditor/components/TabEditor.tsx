@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useReducer, useMemo, useEffect } from 'react';
 import { Space, Card, Modal, message, Button } from 'antd';
 import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
@@ -34,6 +34,72 @@ type OrchestratorRole = 'list' | 'detail' | 'submit' | 'query' | 'data';
 type OrchestratorApplyMode = 'overwrite' | 'merge';
 type QuickLayoutMode = 'list' | 'form' | 'detail' | 'form-detail';
 
+type TabEditorState = {
+  editingColumn: ColumnConfig | null;
+  editingField: FieldConfig | null;
+  columnModalOpen: boolean;
+  fieldModalOpen: boolean;
+  layoutWizardDescriptor: FunctionDescriptor | null;
+  orchestratorOpen: boolean;
+  orchestratorMode: OrchestratorMode;
+  orchestratorBindings: OrchestratorBindings | null;
+  orchestratorApplyMode: OrchestratorApplyMode;
+};
+
+type TabEditorAction =
+  | { type: 'openColumnEditor'; payload: ColumnConfig | null }
+  | { type: 'closeColumnEditor' }
+  | { type: 'openFieldEditor'; payload: FieldConfig | null }
+  | { type: 'closeFieldEditor' }
+  | { type: 'openLayoutWizard'; payload: FunctionDescriptor }
+  | { type: 'closeLayoutWizard' }
+  | { type: 'openOrchestrator' }
+  | { type: 'closeOrchestrator' }
+  | { type: 'setOrchestratorMode'; payload: OrchestratorMode }
+  | { type: 'setOrchestratorBindings'; payload: OrchestratorBindings | null }
+  | { type: 'setOrchestratorApplyMode'; payload: OrchestratorApplyMode };
+
+const initialTabEditorState: TabEditorState = {
+  editingColumn: null,
+  editingField: null,
+  columnModalOpen: false,
+  fieldModalOpen: false,
+  layoutWizardDescriptor: null,
+  orchestratorOpen: false,
+  orchestratorMode: 'form-detail',
+  orchestratorBindings: null,
+  orchestratorApplyMode: 'overwrite',
+};
+
+function tabEditorReducer(state: TabEditorState, action: TabEditorAction): TabEditorState {
+  switch (action.type) {
+    case 'openColumnEditor':
+      return { ...state, editingColumn: action.payload, columnModalOpen: true };
+    case 'closeColumnEditor':
+      return { ...state, editingColumn: null, columnModalOpen: false };
+    case 'openFieldEditor':
+      return { ...state, editingField: action.payload, fieldModalOpen: true };
+    case 'closeFieldEditor':
+      return { ...state, editingField: null, fieldModalOpen: false };
+    case 'openLayoutWizard':
+      return { ...state, layoutWizardDescriptor: action.payload };
+    case 'closeLayoutWizard':
+      return { ...state, layoutWizardDescriptor: null };
+    case 'openOrchestrator':
+      return { ...state, orchestratorOpen: true };
+    case 'closeOrchestrator':
+      return { ...state, orchestratorOpen: false };
+    case 'setOrchestratorMode':
+      return { ...state, orchestratorMode: action.payload };
+    case 'setOrchestratorBindings':
+      return { ...state, orchestratorBindings: action.payload };
+    case 'setOrchestratorApplyMode':
+      return { ...state, orchestratorApplyMode: action.payload };
+    default:
+      return state;
+  }
+}
+
 export interface TabEditorProps {
   tab: TabConfig;
   onChange: (tab: TabConfig) => void;
@@ -41,21 +107,7 @@ export interface TabEditorProps {
 }
 
 export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditorProps) {
-  // State
-  const [editingColumn, setEditingColumn] = useState<ColumnConfig | null>(null);
-  const [editingField, setEditingField] = useState<FieldConfig | null>(null);
-  const [columnModalOpen, setColumnModalOpen] = useState(false);
-  const [fieldModalOpen, setFieldModalOpen] = useState(false);
-  const [layoutWizardDescriptor, setLayoutWizardDescriptor] = useState<FunctionDescriptor | null>(
-    null,
-  );
-  const [orchestratorOpen, setOrchestratorOpen] = useState(false);
-  const [orchestratorMode, setOrchestratorMode] = useState<OrchestratorMode>('form-detail');
-  const [orchestratorBindings, setOrchestratorBindings] = useState<OrchestratorBindings | null>(
-    null,
-  );
-  const [orchestratorApplyMode, setOrchestratorApplyMode] =
-    useState<OrchestratorApplyMode>('overwrite');
+  const [uiState, dispatch] = useReducer(tabEditorReducer, initialTabEditorState);
 
   // Safe tab with defaults
   const safeTab = {
@@ -171,7 +223,7 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       ? safeTab.functions
       : [...safeTab.functions, descriptor.id];
     onChange({ ...safeTab, functions: nextFunctions, layout });
-    setLayoutWizardDescriptor(null);
+    dispatch({ type: 'closeLayoutWizard' });
     message.success(`已基于 ${descriptor.display_name?.zh || descriptor.id} 生成 ${mode} 布局`);
   };
 
@@ -179,12 +231,12 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   const orchestrationPlan = useMemo(
     () =>
       buildOrchestrationLayout(
-        orchestratorMode,
+        uiState.orchestratorMode,
         safeTab.functions,
         descriptors,
-        orchestratorBindings,
+        uiState.orchestratorBindings,
       ),
-    [orchestratorMode, safeTab.functions, descriptors, orchestratorBindings],
+    [uiState.orchestratorMode, safeTab.functions, descriptors, uiState.orchestratorBindings],
   );
 
   const defaultBindings = useMemo(
@@ -193,22 +245,22 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   );
 
   useEffect(() => {
-    if (!orchestratorOpen) return;
-    setOrchestratorBindings(defaultBindings);
-  }, [orchestratorOpen, defaultBindings]);
+    if (!uiState.orchestratorOpen) return;
+    dispatch({ type: 'setOrchestratorBindings', payload: defaultBindings });
+  }, [uiState.orchestratorOpen, defaultBindings]);
 
   const activeOrchestratorRoles = useMemo(
-    () => getRolesForOrchestratorMode(orchestratorMode),
-    [orchestratorMode],
+    () => getRolesForOrchestratorMode(uiState.orchestratorMode),
+    [uiState.orchestratorMode],
   );
 
   const invalidOrchestratorRoles = useMemo(() => {
-    if (!orchestratorBindings) return [] as OrchestratorRole[];
+    if (!uiState.orchestratorBindings) return [] as OrchestratorRole[];
     const functionSet = new Set(safeTab.functions);
     return activeOrchestratorRoles.filter(
-      (role) => !functionSet.has(orchestratorBindings[role]),
+      (role) => !functionSet.has(uiState.orchestratorBindings![role]),
     ) as OrchestratorRole[];
-  }, [orchestratorBindings, safeTab.functions, activeOrchestratorRoles]);
+  }, [uiState.orchestratorBindings, safeTab.functions, activeOrchestratorRoles]);
 
   const displayedAssignments = useMemo(() => {
     if (!orchestrationPlan) return [];
@@ -220,10 +272,10 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
 
   const previewNextLayout = useMemo(() => {
     if (!orchestrationPlan) return null;
-    return orchestratorApplyMode === 'merge'
+    return uiState.orchestratorApplyMode === 'merge'
       ? mergeLayoutByMissing(safeTab.layout as any, orchestrationPlan.layout)
       : orchestrationPlan.layout;
-  }, [orchestrationPlan, orchestratorApplyMode, safeTab.layout]);
+  }, [orchestrationPlan, uiState.orchestratorApplyMode, safeTab.layout]);
 
   const layoutDiffPreview = useMemo(() => {
     if (!previewNextLayout) return [];
@@ -233,12 +285,12 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   const orchestrationRiskTips = useMemo(
     () =>
       buildOrchestrationRiskTips(
-        orchestratorApplyMode,
+        uiState.orchestratorApplyMode,
         safeTab.layout as any,
         previewNextLayout,
         layoutDiffPreview,
       ),
-    [orchestratorApplyMode, safeTab.layout, previewNextLayout, layoutDiffPreview],
+    [uiState.orchestratorApplyMode, safeTab.layout, previewNextLayout, layoutDiffPreview],
   );
 
   const handleApplyOrchestration = () => {
@@ -251,7 +303,7 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       return;
     }
     const riskLevel = assessOrchestrationRiskLevel(
-      orchestratorApplyMode,
+      uiState.orchestratorApplyMode,
       safeTab.layout as any,
       previewNextLayout,
       layoutDiffPreview,
@@ -259,14 +311,14 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
     const doApply = () => {
       pushOrchestrationHistory(safeTab.layout);
       const nextLayout =
-        orchestratorApplyMode === 'merge'
+        uiState.orchestratorApplyMode === 'merge'
           ? mergeLayoutByMissing(safeTab.layout as any, orchestrationPlan.layout)
           : orchestrationPlan.layout;
       onChange({ ...safeTab, layout: nextLayout });
-      setOrchestratorOpen(false);
+      dispatch({ type: 'closeOrchestrator' });
       message.success(
-        `已应用多函数编排：${orchestratorMode}（${
-          orchestratorApplyMode === 'merge' ? '仅补空字段' : '覆盖当前'
+        `已应用多函数编排：${uiState.orchestratorMode}（${
+          uiState.orchestratorApplyMode === 'merge' ? '仅补空字段' : '覆盖当前'
         }）`,
       );
     };
@@ -327,50 +379,65 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
 
   // Column/Field editor handlers
   const handleColumnSave = (values: ColumnConfig) => {
+    const keyLower = String(values?.key || '').toLowerCase();
+    const numericHint =
+      values.render === 'money' ||
+      keyLower.includes('count') ||
+      keyLower.includes('num') ||
+      keyLower.includes('amount') ||
+      keyLower.includes('price') ||
+      keyLower.includes('score') ||
+      keyLower.includes('level') ||
+      keyLower.includes('total');
+    const normalizedValues: ColumnConfig = {
+      ...values,
+      align: values.align || (numericHint ? 'right' : undefined),
+    };
+
     const layout = safeTab.layout as any;
     const cols: ColumnConfig[] = layout.columns || [];
-    if (editingColumn) {
+    if (uiState.editingColumn) {
       onChange({
         ...safeTab,
         layout: {
           ...layout,
-          columns: cols.map((c) => (c.key === editingColumn.key ? { ...c, ...values } : c)),
+          columns: cols.map((c) =>
+            c.key === uiState.editingColumn!.key ? { ...c, ...normalizedValues } : c,
+          ),
         },
       });
     } else {
-      onChange({ ...safeTab, layout: { ...layout, columns: [...cols, values] } });
+      onChange({ ...safeTab, layout: { ...layout, columns: [...cols, normalizedValues] } });
     }
-    setColumnModalOpen(false);
-    setEditingColumn(null);
+    dispatch({ type: 'closeColumnEditor' });
   };
 
   const handleFieldSave = (values: FieldConfig) => {
     const layout = safeTab.layout as any;
     const fieldsKey = layout.type === 'form' ? 'fields' : 'queryFields';
     const fields: FieldConfig[] = layout[fieldsKey] || [];
-    if (editingField) {
+    if (uiState.editingField) {
       onChange({
         ...safeTab,
         layout: {
           ...layout,
-          [fieldsKey]: fields.map((f) => (f.key === editingField.key ? { ...f, ...values } : f)),
+          [fieldsKey]: fields.map((f) =>
+            f.key === uiState.editingField!.key ? { ...f, ...values } : f,
+          ),
         },
       });
     } else {
       onChange({ ...safeTab, layout: { ...layout, [fieldsKey]: [...fields, values] } });
     }
-    setFieldModalOpen(false);
-    setEditingField(null);
+    dispatch({ type: 'closeFieldEditor' });
   };
 
   const handleOpenColumnEditor = (column: ColumnConfig | null) => {
-    setEditingColumn(column);
-    setColumnModalOpen(true);
+    dispatch({ type: 'openColumnEditor', payload: column });
   };
 
   const handleOpenFieldEditor = (field: FieldConfig | null) => {
-    setEditingField(field);
-    setFieldModalOpen(true);
+    dispatch({ type: 'openFieldEditor', payload: field });
   };
 
   return (
@@ -382,30 +449,42 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         descriptors={descriptors}
         onDrop={handleDrop}
         onRemoveFunction={handleRemoveFunction}
-        onOpenLayoutWizard={setLayoutWizardDescriptor}
+        onOpenLayoutWizard={(descriptor) =>
+          dispatch({ type: 'openLayoutWizard', payload: descriptor })
+        }
       />
 
       <Modal
         title={`界面向导: ${
-          layoutWizardDescriptor?.display_name?.zh || layoutWizardDescriptor?.id || ''
+          uiState.layoutWizardDescriptor?.display_name?.zh ||
+          uiState.layoutWizardDescriptor?.id ||
+          ''
         }`}
-        open={!!layoutWizardDescriptor}
+        open={!!uiState.layoutWizardDescriptor}
         footer={null}
-        onCancel={() => setLayoutWizardDescriptor(null)}
+        onCancel={() => dispatch({ type: 'closeLayoutWizard' })}
       >
-        {layoutWizardDescriptor && (
+        {uiState.layoutWizardDescriptor && (
           <Space wrap>
-            <Button onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'list')}>
+            <Button
+              onClick={() => handleApplyFunctionLayout(uiState.layoutWizardDescriptor!, 'list')}
+            >
               生成列表界面
             </Button>
-            <Button onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'form')}>
+            <Button
+              onClick={() => handleApplyFunctionLayout(uiState.layoutWizardDescriptor!, 'form')}
+            >
               生成表单界面
             </Button>
-            <Button onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'detail')}>
+            <Button
+              onClick={() => handleApplyFunctionLayout(uiState.layoutWizardDescriptor!, 'detail')}
+            >
               生成详情界面
             </Button>
             <Button
-              onClick={() => handleApplyFunctionLayout(layoutWizardDescriptor, 'form-detail')}
+              onClick={() =>
+                handleApplyFunctionLayout(uiState.layoutWizardDescriptor!, 'form-detail')
+              }
             >
               生成查询详情界面
             </Button>
@@ -424,16 +503,16 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         onApplyScenario={handleApplyScenario}
         onAutoLayout={handleAutoLayout}
         onHealLayout={handleHealLayout}
-        onOpenOrchestrator={() => setOrchestratorOpen(true)}
+        onOpenOrchestrator={() => dispatch({ type: 'openOrchestrator' })}
         onUndo={handleUndoOrchestration}
         onRedo={handleRedoOrchestration}
       />
 
       <OrchestrationWizard
-        open={orchestratorOpen}
-        mode={orchestratorMode}
-        applyMode={orchestratorApplyMode}
-        bindings={orchestratorBindings}
+        open={uiState.orchestratorOpen}
+        mode={uiState.orchestratorMode}
+        applyMode={uiState.orchestratorApplyMode}
+        bindings={uiState.orchestratorBindings}
         functions={safeTab.functions}
         descriptors={descriptors}
         orchestrationPlan={orchestrationPlan}
@@ -443,12 +522,16 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         displayedAssignments={displayedAssignments}
         riskTips={orchestrationRiskTips}
         diffPreview={layoutDiffPreview}
-        onClose={() => setOrchestratorOpen(false)}
+        onClose={() => dispatch({ type: 'closeOrchestrator' })}
         onApply={handleApplyOrchestration}
-        onModeChange={setOrchestratorMode}
-        onApplyModeChange={setOrchestratorApplyMode}
-        onBindingsChange={setOrchestratorBindings}
-        onResetBindings={() => setOrchestratorBindings(defaultBindings)}
+        onModeChange={(mode) => dispatch({ type: 'setOrchestratorMode', payload: mode })}
+        onApplyModeChange={(mode) => dispatch({ type: 'setOrchestratorApplyMode', payload: mode })}
+        onBindingsChange={(bindings) =>
+          dispatch({ type: 'setOrchestratorBindings', payload: bindings })
+        }
+        onResetBindings={() =>
+          dispatch({ type: 'setOrchestratorBindings', payload: defaultBindings })
+        }
       />
 
       <Card title="布局配置" size="small">
@@ -463,23 +546,17 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       </Card>
 
       <ColumnEditorModal
-        open={columnModalOpen}
-        editingColumn={editingColumn}
+        open={uiState.columnModalOpen}
+        editingColumn={uiState.editingColumn}
         onOk={handleColumnSave}
-        onCancel={() => {
-          setColumnModalOpen(false);
-          setEditingColumn(null);
-        }}
+        onCancel={() => dispatch({ type: 'closeColumnEditor' })}
       />
 
       <FieldEditorModal
-        open={fieldModalOpen}
-        editingField={editingField}
+        open={uiState.fieldModalOpen}
+        editingField={uiState.editingField}
         onOk={handleFieldSave}
-        onCancel={() => {
-          setFieldModalOpen(false);
-          setEditingField(null);
-        }}
+        onCancel={() => dispatch({ type: 'closeFieldEditor' })}
       />
     </Space>
   );
