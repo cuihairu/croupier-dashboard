@@ -6,14 +6,14 @@
 
 ## 0. 执行进度
 
-- **Phase 1: 架构重构与技术债清理** (0/12)
-- **Phase 2: 函数 UI Schema 编辑器升级** (0/15)
+- **Phase 1: 架构重构与技术债清理** (1/12)
+- **Phase 2: 函数 UI Schema 编辑器升级** (3/15)
 - **Phase 3: TabEditor 拆分与增强** (0/18)
 - **Phase 4: 函数选择与预览体验** (0/8)
 - **Phase 5: 布局可视化与交互增强** (0/10)
 - **Phase 6: 企业级特性补齐** (0/12)
 
-**总计**: 0/75 tasks
+**总计**: 4/75 tasks
 
 ---
 
@@ -84,7 +84,7 @@
 
 ### 1.3 状态管理优化
 
-- [ ] **TASK-1.3.1**: 实现 `useOrchestrationHistory` hook
+- [x] **TASK-1.3.1**: 实现 `useOrchestrationHistory` hook
 
   - 封装 undo/redo 逻辑
   - 支持快捷键 Ctrl+Alt+Z / Ctrl+Alt+Y
@@ -107,7 +107,7 @@
   - 支持字段上下拖拽调整顺序
   - 拖拽时显示插入位置指示线
 
-- [ ] **TASK-2.1.2**: 代码编辑模式换成 Monaco Editor
+- [x] **TASK-2.1.2**: 代码编辑模式换成 Monaco Editor
 
   - 替换 TextArea 为 `MonacoDynamic`
   - 增加 JSON Schema 语法提示
@@ -125,13 +125,13 @@
   - 分组可折叠展开
   - 分组内字段可拖拽排序
 
-- [ ] **TASK-2.1.5**: 枚举编辑器重构
+- [x] **TASK-2.1.5**: 枚举编辑器重构
 
   - 去掉 `document.getElementById` 反模式
   - 改为受控组件 + Modal 表单
   - 支持批量导入枚举（CSV / JSON）
 
-- [ ] **TASK-2.1.6**: 中英文文案统一
+- [x] **TASK-2.1.6**: 中英文文案统一
   - 所有按钮、提示改为中文
   - 保留技术术语英文（如 "JSON Schema"）
   - 增加国际化支持（i18n 预留）

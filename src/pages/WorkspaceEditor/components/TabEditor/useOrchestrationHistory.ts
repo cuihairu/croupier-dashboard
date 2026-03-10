@@ -12,11 +12,15 @@ function cloneLayout(layout: any): any {
 export interface UseOrchestrationHistoryOptions {
   maxStackSize?: number;
   onLayoutChange: (layout: any) => void;
+  getCurrentLayout?: () => any;
+  enableHotkeys?: boolean;
 }
 
 export function useOrchestrationHistory({
   maxStackSize = 10,
   onLayoutChange,
+  getCurrentLayout,
+  enableHotkeys = false,
 }: UseOrchestrationHistoryOptions) {
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [redoStack, setRedoStack] = useState<any[]>([]);
@@ -57,26 +61,24 @@ export function useOrchestrationHistory({
     setRedoStack([]);
   }, []);
 
-  // 键盘快捷键
+  // 键盘快捷键：Ctrl/Cmd + Alt + Z / Y
   useEffect(() => {
+    if (!enableHotkeys || !getCurrentLayout) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
-      // Ctrl/Cmd + Alt + Z: 撤销编排
       if (e.altKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        // 注意：这里无法直接调用 undo，因为需要 currentLayout
-        // 实际使用时需要在组件中监听
+        undo(getCurrentLayout());
         return;
       }
-      // Ctrl/Cmd + Alt + Y: 重做编排
       if (e.altKey && e.key.toLowerCase() === 'y') {
         e.preventDefault();
-        // 同上
+        redo(getCurrentLayout());
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [enableHotkeys, getCurrentLayout, undo, redo]);
 
   return {
     undoStack,

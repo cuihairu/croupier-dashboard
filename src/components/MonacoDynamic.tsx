@@ -5,6 +5,7 @@ type EditorProps = {
   language?: string;
   height?: number | string;
   onChange?: (v: string) => void;
+  onMount?: (editor: any, monaco: any) => void;
   readOnly?: boolean;
   theme?: string;
   options?: Record<string, any>;
@@ -16,6 +17,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
   language = 'plaintext',
   height = 360,
   onChange,
+  onMount,
   readOnly,
   theme,
   options,
@@ -56,6 +58,7 @@ export const CodeEditor: React.FC<EditorProps> = ({
       theme={theme}
       beforeMount={beforeMount}
       onChange={(v: string | undefined) => onChange && onChange(v || '')}
+      onMount={onMount}
       options={{
         minimap: { enabled: false },
         wordWrap: 'on',

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Space, Card, Modal, message } from 'antd';
+import { Space, Card, Modal, message, Button } from 'antd';
 import type { TabConfig, ColumnConfig, FieldConfig } from '@/types/workspace';
 import type { FunctionDescriptor } from '@/services/api/functions';
 import { descriptorToLayout } from '../utils/schemaToLayout';
@@ -27,6 +27,7 @@ import {
   type ScenarioRecommendation,
 } from './TabEditor/scenarioUtils';
 import { healTabLayoutWithTemplate } from './TabEditor/healLayoutUtils';
+import { useOrchestrationHistory } from './TabEditor/useOrchestrationHistory';
 
 type OrchestratorMode = 'list' | 'form-detail' | 'split' | 'dashboard';
 type OrchestratorRole = 'list' | 'detail' | 'submit' | 'query' | 'data';
@@ -55,8 +56,6 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   );
   const [orchestratorApplyMode, setOrchestratorApplyMode] =
     useState<OrchestratorApplyMode>('overwrite');
-  const [orchestratorUndoStack, setOrchestratorUndoStack] = useState<any[]>([]);
-  const [orchestratorRedoStack, setOrchestratorRedoStack] = useState<any[]>([]);
 
   // Safe tab with defaults
   const safeTab = {
@@ -64,6 +63,20 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
     functions: tab?.functions || [],
     layout: tab?.layout || { type: 'form' },
   };
+
+  const {
+    undoStack: orchestratorUndoStack,
+    redoStack: orchestratorRedoStack,
+    pushToHistory: pushOrchestrationHistory,
+    undo: undoOrchestration,
+    redo: redoOrchestration,
+    clearRedoStack,
+  } = useOrchestrationHistory({
+    maxStackSize: 10,
+    onLayoutChange: (layout) => onChange({ ...safeTab, layout }),
+    getCurrentLayout: () => safeTab.layout,
+    enableHotkeys: true,
+  });
 
   // Handlers
   const handleBasicChange = (field: string, value: any) => {
@@ -244,11 +257,7 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       layoutDiffPreview,
     );
     const doApply = () => {
-      setOrchestratorUndoStack((prev) => [
-        ...prev.slice(-9),
-        JSON.parse(JSON.stringify(safeTab.layout)),
-      ]);
-      setOrchestratorRedoStack([]);
+      pushOrchestrationHistory(safeTab.layout);
       const nextLayout =
         orchestratorApplyMode === 'merge'
           ? mergeLayoutByMissing(safeTab.layout as any, orchestrationPlan.layout)
@@ -289,43 +298,12 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
   };
 
   const handleUndoOrchestration = () => {
-    if (orchestratorUndoStack.length === 0) return;
-    const previous = orchestratorUndoStack[orchestratorUndoStack.length - 1];
-    setOrchestratorUndoStack((prev) => prev.slice(0, -1));
-    setOrchestratorRedoStack((prev) => [...prev, JSON.parse(JSON.stringify(safeTab.layout))]);
-    onChange({ ...safeTab, layout: previous });
-    message.success('已撤销上一次编排变更');
+    undoOrchestration(safeTab.layout);
   };
 
   const handleRedoOrchestration = () => {
-    if (orchestratorRedoStack.length === 0) return;
-    const next = orchestratorRedoStack[orchestratorRedoStack.length - 1];
-    setOrchestratorRedoStack((prev) => prev.slice(0, -1));
-    setOrchestratorUndoStack((prev) => [
-      ...prev.slice(-9),
-      JSON.parse(JSON.stringify(safeTab.layout)),
-    ]);
-    onChange({ ...safeTab, layout: next });
-    message.success('已恢复上一次撤销的编排变更');
+    redoOrchestration(safeTab.layout);
   };
-
-  // Keyboard shortcuts for undo/redo
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
-      if (e.altKey && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        handleUndoOrchestration();
-        return;
-      }
-      if (e.altKey && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        handleRedoOrchestration();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [orchestratorUndoStack, orchestratorRedoStack, safeTab.layout]);
 
   // Clear redo stack on external layout change
   useEffect(() => {
@@ -334,9 +312,9 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
       if (JSON.stringify(lastRedo) === JSON.stringify(safeTab.layout)) {
         return;
       }
-      setOrchestratorRedoStack([]);
+      clearRedoStack();
     }
-  }, [safeTab.layout]);
+  }, [safeTab.layout, orchestratorRedoStack, clearRedoStack]);
 
   // Scenario recommendation
   const recommendedScenario = useMemo((): ScenarioRecommendation | null => {
