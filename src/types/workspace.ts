@@ -108,6 +108,18 @@ export interface TabConfig {
 
   /** 权限要求 */
   permissions?: string[];
+
+  /** 配置注释（不影响运行时，用于团队协作说明） */
+  comment?: string;
+
+  /** 配置锁定（锁定后不可编辑，防止误操作） */
+  locked?: boolean;
+
+  /** 锁定者信息（记录谁锁定的配置） */
+  lockedBy?: string;
+
+  /** 锁定时间 */
+  lockedAt?: string;
 }
 
 /**
@@ -444,6 +456,9 @@ export interface FieldConfig {
   /** 默认值 */
   defaultValue?: any;
 
+  /** 默认值表达式（如 "$now()", "$user.id", "$query.key"）*/
+  defaultValueExpression?: string;
+
   /** 选项列表（用于 select、radio、checkbox） */
   options?: Array<{ label: string; value: any }>;
 
@@ -455,6 +470,12 @@ export interface FieldConfig {
 
   /** 提示信息 */
   tooltip?: string;
+
+  /** 显隐联动条件（如 "status === 'active'"，为 false 时隐藏该字段） */
+  visibleWhen?: string;
+
+  /** 禁用联动条件（如 "type === 'readonly'"，为 true 时禁用该字段） */
+  disabledWhen?: string;
 }
 
 /**
@@ -512,6 +533,12 @@ export interface ColumnConfig {
 
   /** 渲染选项（如状态映射、日期格式等） */
   renderOptions?: Record<string, any>;
+
+  /** 条件显隐 - 权限控制（需要的权限标识，无权限时隐藏该列） */
+  visiblePermission?: string;
+
+  /** 条件显隐 - 数据状态表达式（如 "status !== 'archived'"，为 false 时隐藏该列） */
+  visibleCondition?: string;
 }
 
 /**

@@ -386,6 +386,17 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
         errors.push('tabs 布局至少需要一个 tab');
       }
 
+      // 检测 tab key 重复
+      const tabKeys = new Set<string>();
+      config.layout.tabs?.forEach((tab, index) => {
+        if (tab.key) {
+          if (tabKeys.has(tab.key)) {
+            errors.push(`tabs[${index}].key 重复: "${tab.key}"，每个 Tab 的 key 必须唯一`);
+          }
+          tabKeys.add(tab.key);
+        }
+      });
+
       // 验证每个 tab
       config.layout.tabs?.forEach((tab, index) => {
         if (!tab.key) {
@@ -413,6 +424,18 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
           if (!Array.isArray(tab.layout.columns) || tab.layout.columns.length === 0) {
             errors.push(`tabs[${index}].columns 至少需要一列`);
           }
+          // 检测列 key 重复
+          if (Array.isArray(tab.layout.columns)) {
+            const colKeys = new Set<string>();
+            tab.layout.columns.forEach((col: any, ci: number) => {
+              if (col.key) {
+                if (colKeys.has(col.key)) {
+                  errors.push(`tabs[${index}].columns[${ci}].key 重复: "${col.key}"`);
+                }
+                colKeys.add(col.key);
+              }
+            });
+          }
         }
 
         if (tab.layout?.type === 'form') {
@@ -421,6 +444,18 @@ export function validateWorkspaceConfig(config: WorkspaceConfig): {
           }
           if (!Array.isArray(tab.layout.fields) || tab.layout.fields.length === 0) {
             errors.push(`tabs[${index}].fields 至少需要一个字段`);
+          }
+          // 检测字段 key 重复
+          if (Array.isArray(tab.layout.fields)) {
+            const fieldKeys = new Set<string>();
+            tab.layout.fields.forEach((f: any, fi: number) => {
+              if (f.key) {
+                if (fieldKeys.has(f.key)) {
+                  errors.push(`tabs[${index}].fields[${fi}].key 重复: "${f.key}"`);
+                }
+                fieldKeys.add(f.key);
+              }
+            });
           }
         }
 

@@ -25,6 +25,11 @@ import {
   UndoOutlined,
   RedoOutlined,
   HistoryOutlined,
+  ThunderboltOutlined,
+  BorderOutlined,
+  PlayCircleOutlined,
+  TeamOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { useAccess, useParams } from '@umijs/max';
 import type { WorkspaceConfig, WorkspaceVersionRecord } from '@/types/workspace';
@@ -41,6 +46,8 @@ import {
   saveWorkspaceConfig,
   validateWorkspaceConfig,
 } from '@/services/workspaceConfig';
+import { validateTabConfig, formatValidationResult } from './utils/configValidator';
+import { analyzeMultipleTabsPerformance } from './utils/configAnalyzer';
 import { trackWorkspaceEvent } from '@/services/workspace/telemetry';
 import { getWorkspaceErrorMessage } from '@/services/workspace/errors';
 import { listDescriptors } from '@/services/api/functions';
@@ -48,6 +55,18 @@ import FunctionList from './components/FunctionList';
 import LayoutDesigner from './components/LayoutDesigner';
 import ConfigPreview from './components/ConfigPreview';
 import TemplateManager, { type Template } from './components/TemplateManager';
+import DiffViewer from './components/DiffViewer';
+import PerformancePanel from './components/PerformancePanel';
+import LayoutThumbnail, { MultiTabThumbnail } from './components/LayoutThumbnail';
+import GuideTour, { shouldShowGuide, QuickGuideButton } from './components/GuideTour';
+import ConfigTestTool from './components/ConfigTestTool';
+import AuditLogPanel, { AuditLogDetailModal } from './components/AuditLogPanel';
+import CollaborationPanel, { CollaborationIndicator } from './components/CollaborationPanel';
+import CanvasEditor, { CanvasModeButton } from './components/CanvasEditor/CanvasEditor';
+import DraftPanel, { DraftIndicator } from './components/DraftPanel';
+import { analyzeConfigImpact } from './utils/impactAnalyzer';
+import { getCollaborationManager } from './utils/collaborationManager';
+import { AutoSaveDraft, saveDraft } from './utils/draftManager';
 import { useSimpleHistory } from './hooks/useHistory';
 
 /** 两种模式：2=函数+设计器（默认），3=函数+设计器+预览 */
@@ -402,6 +421,10 @@ export default function WorkspaceEditor() {
   const [rollingVersionId, setRollingVersionId] = useState('');
   const [versions, setVersions] = useState<WorkspaceVersionRecord[]>([]);
   const [selectedVersion, setSelectedVersion] = useState<WorkspaceVersionRecord | null>(null);
+  const [compareVersions, setCompareVersions] = useState<{
+    old: WorkspaceVersionRecord;
+    new: WorkspaceVersionRecord;
+  } | null>(null);
   const [versionDetailLoading, setVersionDetailLoading] = useState(false);
   const [versionDetailId, setVersionDetailId] = useState('');
   const [versionTimeRange, setVersionTimeRange] = useState<VersionTimeRange>('all');
@@ -412,6 +435,25 @@ export default function WorkspaceEditor() {
 
   // 模板管理
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [performanceModalVisible, setPerformanceModalVisible] = useState(false);
+  const [thumbnailModalVisible, setThumbnailModalVisible] = useState(false);
+  const [configTestVisible, setConfigTestVisible] = useState(false);
+  const [auditLogVisible, setAuditLogVisible] = useState(false);
+
+  // 新手引导
+  const [guideTourVisible, setGuideTourVisible] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
+
+  // 协作面板
+  const [collaborationVisible, setCollaborationVisible] = useState(false);
+
+  // 画布编辑器
+  const [canvasEditorVisible, setCanvasEditorVisible] = useState(false);
+  const [canvasEditorTab, setCanvasEditorTab] = useState<any>(null);
+
+  // 草稿管理
+  const [draftVisible, setDraftVisible] = useState(false);
+  const autoSaveRef = useRef<AutoSaveDraft | null>(null);
 
   // 使用历史记录 Hook
   const history = useSimpleHistory<WorkspaceConfig | null>(null, 100);
@@ -423,6 +465,48 @@ export default function WorkspaceEditor() {
     });
     loadData();
   }, [objectKey]);
+
+  // 新手引导自动启动检测
+  useEffect(() => {
+    // 延迟检测，确保页面已完全加载
+    const timer = setTimeout(() => {
+      if (shouldShowGuide()) {
+        setGuideTourVisible(true);
+      }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 组件卸载时清理协作管理器
+  useEffect(() => {
+    return () => {
+      const manager = getCollaborationManager();
+      manager.leave();
+    };
+  }, []);
+
+  // 自动保存草稿
+  useEffect(() => {
+    if (!config || !objectKey) return;
+
+    // 初始化自动保存
+    if (!autoSaveRef.current) {
+      autoSaveRef.current = new AutoSaveDraft(objectKey, () => config, {
+        delay: 30000, // 30秒
+        onSave: (draft) => {
+          console.log('自动保存草稿:', draft.id);
+        },
+      });
+    }
+
+    // 配置变化时触发自动保存
+    autoSaveRef.current.trigger();
+
+    return () => {
+      autoSaveRef.current?.dispose();
+      autoSaveRef.current = null;
+    };
+  }, [config, objectKey]);
 
   const loadData = async () => {
     if (!objectKey) {
@@ -499,6 +583,74 @@ export default function WorkspaceEditor() {
       });
       return;
     }
+
+    // Tab 级别详细校验
+    if (config.layout?.type === 'tabs' && config.layout.tabs) {
+      const functionIds = descriptors.map((d) => d.id);
+      const tabErrors: string[] = [];
+      const tabWarnings: string[] = [];
+
+      config.layout.tabs.forEach((tab) => {
+        const result = validateTabConfig(tab, functionIds);
+        if (!result.valid) {
+          tabErrors.push(`Tab [${tab.key}]:`);
+          result.errors.forEach((error) => {
+            tabErrors.push(`  - ${error.path}: ${error.message}`);
+          });
+        }
+        if (result.warnings.length > 0) {
+          tabWarnings.push(`Tab [${tab.key}]:`);
+          result.warnings.forEach((warning) => {
+            tabWarnings.push(`  - ${warning.path}: ${warning.message}`);
+          });
+        }
+      });
+
+      if (tabErrors.length > 0) {
+        Modal.error({
+          title: 'Tab 配置校验失败',
+          width: 600,
+          content: (
+            <div style={{ maxHeight: 400, overflow: 'auto' }}>
+              {tabErrors.slice(0, 20).map((error, index) => (
+                <div key={index} style={{ fontSize: 12, fontFamily: 'monospace' }}>
+                  {error}
+                </div>
+              ))}
+            </div>
+          ),
+        });
+        return;
+      }
+
+      if (tabWarnings.length > 0) {
+        Modal.confirm({
+          title: 'Tab 配置警告',
+          width: 600,
+          content: (
+            <div style={{ maxHeight: 300, overflow: 'auto' }}>
+              <div>以下配置可能存在问题，建议检查：</div>
+              {tabWarnings.slice(0, 10).map((warning, index) => (
+                <div key={index} style={{ fontSize: 12, fontFamily: 'monospace', marginTop: 4 }}>
+                  {warning}
+                </div>
+              ))}
+            </div>
+          ),
+          okText: '继续保存',
+          cancelText: '取消',
+          onOk: () => {
+            doSave();
+          },
+        });
+        return;
+      }
+    }
+
+    doSave();
+  };
+
+  const doSave = async () => {
     setSaving(true);
     try {
       await saveWorkspaceConfig(config);
@@ -1035,6 +1187,74 @@ export default function WorkspaceEditor() {
         >
           版本
         </Button>,
+        <Button
+          key="performance"
+          icon={<ThunderboltOutlined />}
+          onClick={() => setPerformanceModalVisible(true)}
+          style={{ marginLeft: 8 }}
+        >
+          性能
+        </Button>,
+        <Button
+          key="thumbnail"
+          icon={<BorderOutlined />}
+          onClick={() => setThumbnailModalVisible(true)}
+          style={{ marginLeft: 8 }}
+        >
+          缩略图
+        </Button>,
+        <Button
+          key="config-test"
+          icon={<PlayCircleOutlined />}
+          onClick={() => setConfigTestVisible(true)}
+          style={{ marginLeft: 8 }}
+        >
+          测试
+        </Button>,
+        <Button
+          key="audit-log"
+          icon={<FileOutlined />}
+          onClick={() => setAuditLogVisible(true)}
+          style={{ marginLeft: 8 }}
+        >
+          日志
+        </Button>,
+        <Tooltip key="collaboration" title="协作状态">
+          <Button
+            icon={<TeamOutlined />}
+            onClick={() => setCollaborationVisible(true)}
+            style={{ marginLeft: 8 }}
+          >
+            协作
+          </Button>
+        </Tooltip>,
+        <CanvasModeButton
+          key="canvas-editor"
+          tabConfig={canvasEditorTab}
+          onSave={(newTabConfig) => {
+            // 更新当前 Tab 的配置
+            if (config && config.layout?.tabs) {
+              const updatedTabs = config.layout.tabs.map((tab: any) =>
+                tab.key === canvasEditorTab?.key ? { ...tab, layout: newTabConfig.layout } : tab,
+              );
+              handleConfigChange(
+                { ...config, layout: { ...config.layout, tabs: updatedTabs } },
+                '画布编辑器保存',
+              );
+              message.success('画布配置已保存');
+            }
+          }}
+        />,
+        <DraftIndicator key="draft" objectKey={objectKey} />,
+        <Tooltip key="draft-panel" title="草稿管理">
+          <Button
+            icon={<FileOutlined />}
+            onClick={() => setDraftVisible(true)}
+            style={{ marginLeft: 8 }}
+          >
+            草稿
+          </Button>
+        </Tooltip>,
         // 视图模式切换
         <div
           key="view-mode"
@@ -1220,6 +1440,23 @@ export default function WorkspaceEditor() {
             <List.Item
               actions={[
                 <Button
+                  key="compare"
+                  size="small"
+                  onClick={() =>
+                    setCompareVersions({
+                      old: item,
+                      new: {
+                        id: 'current',
+                        version: 'current',
+                        objectKey: config.objectKey,
+                        config,
+                      } as any,
+                    })
+                  }
+                >
+                  对比当前
+                </Button>,
+                <Button
                   key="detail"
                   size="small"
                   onClick={() => handleOpenVersionDetail(item)}
@@ -1321,35 +1558,196 @@ export default function WorkspaceEditor() {
             </div>
             <div style={{ border: '1px solid #f0f0f0', borderRadius: 6, padding: 12 }}>
               <div style={{ marginBottom: 8, fontWeight: 500 }}>与当前草稿 Diff</div>
-              {(() => {
-                const diff = buildVersionDiff(config, selectedVersion.config);
-                const lines = [
-                  ...diff.fieldChanges.map((line) => `字段: ${line}`),
-                  ...diff.layoutChanges.map((line) => `布局: ${line}`),
-                  ...diff.tabChanges.map((line) => `结构: ${line}`),
-                ];
-                return (
-                  <pre
-                    style={{
-                      margin: 0,
-                      maxHeight: 220,
-                      overflow: 'auto',
-                      background: '#fafafa',
-                      border: '1px solid #f0f0f0',
-                      padding: 12,
-                      borderRadius: 6,
-                      fontSize: 12,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {lines.join('\n')}
-                  </pre>
-                );
-              })()}
+              <div
+                style={{
+                  maxHeight: 320,
+                  overflow: 'auto',
+                  border: '1px solid #f0f0f0',
+                  borderRadius: 6,
+                  padding: 8,
+                  background: '#fafafa',
+                }}
+              >
+                <DiffViewer
+                  title={null}
+                  oldData={selectedVersion.config}
+                  newData={config}
+                  expanded={false}
+                />
+              </div>
             </div>
           </Space>
         )}
       </Modal>
+
+      <Modal
+        title={
+          compareVersions ? `版本对比: v${compareVersions.old.version} → 当前草稿` : '版本对比'
+        }
+        open={Boolean(compareVersions)}
+        width={900}
+        footer={<Button onClick={() => setCompareVersions(null)}>关闭</Button>}
+        onCancel={() => setCompareVersions(null)}
+      >
+        {compareVersions && (
+          <DiffViewer
+            title={`v${compareVersions.old.version} vs 当前草稿`}
+            oldData={compareVersions.old.config}
+            newData={compareVersions.new.config}
+            expanded={true}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        title="配置性能分析"
+        open={performanceModalVisible}
+        onCancel={() => setPerformanceModalVisible(false)}
+        footer={<Button onClick={() => setPerformanceModalVisible(false)}>关闭</Button>}
+        width={700}
+      >
+        {config?.layout?.type === 'tabs' && config.layout.tabs && (
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            <PerformancePanel
+              title="总体性能"
+              result={analyzeMultipleTabsPerformance(config.layout.tabs).overall}
+            />
+            <Collapse
+              ghost
+              size="small"
+              items={config.layout.tabs.map((tab) => ({
+                key: tab.key,
+                label: `Tab: ${tab.title} (${tab.key})`,
+                children: (
+                  <PerformancePanel
+                    title={null}
+                    result={analyzeMultipleTabsPerformance(config.layout.tabs).byTab[tab.key]}
+                  />
+                ),
+              }))}
+            />
+          </Space>
+        )}
+      </Modal>
+
+      <Modal
+        title="布局结构缩略图"
+        open={thumbnailModalVisible}
+        onCancel={() => setThumbnailModalVisible(false)}
+        footer={<Button onClick={() => setThumbnailModalVisible(false)}>关闭</Button>}
+        width={600}
+      >
+        {config?.layout?.type === 'tabs' && config.layout.tabs ? (
+          <MultiTabThumbnail
+            tabs={config.layout.tabs}
+            onTabClick={(tabKey) => {
+              setThumbnailModalVisible(false);
+              // 可以添加滚动到对应 Tab 的逻辑
+            }}
+          />
+        ) : config?.layout ? (
+          <LayoutThumbnail
+            tab={
+              {
+                key: config.objectKey,
+                title: config.title,
+                functions: [],
+                layout: config.layout,
+              } as any
+            }
+          />
+        ) : (
+          <div style={{ textAlign: 'center', color: '#999', padding: 20 }}>暂无配置</div>
+        )}
+      </Modal>
+
+      {/* 配置测试工具 */}
+      {config?.layout?.type === 'tabs' && config.layout.tabs && config.layout.tabs.length > 0 && (
+        <ConfigTestTool
+          visible={configTestVisible}
+          onClose={() => setConfigTestVisible(false)}
+          tab={config.layout.tabs[0]}
+          descriptors={availableFunctions}
+        />
+      )}
+
+      {/* 审计日志 */}
+      <AuditLogPanel
+        visible={auditLogVisible}
+        onClose={() => setAuditLogVisible(false)}
+        objectKey={objectKey}
+      />
+
+      {/* 协作面板 */}
+      <Drawer
+        title="协作状态"
+        placement="right"
+        width={380}
+        open={collaborationVisible}
+        onClose={() => setCollaborationVisible(false)}
+        styles={{
+          body: { padding: 12 },
+        }}
+      >
+        <CollaborationPanel objectKey={objectKey} isAdmin={access?.canWorkspaceAdmin || false} />
+      </Drawer>
+
+      {/* 画布编辑器 */}
+      {canvasEditorTab && (
+        <CanvasEditor
+          visible={canvasEditorVisible}
+          tabConfig={canvasEditorTab}
+          onSave={(newTabConfig) => {
+            if (config && config.layout?.tabs) {
+              const updatedTabs = config.layout.tabs.map((tab: any) =>
+                tab.key === canvasEditorTab?.key ? { ...tab, layout: newTabConfig.layout } : tab,
+              );
+              handleConfigChange(
+                { ...config, layout: { ...config.layout, tabs: updatedTabs } },
+                '画布编辑器保存',
+              );
+              message.success('画布配置已保存');
+              setCanvasEditorVisible(false);
+            }
+          }}
+          onCancel={() => setCanvasEditorVisible(false)}
+        />
+      )}
+
+      {/* 草稿面板 */}
+      <Drawer
+        title="草稿管理"
+        placement="right"
+        width={400}
+        open={draftVisible}
+        onClose={() => setDraftVisible(false)}
+        styles={{
+          body: { padding: 12 },
+        }}
+      >
+        <DraftPanel
+          objectKey={objectKey}
+          onRestore={(restoredConfig) => {
+            handleConfigChange(restoredConfig, '恢复草稿');
+            setDraftVisible(false);
+            message.success('已恢复草稿');
+          }}
+        />
+      </Drawer>
+
+      {/* 新手引导 */}
+      <QuickGuideButton
+        onStart={() => {
+          setGuideTourVisible(true);
+          setGuideStep(0);
+        }}
+      />
+      <GuideTour
+        visible={guideTourVisible}
+        currentStep={guideStep}
+        onStepChange={setGuideStep}
+        onClose={() => setGuideTourVisible(false)}
+      />
     </PageContainer>
   );
 }

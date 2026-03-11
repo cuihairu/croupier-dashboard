@@ -449,6 +449,10 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         descriptors={descriptors}
         onDrop={handleDrop}
         onRemoveFunction={handleRemoveFunction}
+        onAddFunctions={(functionIds) => {
+          const nextFunctions = [...(safeTab.functions || []), ...functionIds];
+          onChange({ ...safeTab, functions: nextFunctions });
+        }}
         onOpenLayoutWizard={(descriptor) =>
           dispatch({ type: 'openLayoutWizard', payload: descriptor })
         }
@@ -501,6 +505,7 @@ export default function TabEditor({ tab, onChange, descriptors = [] }: TabEditor
         redoStackLength={orchestratorRedoStack.length}
         onLayoutTypeChange={handleLayoutTypeChange}
         onApplyScenario={handleApplyScenario}
+        onApplyLayout={(layout) => onChange({ ...safeTab, layout })}
         onAutoLayout={handleAutoLayout}
         onHealLayout={handleHealLayout}
         onOpenOrchestrator={() => dispatch({ type: 'openOrchestrator' })}
