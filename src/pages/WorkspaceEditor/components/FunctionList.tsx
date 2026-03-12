@@ -650,7 +650,7 @@ export default function FunctionList({ functions, onCollapse }: FunctionListProp
           </Space>
         }
         style={{ height: 'calc(100vh - 200px)', overflow: 'auto' }}
-        bodyStyle={{ height: 'calc(100% - 60px)', overflow: 'auto' }}
+        styles={{ body: { height: 'calc(100% - 60px)', overflow: 'auto' } }}
         extra={
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Input

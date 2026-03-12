@@ -763,7 +763,7 @@ export default function VisualNodeEditor({
 
         <div style={{ flex: 1 }} />
 
-        <Button.Group>
+        <Space.Compact>
           <Tooltip title="撤销 (Ctrl+Z)">
             <Button icon={<UndoOutlined />} disabled={state.historyIndex <= 0} onClick={undo} />
           </Tooltip>
@@ -774,9 +774,9 @@ export default function VisualNodeEditor({
               onClick={redo}
             />
           </Tooltip>
-        </Button.Group>
+        </Space.Compact>
 
-        <Button.Group>
+        <Space.Compact>
           <Tooltip title="缩小">
             <Button icon={<ZoomOutOutlined />} onClick={() => handleZoom(-0.1)} />
           </Tooltip>
@@ -784,7 +784,7 @@ export default function VisualNodeEditor({
           <Tooltip title="放大">
             <Button icon={<ZoomInOutlined />} onClick={() => handleZoom(0.1)} />
           </Tooltip>
-        </Button.Group>
+        </Space.Compact>
 
         <Tooltip title="适应画布">
           <Button icon={<FullscreenOutlined />} onClick={fitCanvas} />

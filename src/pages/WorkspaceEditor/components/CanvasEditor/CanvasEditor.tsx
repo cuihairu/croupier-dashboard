@@ -284,7 +284,7 @@ function CanvasEditorContent({
         footer={null}
         width="95vw"
         style={{ top: 20 }}
-        bodyStyle={{ padding: 0, height: 'calc(100vh - 200px)' }}
+        styles={{ body: { padding: 0, height: 'calc(100vh - 200px)' } }}
         closable={false}
       >
         {content}

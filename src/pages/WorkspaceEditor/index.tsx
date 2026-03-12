@@ -1117,14 +1117,14 @@ export default function WorkspaceEditor() {
       title={`Workspace 配置: ${objectKey}`}
       extra={[
         // 撤销/重做按钮
-        <Button.Group key="history">
+        <Space.Compact key="history">
           <Tooltip title="撤销 (Ctrl+Z)">
             <Button icon={<UndoOutlined />} disabled={!history.canUndo} onClick={handleUndo} />
           </Tooltip>
           <Tooltip title="重做 (Ctrl+Y)">
             <Button icon={<RedoOutlined />} disabled={!history.canRedo} onClick={handleRedo} />
           </Tooltip>
-        </Button.Group>,
+        </Space.Compact>,
         // 模板按钮
         <Button
           key="template"
