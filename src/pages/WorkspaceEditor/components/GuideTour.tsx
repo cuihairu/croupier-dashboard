@@ -161,25 +161,25 @@ export interface QuickGuideButtonProps {
 }
 
 export function QuickGuideButton({ onStart }: QuickGuideButtonProps) {
+  // 将所有 hooks 声明放在任何条件返回之前
   const [hasBeenShown, setHasBeenShown] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const isCompleted = isGuideCompleted();
-
-  // 如果已完成或已关闭，不显示
-  if (isCompleted || dismissed) return null;
-
-  // 延迟显示，避免页面加载时立即弹出
   const [show, setShow] = useState(false);
+
+  const isCompleted = isGuideCompleted();
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (!hasBeenShown) {
+      if (!hasBeenShown && !isCompleted && !dismissed) {
         setShow(true);
       }
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [hasBeenShown]);
+  }, [hasBeenShown, isCompleted, dismissed]);
+
+  // 如果已完成或已关闭，不显示
+  if (isCompleted || dismissed) return null;
 
   if (!show) return null;
 

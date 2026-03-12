@@ -1,6 +1,7 @@
 import React from 'react';
-import { Card, Select, Space, Button, Tooltip, Tag, Dropdown, Menu, message } from 'antd';
+import { Card, Select, Space, Button, Tooltip, Tag, Dropdown, message } from 'antd';
 import { ThunderboltOutlined, AppstoreOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import type { MenuProps } from 'antd';
 import type { FunctionDescriptor } from '@/services/api/functions';
 import { HelpTooltip, HelpModal } from '../HelpTooltip';
 
@@ -195,28 +196,25 @@ export default function LayoutTypeSelector({
             />
             <Dropdown
               trigger={['click']}
-              overlay={
-                <Menu>
-                  {LAYOUT_TEMPLATES.map((tpl) => (
-                    <Menu.Item
-                      key={tpl.id}
-                      onClick={() => {
-                        if (onApplyLayout) {
-                          onApplyLayout(tpl.layout);
-                        } else {
-                          onLayoutTypeChange(tpl.layout.type);
-                        }
-                        message.success(`已应用布局模板：${tpl.label}`);
-                      }}
-                    >
-                      <div>
-                        <strong>{tpl.label}</strong>
-                        <div style={{ fontSize: 11, color: '#999' }}>{tpl.description}</div>
-                      </div>
-                    </Menu.Item>
-                  ))}
-                </Menu>
-              }
+              menu={{
+                items: LAYOUT_TEMPLATES.map((tpl) => ({
+                  key: tpl.id,
+                  label: (
+                    <div>
+                      <strong>{tpl.label}</strong>
+                      <div style={{ fontSize: 11, color: '#999' }}>{tpl.description}</div>
+                    </div>
+                  ),
+                  onClick: () => {
+                    if (onApplyLayout) {
+                      onApplyLayout(tpl.layout);
+                    } else {
+                      onLayoutTypeChange(tpl.layout.type);
+                    }
+                    message.success(`已应用布局模板：${tpl.label}`);
+                  },
+                })),
+              }}
             >
               <Button size="small" icon={<AppstoreOutlined />}>
                 布局模板
