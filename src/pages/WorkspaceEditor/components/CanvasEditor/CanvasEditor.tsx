@@ -20,7 +20,7 @@ import {
 import CanvasRenderer from './CanvasRenderer';
 import ComponentLibrary from './ComponentLibrary';
 import PropertyPanel from './PropertyPanel';
-import { useCanvasStore } from '../../utils/canvasStore';
+import { useCanvasStore, CanvasProvider } from '../../utils/canvasStore';
 import './CanvasEditor.less';
 
 export type EditorMode = 'design' | 'preview';

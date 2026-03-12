@@ -227,7 +227,7 @@ function SortableFunctionItem({ func, favoriteSet, onToggleFavorite }: SortableF
 }
 
 // 拖拽预览组件
-function DragOverlay({ func, favoriteSet }: { func: any; favoriteSet: Set<string> }) {
+function DragOverlayItem({ func, favoriteSet }: { func: any; favoriteSet: Set<string> }) {
   if (!func) return null;
   const op = func.operation || 'custom';
   const borderColor = OPERATION_COLOR[op] || '#d9d9d9';
@@ -830,7 +830,7 @@ export default function FunctionList({ functions, onCollapse }: FunctionListProp
       </Card>
       {/* 拖拽预览 */}
       <DragOverlay>
-        <DragOverlay func={activeFunc} favoriteSet={favoriteSet} />
+        <DragOverlayItem func={activeFunc} favoriteSet={favoriteSet} />
       </DragOverlay>
     </DndContext>
   );

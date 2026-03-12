@@ -14,8 +14,8 @@ import {
   CloseCircleOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
-import type { PerformanceAnalysisResult } from '../../utils/configAnalyzer';
-import { getPerformanceLevelColor, getPerformanceLevelText } from '../../utils/configAnalyzer';
+import type { PerformanceAnalysisResult } from '../utils/configAnalyzer';
+import { getPerformanceLevelColor, getPerformanceLevelText } from '../utils/configAnalyzer';
 
 const { Text } = Typography;
 
