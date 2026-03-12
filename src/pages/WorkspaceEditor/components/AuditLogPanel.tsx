@@ -33,8 +33,8 @@ import {
   BarChartOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd';
-import type { Dayjs } from 'dayjs';
-import dayjs from 'dayjs';
+import moment from 'moment';
+import type { Moment } from 'moment';
 import {
   loadAllLogs,
   queryAuditLogs,
@@ -75,7 +75,7 @@ export default function AuditLogPanel({
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('');
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>(null);
+  const [dateRange, setDateRange] = useState<[Moment, Moment] | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
 
@@ -132,7 +132,7 @@ export default function AuditLogPanel({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit_log_${objectKey || 'all'}_${dayjs().format('YYYYMMDD_HHmmss')}.csv`;
+      a.download = `audit_log_${objectKey || 'all'}_${moment().format('YYYYMMDD_HHmmss')}.csv`;
       a.click();
       URL.revokeObjectURL(url);
       message.success('日志导出成功');
@@ -148,7 +148,7 @@ export default function AuditLogPanel({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `audit_log_${objectKey || 'all'}_${dayjs().format('YYYYMMDD_HHmmss')}.json`;
+      a.download = `audit_log_${objectKey || 'all'}_${moment().format('YYYYMMDD_HHmmss')}.json`;
       a.click();
       URL.revokeObjectURL(url);
       message.success('日志导出成功');
@@ -177,7 +177,7 @@ export default function AuditLogPanel({
       width: 160,
       render: (timestamp: string) => (
         <Text type="secondary" style={{ fontSize: 12 }}>
-          {dayjs(timestamp).format('YYYY-MM-DD HH:mm:ss')}
+          {moment(timestamp).format('YYYY-MM-DD HH:mm:ss')}
         </Text>
       ),
     },

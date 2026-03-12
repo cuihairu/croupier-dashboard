@@ -22,7 +22,8 @@ import {
   Empty,
 } from 'antd';
 import { DeleteOutlined, CopyOutlined } from '@ant-design/icons';
-import { useCanvasStore, findComponent, type CanvasComponent } from '../../utils/canvasStore';
+import { useCanvasStore } from '../../utils/canvasStoreContext';
+import { findComponent, type CanvasComponent } from '../../utils/canvasStore';
 import './PropertyPanel.less';
 
 const { Text } = Typography;

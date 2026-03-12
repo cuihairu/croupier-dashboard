@@ -7,7 +7,11 @@
  */
 
 import { useCallback } from 'react';
-import { useHighlightStore, type HighlightTarget } from '../utils/previewConfigLink';
+import {
+  highlightConfig,
+  highlightPreview,
+  type HighlightTarget,
+} from '../utils/previewConfigLink';
 
 export interface UsePreviewHighlightOptions {
   /** Tab 标识 */
@@ -23,7 +27,6 @@ export interface UsePreviewHighlightOptions {
  */
 export function usePreviewHighlight(options: UsePreviewHighlightOptions = {}) {
   const { tabKey, layoutType } = options;
-  const highlightConfig = useHighlightStore((state) => state.highlightConfig);
 
   /**
    * 创建点击处理器
@@ -42,7 +45,7 @@ export function usePreviewHighlight(options: UsePreviewHighlightOptions = {}) {
         });
       };
     },
-    [tabKey, layoutType, highlightConfig],
+    [tabKey, layoutType],
   );
 
   /**
@@ -61,14 +64,13 @@ export function usePreviewHighlight(options: UsePreviewHighlightOptions = {}) {
         });
       };
     },
-    [tabKey, layoutType, highlightConfig],
+    [tabKey, layoutType],
   );
 
   /**
    * 创建悬停离开处理器
    */
   const createMouseLeaveHandler = useCallback(() => {
-    // 可选：延迟清除高亮，提升用户体验
     return () => {
       // 高亮会自动清除，这里可以什么都不做
     };
@@ -117,7 +119,6 @@ export function usePreviewHighlight(options: UsePreviewHighlightOptions = {}) {
  */
 export function useConfigHighlight() {
   const [highlightTarget, setHighlightTarget] = React.useState<HighlightTarget | null>(null);
-  const highlightPreview = useHighlightStore((state) => state.highlightPreview);
 
   React.useEffect(() => {
     const handlePreviewHighlight = (event: CustomEvent) => {
@@ -169,8 +170,16 @@ export function useConfigHighlight() {
     return undefined;
   };
 
+  /**
+   * 手动触发预览区高亮
+   */
+  const triggerHighlight = useCallback((target: HighlightTarget) => {
+    highlightPreview(target);
+  }, []);
+
   return {
     highlightTarget,
     getPreviewHighlightStyle,
+    triggerHighlight,
   };
 }

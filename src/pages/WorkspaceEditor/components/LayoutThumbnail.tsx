@@ -10,7 +10,7 @@ import React from 'react';
 import { Card, Space, Typography, Tag, Collapse } from 'antd';
 import {
   AppstoreOutlined,
-  ListOutlined,
+  UnorderedListOutlined,
   FormOutlined,
   FileTextOutlined,
   EyeOutlined,
@@ -32,7 +32,7 @@ export interface LayoutThumbnailProps {
 function getLayoutIcon(type: TabLayout['type']) {
   switch (type) {
     case 'list':
-      return <ListOutlined />;
+      return <UnorderedListOutlined />;
     case 'form':
       return <FormOutlined />;
     case 'detail':

@@ -6,7 +6,7 @@
  * @module pages/WorkspaceEditor/components/CanvasEditor/CanvasEditor
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button, Space, Switch, Modal, message, Tooltip, Segmented } from 'antd';
 import {
   SaveOutlined,
@@ -20,7 +20,7 @@ import {
 import CanvasRenderer from './CanvasRenderer';
 import ComponentLibrary from './ComponentLibrary';
 import PropertyPanel from './PropertyPanel';
-import { useCanvasStore, CanvasProvider } from '../../utils/canvasStore';
+import { useCanvasStore, CanvasProvider } from '../../utils/canvasStoreContext';
 import './CanvasEditor.less';
 
 export type EditorMode = 'design' | 'preview';
@@ -40,15 +40,23 @@ export interface CanvasEditorProps {
 }
 
 /**
- * 画布编辑器主组件
+ * 画布编辑器内容组件（在 CanvasProvider 内部使用）
  */
-export default function CanvasEditor({
+function CanvasEditorContent({
   tabConfig,
   onSave,
   onCancel,
-  visible = true,
-  readOnly = false,
-}: CanvasEditorProps) {
+  readOnly,
+  fullscreen,
+  onFullscreenChange,
+}: {
+  tabConfig?: any;
+  onSave?: (config: any) => void;
+  onCancel?: () => void;
+  readOnly?: boolean;
+  fullscreen: boolean;
+  onFullscreenChange: (value: boolean) => void;
+}) {
   const {
     rootComponent,
     selectedId,
@@ -67,24 +75,20 @@ export default function CanvasEditor({
 
   const [editorMode, setEditorMode] = useState<EditorMode>('design');
   const [viewMode, setViewMode] = useState<ViewMode>('canvas');
-  const [fullscreen, setFullscreen] = useState(false);
 
   // 初始化：从 Tab 配置转换
   useEffect(() => {
-    if (tabConfig && visible) {
+    if (tabConfig) {
       const canvasComponent = fromTabConfig(tabConfig);
       setRootComponent(canvasComponent);
     }
-  }, [tabConfig, visible, fromTabConfig, setRootComponent]);
+  }, [tabConfig, fromTabConfig, setRootComponent]);
 
   // 处理拖拽放置
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
-
       if (!draggingComponent) return;
-
-      // 添加到根组件
       addComponent(null, draggingComponent);
     },
     [draggingComponent, addComponent],
@@ -149,7 +153,6 @@ export default function CanvasEditor({
   // 删除组件
   const handleDeleteComponent = useCallback(() => {
     if (selectedId) {
-      // Store 中的 removeComponent 会处理
       message.success('已删除组件');
     }
   }, [selectedId]);
@@ -157,8 +160,6 @@ export default function CanvasEditor({
   // 计算是否可以撤销/重做
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
-
-  if (!visible) return null;
 
   const content = (
     <div className={`canvas-editor ${fullscreen ? 'fullscreen' : ''}`}>
@@ -210,7 +211,7 @@ export default function CanvasEditor({
               type="text"
               size="small"
               icon={<FullscreenOutlined />}
-              onClick={() => setFullscreen(!fullscreen)}
+              onClick={() => onFullscreenChange(!fullscreen)}
             />
           </Tooltip>
           <Tooltip title="清空">
@@ -279,7 +280,7 @@ export default function CanvasEditor({
     return (
       <Modal
         open={fullscreen}
-        onCancel={() => setFullscreen(false)}
+        onCancel={() => onFullscreenChange(false)}
         footer={null}
         width="95vw"
         style={{ top: 20 }}
@@ -292,6 +293,34 @@ export default function CanvasEditor({
   }
 
   return content;
+}
+
+/**
+ * 画布编辑器主组件
+ */
+export default function CanvasEditor({
+  tabConfig,
+  onSave,
+  onCancel,
+  visible = true,
+  readOnly = false,
+}: CanvasEditorProps) {
+  const [fullscreen, setFullscreen] = useState(false);
+
+  if (!visible) return null;
+
+  return (
+    <CanvasProvider>
+      <CanvasEditorContent
+        tabConfig={tabConfig}
+        onSave={onSave}
+        onCancel={onCancel}
+        readOnly={readOnly}
+        fullscreen={fullscreen}
+        onFullscreenChange={setFullscreen}
+      />
+    </CanvasProvider>
+  );
 }
 
 /**

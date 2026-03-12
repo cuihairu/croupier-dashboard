@@ -24,7 +24,7 @@ import {
 } from 'antd';
 import {
   DeleteOutlined,
-  RestoreOutlined,
+  RollbackOutlined,
   ClockCircleOutlined,
   UserOutlined,
   WarningOutlined,
@@ -84,7 +84,7 @@ function DraftItem({
                 <Button
                   type="link"
                   size="small"
-                  icon={<RestoreOutlined />}
+                  icon={<RollbackOutlined />}
                   onClick={() => onRestore(draft)}
                   disabled={draft.isExpired}
                 >

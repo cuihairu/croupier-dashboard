@@ -8,11 +8,8 @@
 
 import React, { useMemo } from 'react';
 import { Card, Collapse, Typography, Tag } from 'antd';
-import {
-  useCanvasStore,
-  createComponentInstance,
-  type CanvasComponentTemplate,
-} from '../../utils/canvasStore';
+import { useCanvasStore } from '../../utils/canvasStoreContext';
+import { createComponentInstance, type CanvasComponentTemplate } from '../../utils/canvasStore';
 import './ComponentLibrary.less';
 
 const { Text } = Typography;

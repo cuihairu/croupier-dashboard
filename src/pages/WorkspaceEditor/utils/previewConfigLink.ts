@@ -2,11 +2,10 @@
  * 预览配置联动管理
  *
  * 管理预览区和配置区之间的双向高亮联动。
+ * 使用 CustomEvent API 实现跨组件通信。
  *
  * @module pages/WorkspaceEditor/utils/previewConfigLink
  */
-
-import { create } from 'zustand';
 
 /** 高亮目标类型 */
 export type HighlightTargetType =
@@ -25,92 +24,27 @@ export interface HighlightTarget {
   path?: string[]; // 字段路径（用于嵌套字段）
 }
 
-/** 高亮状态 */
-interface HighlightState {
-  /** 当前高亮的目标 */
-  activeTarget: HighlightTarget | null;
-  /** 高亮开始时间（用于自动清除） */
-  highlightStartTime: number;
-  /** 高亮持续时间（毫秒） */
-  highlightDuration: number;
-}
-
-interface HighlightActions {
-  /** 设置高亮 */
-  setHighlight: (target: HighlightTarget, duration?: number) => void;
-  /** 清除高亮 */
-  clearHighlight: () => void;
-  /** 从预览区触发的配置区高亮 */
-  highlightConfig: (target: HighlightTarget) => void;
-  /** 从配置区触发的预览区高亮 */
-  highlightPreview: (target: HighlightTarget) => void;
+/**
+ * 从预览区触发的配置区高亮
+ */
+export function highlightConfig(target: HighlightTarget): void {
+  window.dispatchEvent(
+    new CustomEvent('config-highlight', {
+      detail: target,
+    }),
+  );
 }
 
 /**
- * 高亮联动 Store
+ * 从配置区触发的预览区高亮
  */
-const useHighlightStore = create<HighlightState & HighlightActions>((set) => ({
-  activeTarget: null,
-  highlightStartTime: 0,
-  highlightDuration: 2000,
-
-  setHighlight: (target, duration = 2000) => {
-    set({
-      activeTarget: target,
-      highlightStartTime: Date.now(),
-      highlightDuration: duration,
-    });
-
-    // 自动清除高亮
-    setTimeout(() => {
-      set((state) => {
-        if (Date.now() - state.highlightStartTime >= state.highlightDuration) {
-          return { activeTarget: null, highlightStartTime: 0, highlightDuration: 2000 };
-        }
-        return state;
-      });
-    }, duration);
-  },
-
-  clearHighlight: () =>
-    set({
-      activeTarget: null,
-      highlightStartTime: 0,
-      highlightDuration: 2000,
+export function highlightPreview(target: HighlightTarget): void {
+  window.dispatchEvent(
+    new CustomEvent('preview-highlight', {
+      detail: target,
     }),
-
-  highlightConfig: (target) => {
-    set({
-      activeTarget: { ...target, source: 'preview' },
-      highlightStartTime: Date.now(),
-      highlightDuration: 2000,
-    });
-
-    // 触发自定义事件，让配置区滚动到目标位置
-    window.dispatchEvent(
-      new CustomEvent('config-highlight', {
-        detail: target,
-      }),
-    );
-  },
-
-  highlightPreview: (target) => {
-    set({
-      activeTarget: { ...target, source: 'config' },
-      highlightStartTime: Date.now(),
-      highlightDuration: 2000,
-    });
-
-    // 触发自定义事件，让预览区高亮对应元素
-    window.dispatchEvent(
-      new CustomEvent('preview-highlight', {
-        detail: target,
-      }),
-    );
-  },
-}));
-
-export { useHighlightStore };
+  );
+}
 
 /**
  * 生成字段路径的 CSS 选择器
@@ -241,3 +175,16 @@ export function injectHighlightStyles(): void {
 if (typeof window !== 'undefined') {
   injectHighlightStyles();
 }
+
+/**
+ * 高亮联动 API
+ */
+export const PreviewConfigLink = {
+  highlightConfig,
+  highlightPreview,
+  getFieldSelector,
+  getConfigItemKey,
+  parseConfigItemKey,
+  getHighlightStyles,
+  injectHighlightStyles,
+};

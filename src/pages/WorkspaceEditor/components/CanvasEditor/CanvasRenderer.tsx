@@ -8,7 +8,8 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Card, Input, Button, Select, DatePicker, Switch, Divider, Space, Typography } from 'antd';
-import { useCanvasStore, type CanvasComponent } from '../../utils/canvasStore';
+import { useCanvasStore } from '../../utils/canvasStoreContext';
+import { type CanvasComponent } from '../../utils/canvasStore';
 import './CanvasRenderer.less';
 
 const { Text } = Typography;
