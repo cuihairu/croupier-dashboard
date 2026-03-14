@@ -114,13 +114,6 @@ export default [
             component: './Assignments',
             icon: 'safety',
           },
-          {
-            path: '/system/functions/packs',
-            name: 'FunctionPacks',
-            access: 'canPacksRead',
-            component: './Packs',
-            icon: 'inbox',
-          },
         ],
       },
       // 新增统一组件管理中心

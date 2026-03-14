@@ -41,8 +41,6 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     canRegistryRead: has('registry:read') || has('admin'),
     canAssignmentsRead: has('assignments:read') || has('admin'),
     canAssignmentsWrite: has('assignments:write') || has('admin'),
-    canPacksReload: has('packs:reload') || has('admin'),
-    canPacksExport: has('packs:export') || has('admin'),
     canAuditRead: has('audit:read') || has('admin'),
     // Functions management
     canFunctionsRead: has('functions:read') || has('functions:manage') || has('admin'),
@@ -56,7 +54,6 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     canWorkspaceRollback,
     canWorkspaceDelete,
     canEntitiesRead: has('entities:read') || has('entities:manage') || has('admin'),
-    canPacksRead: has('packs:read') || has('packs:manage') || has('admin'),
     // 运维管理（Ops）
     canOpsRead: has('ops:read') || has('admin') || has('registry:read'),
     canOpsManage: has('ops:manage') || has('admin'),

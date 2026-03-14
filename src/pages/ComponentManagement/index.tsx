@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Card,
   Tabs,
@@ -16,29 +16,21 @@ import { PageContainer } from '@ant-design/pro-components';
 import {
   FunctionOutlined,
   DatabaseOutlined,
-  AppstoreOutlined,
   MonitorOutlined,
   SettingOutlined,
-  PlusOutlined,
   ApartmentOutlined,
 } from '@ant-design/icons';
 import { useModel, useIntl } from '@umijs/max';
 import FunctionWorkspace from './components/FunctionWorkspace';
 import RegistryDashboard from './components/RegistryDashboard';
-import PackageCenter from './components/PackageCenter';
 import ExecutionMonitor from './components/ExecutionMonitor';
 import VirtualObjectManager from './components/VirtualObjectManager';
 import GameSelector from '@/components/GameSelector';
-import { getPacksExportUrl, reloadPacks, listPacks } from '@/services/api/packs';
 import { createEntity, listEntities } from '@/services/api/entities';
 import { fetchRegistry, listDescriptors } from '@/services/api';
 import { listOpsJobs } from '@/services/api/ops';
 
 const QUICK_ACTIONS = {
-  importPack: {
-    title: '导入组件包',
-    description: '上传一个新的组件包或指定远程地址进行导入。',
-  },
   createFunction: {
     title: '创建新组件',
     description: '快速定义一个新的函数组件并保存草稿。',
@@ -53,7 +45,7 @@ const QUICK_ACTIONS = {
   },
   exportConfig: {
     title: '导出配置',
-    description: '导出当前组件配置，便于备份或迁移。',
+    description: '导出当前函数与对象配置，便于备份或迁移。',
   },
 } as const;
 
@@ -63,7 +55,6 @@ interface ComponentStats {
   totalFunctions: number;
   activeFunctions: number;
   runningJobs: number;
-  availablePackages: number;
   connectedAgents: number;
   virtualObjects: number;
 }
@@ -77,7 +68,6 @@ export default function ComponentManagement() {
     totalFunctions: 0,
     activeFunctions: 0,
     runningJobs: 0,
-    availablePackages: 0,
     connectedAgents: 0,
     virtualObjects: 0,
   });
@@ -87,14 +77,11 @@ export default function ComponentManagement() {
   const { initialState } = useModel('@@initialState');
   const currentUser = (initialState as any)?.currentUser;
   const roles = currentUser?.access?.split(',') || [];
-
-  // 权限检查
-  const canManagePackages = roles.includes('*') || roles.includes('functions:manage');
   const canViewRegistry = roles.includes('*') || roles.includes('registry:read');
 
   useEffect(() => {
     loadStats();
-    refreshTimer.current = setInterval(loadStats, 60000); // 60秒刷新
+    refreshTimer.current = setInterval(loadStats, 60000);
     return () => {
       mounted.current = false;
       if (refreshTimer.current) clearInterval(refreshTimer.current);
@@ -108,7 +95,6 @@ export default function ComponentManagement() {
         totalFunctions: 0,
         activeFunctions: 0,
         runningJobs: 0,
-        availablePackages: 0,
         connectedAgents: 0,
         virtualObjects: 0,
       });
@@ -117,20 +103,15 @@ export default function ComponentManagement() {
     if (unauthorized) return;
 
     try {
-      const [descriptors, registry, packs, entities, jobs] = await Promise.all([
+      const [descriptors, registry, entities, jobs] = await Promise.all([
         listDescriptors().catch(() => []),
         fetchRegistry().catch(() => ({} as any)),
-        listPacks().catch(() => ({} as any)),
         listEntities().catch(() => []),
         listOpsJobs({ status: 'running', page: 1, size: 1 }).catch(() => ({ total: 0 })),
       ]);
 
       const entityCount = Array.isArray(entities) ? entities.length : 0;
       const descriptorList = Array.isArray(descriptors) ? descriptors : [];
-      const packCount =
-        packs?.packages && Array.isArray(packs.packages)
-          ? packs.packages.length
-          : packs?.counts?.descriptors || 0;
       const connectedAgents =
         registry?.agents && Array.isArray(registry.agents)
           ? registry.agents.filter((a: any) => a?.connected ?? a?.Healthy ?? a?.healthy).length
@@ -141,7 +122,6 @@ export default function ComponentManagement() {
         totalFunctions: descriptorList.length,
         activeFunctions: descriptorList.filter((d: any) => d?.enabled).length,
         runningJobs: runningJobsCount,
-        availablePackages: packCount,
         connectedAgents,
         virtualObjects: entityCount,
       });
@@ -157,12 +137,10 @@ export default function ComponentManagement() {
       }
       console.error('Failed to load function stats:', error);
       if (!initError) setInitError('组件统计加载失败');
-      // 如果网络完全失败，设置默认值
       setStats({
         totalFunctions: 0,
         activeFunctions: 0,
         runningJobs: 0,
-        availablePackages: 0,
         connectedAgents: 0,
         virtualObjects: 0,
       });
@@ -186,11 +164,7 @@ export default function ComponentManagement() {
     try {
       const values = await actionForm.validateFields();
       setActionSubmitting(true);
-      if (actionModal.key === 'importPack') {
-        await reloadPacks();
-        message.success('组件包已重新加载');
-        await loadStats();
-      } else if (actionModal.key === 'createVirtualObject') {
+      if (actionModal.key === 'createVirtualObject') {
         const game_id = localStorage.getItem('game_id') || undefined;
         const env = localStorage.getItem('env') || undefined;
         await createEntity(
@@ -200,21 +174,16 @@ export default function ComponentManagement() {
         message.success('虚拟对象已创建');
         await loadStats();
       } else if (actionModal.key === 'exportConfig') {
-        const link = document.createElement('a');
-        link.href = getPacksExportUrl();
-        link.target = '_blank';
-        link.rel = 'noopener';
-        link.click();
-        message.success('开始导出配置');
+        message.info('导出能力待切换到新的配置导出接口');
       } else if (actionModal.key === 'createFunction') {
         message.info('已跳转到组件工作台，可在下方创建新组件');
       } else if (actionModal.key === 'bulkEnable') {
-        message.info('批量启用/禁用暂未开放，请在组件包或函数列表中操作');
+        message.info('批量启用/禁用暂未开放，请在函数列表中操作');
       }
       setActionModal(null);
     } catch (error) {
       if ((error as any)?.errorFields) {
-        return; // 表单校验错误
+        return;
       }
       message.error('操作失败，请稍后重试');
     } finally {
@@ -222,32 +191,9 @@ export default function ComponentManagement() {
     }
   };
 
-  const closeActionModal = () => {
-    setActionModal(null);
-  };
-
   const renderActionFields = () => {
     if (!actionModal) return null;
     switch (actionModal.key) {
-      case 'importPack':
-        return (
-          <>
-            <Form.Item
-              label="包名称"
-              name="packName"
-              rules={[{ required: true, message: '请输入包名称' }]}
-            >
-              <Input placeholder="如：core-pack" />
-            </Form.Item>
-            <Form.Item
-              label="来源"
-              name="source"
-              rules={[{ required: true, message: '请输入或选择来源' }]}
-            >
-              <Input placeholder="https://example.com/packs/core-pack.tar.gz" />
-            </Form.Item>
-          </>
-        );
       case 'createFunction':
         return (
           <>
@@ -331,7 +277,7 @@ export default function ComponentManagement() {
               />
             </Form.Item>
             <Form.Item label="包含内容" name="includes">
-              <Input placeholder="如：functions,packages,entities" />
+              <Input placeholder="如：functions,entities" />
             </Form.Item>
           </>
         );
@@ -342,7 +288,6 @@ export default function ComponentManagement() {
 
   const quickActionsMenu = {
     items: [
-      { key: 'importPack', icon: <PlusOutlined />, label: '导入组件包' },
       { key: 'createFunction', label: '创建新组件' },
       { key: 'createVirtualObject', icon: <ApartmentOutlined />, label: '创建虚拟对象' },
       { key: 'bulkEnable', label: '批量启用/禁用' },
@@ -383,8 +328,7 @@ export default function ComponentManagement() {
         }
         variant="bordered"
       >
-        {/* 统计概览 */}
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
+        <Card.Grid hoverable={false} style={{ width: '20%', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#1890ff' }}>
               {stats.totalFunctions}
@@ -395,7 +339,7 @@ export default function ComponentManagement() {
           </div>
         </Card.Grid>
 
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
+        <Card.Grid hoverable={false} style={{ width: '20%', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#52c41a' }}>
               {stats.activeFunctions}
@@ -406,7 +350,7 @@ export default function ComponentManagement() {
           </div>
         </Card.Grid>
 
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
+        <Card.Grid hoverable={false} style={{ width: '20%', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#faad14' }}>
               {stats.runningJobs}
@@ -417,18 +361,7 @@ export default function ComponentManagement() {
           </div>
         </Card.Grid>
 
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
-          <div>
-            <div style={{ fontSize: 24, fontWeight: 'bold', color: '#722ed1' }}>
-              {stats.availablePackages}
-            </div>
-            <div style={{ color: '#666' }}>
-              {intl.formatMessage({ id: 'pages.component.management.available.packages' })}
-            </div>
-          </div>
-        </Card.Grid>
-
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
+        <Card.Grid hoverable={false} style={{ width: '20%', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#13c2c2' }}>
               {stats.connectedAgents}
@@ -439,7 +372,7 @@ export default function ComponentManagement() {
           </div>
         </Card.Grid>
 
-        <Card.Grid hoverable={false} style={{ width: '16.66%', textAlign: 'center' }}>
+        <Card.Grid hoverable={false} style={{ width: '20%', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: 24, fontWeight: 'bold', color: '#eb2f96' }}>
               {stats.virtualObjects}
@@ -459,13 +392,10 @@ export default function ComponentManagement() {
           title="未授权"
           variant="bordered"
         >
-          <p>
-            无法访问部分接口（如注册表、组件包列表），已停止自动刷新。请登录或联系管理员获取权限。
-          </p>
+          <p>无法访问部分接口，已停止自动刷新。请登录或联系管理员获取权限。</p>
         </Card>
       )}
 
-      {/* 功能标签页 */}
       <Card style={{ marginTop: 16 }} styles={{ body: { padding: 0 } }} variant="bordered">
         <Tabs
           activeKey={activeTab}
@@ -492,20 +422,6 @@ export default function ComponentManagement() {
                     children: (
                       <div style={{ padding: 24 }}>
                         <RegistryDashboard />
-                      </div>
-                    ),
-                  },
-                ]
-              : []),
-            ...(canManagePackages
-              ? [
-                  {
-                    key: 'packages',
-                    icon: <AppstoreOutlined />,
-                    label: renderTabTitle('组件包', stats.availablePackages, '#722ed1'),
-                    children: (
-                      <div style={{ padding: 24 }}>
-                        <PackageCenter />
                       </div>
                     ),
                   },
@@ -539,7 +455,7 @@ export default function ComponentManagement() {
         open={!!actionModal}
         onOk={handleActionSubmit}
         confirmLoading={actionSubmitting}
-        onCancel={closeActionModal}
+        onCancel={() => setActionModal(null)}
         destroyOnHidden
       >
         {actionModal && (

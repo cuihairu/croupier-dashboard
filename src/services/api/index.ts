@@ -4,7 +4,6 @@ export * from './games';
 export * from './assignments';
 export * from './registry';
 export * from './ops';
-export * from './packs';
 export * from './audit';
 export * from './storage';
 export * from './me';

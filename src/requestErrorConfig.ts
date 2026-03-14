@@ -81,12 +81,18 @@ export const errorConfig: RequestConfig = {
         if (history.location?.pathname !== '/403') history.push('/403');
         return;
       }
-      // Silence expected 401s during boot/login for current-user + messages endpoints
+      // Silence expected 401s during boot/login for profile + messages endpoints
       if (status === 401 && url) {
         if (
+          url.includes(`${API_V1_PREFIX}/profile`) ||
           url.includes(`${API_V1_PREFIX}/users/current`) ||
           url.includes(`${API_V1_PREFIX}/messages`)
         ) {
+          // 清除无效 token，静默跳转（不显示警告消息）
+          try {
+            localStorage.removeItem('token');
+          } catch {}
+          history.push('/user/login');
           return;
         }
         // token 失效：跳转登录

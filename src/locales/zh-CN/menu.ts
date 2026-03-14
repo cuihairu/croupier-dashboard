@@ -41,7 +41,6 @@ export default {
   'menu.SystemConfig.FunctionManagement.FunctionInstances': '实例管理',
   'menu.SystemConfig.FunctionManagement.FunctionWarnings': '注册告警',
   'menu.SystemConfig.FunctionManagement.FunctionAssignments': '权限分配',
-  'menu.SystemConfig.FunctionManagement.FunctionPacks': '函数包管理',
   'menu.SystemConfig.FunctionManagement.WorkspaceEditor': 'Workspace 编排器',
   'menu.SystemConfig.RegisteredFunctions': '注册函数',
   'menu.RegisteredFunctions': '注册函数',

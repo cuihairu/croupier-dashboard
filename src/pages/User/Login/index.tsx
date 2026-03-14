@@ -1,5 +1,6 @@
 import { Footer } from '@/components';
-import { createSession } from '@/services/api';
+import { createSession, fetchCurrentUserGames } from '@/services/api';
+import { setScope } from '@/stores/scope';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-components';
 import { FormattedMessage, history, SelectLang, useIntl, useModel, Helmet } from '@umijs/max';
@@ -99,6 +100,26 @@ const Login: React.FC = () => {
       // RESTful: 创建会话
       const res = await createSession({ username: values.username, password: values.password });
       localStorage.setItem('token', res.token);
+      try {
+        const gamesResp = await fetchCurrentUserGames();
+        const games = Array.isArray((gamesResp as any)?.games) ? (gamesResp as any).games : [];
+        const firstGame = games[0];
+        const gameId =
+          firstGame?.gameId || firstGame?.game_id || firstGame?.name || firstGame?.Name;
+        const env =
+          (Array.isArray(firstGame?.envs) && firstGame.envs[0]) ||
+          (Array.isArray(firstGame?.envMeta) && firstGame.envMeta[0]?.env) ||
+          undefined;
+        if (gameId || env) {
+          setScope(
+            {
+              gameId: gameId || undefined,
+              env: env || undefined,
+            },
+            { persist: true, emit: true },
+          );
+        }
+      } catch {}
       getMessage()?.success(
         intl.formatMessage({ id: 'pages.login.success', defaultMessage: '登录成功！' }),
       );

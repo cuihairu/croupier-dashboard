@@ -13,7 +13,6 @@ import { hydrateScope } from '@/stores/scope';
 import React, { useEffect } from 'react';
 import { App as AntdApp } from 'antd';
 import { setAppApi } from './utils/antdApp';
-import { loadPackPlugins } from './plugin/registry';
 import { initWorkspaceAlerting } from './services/workspace/alerts';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -101,11 +100,6 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     useEffect(() => {
       initWorkspaceAlerting();
     }, []);
-    useEffect(() => {
-      if (initialState?.currentUser) {
-        loadPackPlugins().catch(() => {});
-      }
-    }, [initialState?.currentUser]);
     return null;
   };
 

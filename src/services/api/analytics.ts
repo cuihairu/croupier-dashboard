@@ -1,9 +1,19 @@
 import { request } from '@umijs/max';
+import { getScope } from '@/stores/scope';
+
+function withAnalyticsScope(params?: Record<string, any>) {
+  const scope = getScope();
+  return {
+    ...(params || {}),
+    ...(params?.gameId ? {} : scope.gameId ? { gameId: scope.gameId } : {}),
+    ...(params?.env ? {} : scope.env ? { env: scope.env } : {}),
+  };
+}
 
 // Overview KPI
 export async function fetchAnalyticsOverview(params?: any) {
   try {
-    return await request('/api/v1/analytics/overview', { params });
+    return await request('/api/v1/analytics/overview', { params: withAnalyticsScope(params) });
   } catch {
     return {};
   }
@@ -12,16 +22,16 @@ export async function fetchAnalyticsOverview(params?: any) {
 // Retention (cohort)
 export async function fetchAnalyticsRetention(params?: any) {
   try {
-    return await request('/api/v1/analytics/retention', { params });
+    return await request('/api/v1/analytics/retention', { params: withAnalyticsScope(params) });
   } catch {
     return { cohorts: [] };
   }
 }
 
 // Realtime screen
-export async function fetchAnalyticsRealtime() {
+export async function fetchAnalyticsRealtime(params?: any) {
   try {
-    return await request('/api/v1/analytics/realtime');
+    return await request('/api/v1/analytics/realtime', { params: withAnalyticsScope(params) });
   } catch {
     return {};
   }
@@ -29,7 +39,9 @@ export async function fetchAnalyticsRealtime() {
 
 export async function fetchRealtimeSeries(params: any) {
   try {
-    return await request('/api/v1/analytics/realtime/series', { params });
+    return await request('/api/v1/analytics/realtime/series', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { online: [], revenue_cents: [] };
   }
@@ -38,14 +50,18 @@ export async function fetchRealtimeSeries(params: any) {
 // Behavior events and funnel
 export async function fetchAnalyticsEvents(params?: any) {
   try {
-    return await request('/api/v1/analytics/behavior/events', { params });
+    return await request('/api/v1/analytics/behavior/events', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { events: [], total: 0 };
   }
 }
 export async function fetchAnalyticsFunnel(params?: any) {
   try {
-    return await request('/api/v1/analytics/behavior/funnel', { params });
+    return await request('/api/v1/analytics/behavior/funnel', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { steps: [] };
   }
@@ -54,7 +70,9 @@ export async function fetchAnalyticsFunnel(params?: any) {
 // Behavior paths (Top N)
 export async function fetchAnalyticsPaths(params?: any) {
   try {
-    return await request('/api/v1/analytics/behavior/paths', { params });
+    return await request('/api/v1/analytics/behavior/paths', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { paths: [] };
   }
@@ -63,7 +81,9 @@ export async function fetchAnalyticsPaths(params?: any) {
 // Feature adoption
 export async function fetchAnalyticsAdoption(params?: any) {
   try {
-    return await request('/api/v1/analytics/behavior/adoption', { params });
+    return await request('/api/v1/analytics/behavior/adoption', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { features: [], baseline: 0 };
   }
@@ -71,7 +91,9 @@ export async function fetchAnalyticsAdoption(params?: any) {
 
 export async function fetchAnalyticsAdoptionBreakdown(params?: any) {
   try {
-    return await request('/api/v1/analytics/behavior/adoption/breakdown', { params });
+    return await request('/api/v1/analytics/behavior/adoption/breakdown', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { by: 'channel', rows: [] };
   }
@@ -80,14 +102,18 @@ export async function fetchAnalyticsAdoptionBreakdown(params?: any) {
 // Payments
 export async function fetchAnalyticsPaymentsSummary(params?: any) {
   try {
-    return await request('/api/v1/analytics/payments/summary', { params });
+    return await request('/api/v1/analytics/payments/summary', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { totals: {}, by_channel: [], by_product: [] };
   }
 }
 export async function fetchAnalyticsTransactions(params?: any) {
   try {
-    return await request('/api/v1/analytics/payments/transactions', { params });
+    return await request('/api/v1/analytics/payments/transactions', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { transactions: [], total: 0 };
   }
@@ -96,21 +122,25 @@ export async function fetchAnalyticsTransactions(params?: any) {
 // Levels (funnel + winrate + time + retries)
 export async function fetchAnalyticsLevels(params?: any) {
   try {
-    return await request('/api/v1/analytics/levels', { params });
+    return await request('/api/v1/analytics/levels', { params: withAnalyticsScope(params) });
   } catch {
     return { funnel: [], per_level: [] };
   }
 }
 export async function fetchAnalyticsLevelsEpisodes(params?: any) {
   try {
-    return await request('/api/v1/analytics/levels/episodes', { params });
+    return await request('/api/v1/analytics/levels/episodes', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { episodes: [] };
   }
 }
 export async function fetchAnalyticsLevelsMaps(params?: any) {
   try {
-    return await request('/api/v1/analytics/levels/maps', { params });
+    return await request('/api/v1/analytics/levels/maps', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { maps: [] };
   }
@@ -119,7 +149,9 @@ export async function fetchAnalyticsLevelsMaps(params?: any) {
 // Payments product trend
 export async function fetchProductTrend(params: any) {
   try {
-    return await request('/api/v1/analytics/payments/product-trend', { params });
+    return await request('/api/v1/analytics/payments/product-trend', {
+      params: withAnalyticsScope(params),
+    });
   } catch {
     return { products: [] };
   }

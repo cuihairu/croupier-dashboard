@@ -40,7 +40,6 @@ export default {
   'menu.SystemConfig.FunctionManagement.FunctionInstances': 'Instance Management',
   'menu.SystemConfig.FunctionManagement.FunctionWarnings': 'Registration Warnings',
   'menu.SystemConfig.FunctionManagement.FunctionAssignments': 'Permission Assignments',
-  'menu.SystemConfig.FunctionManagement.FunctionPacks': 'Pack Management',
   'menu.SystemConfig.RegisteredFunctions': 'Registered Functions',
   'menu.RegisteredFunctions': 'Registered Functions',
   'menu.ControlConsole': 'Control Console',
