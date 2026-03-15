@@ -6,6 +6,7 @@ export interface PlatformInfo {
   name: string;
   enabled: boolean;
   methods: string[];
+  source?: 'extension' | string;
 }
 
 export interface CallPlatformRequest {
@@ -18,6 +19,7 @@ export interface CallPlatformResponse {
   code: number;
   message: string;
   response?: any;
+  source?: 'extension' | string;
 }
 
 // 获取所有平台列表
@@ -27,7 +29,7 @@ export async function listPlatforms() {
 
 // 获取指定平台支持的方法列表
 export async function listPlatformMethods(platformName: string) {
-  return request<{ code: number; message: string; methods: string[] }>(
+  return request<{ code: number; message: string; methods: string[]; source?: string }>(
     `${BASE}/${platformName}/methods`,
   );
 }
@@ -37,12 +39,5 @@ export async function callPlatform(data: CallPlatformRequest) {
   return request<CallPlatformResponse>(`${BASE}/call`, {
     method: 'POST',
     data,
-  });
-}
-
-// 重新加载平台配置
-export async function reloadPlatformConfig() {
-  return request<{ code: number; message: string; success: boolean }>(`${BASE}/reload`, {
-    method: 'POST',
   });
 }

@@ -1,15 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Space, Tag, Button, App, Tabs, Descriptions, Badge, Switch } from 'antd';
+import { Card, Table, Space, Tag, Button, App, Tabs, Badge } from 'antd';
 import { PageContainer } from '@ant-design/pro-components';
 import type { ColumnsType } from 'antd/es/table';
-import { ReloadOutlined, ApiOutlined, ExperimentOutlined } from '@ant-design/icons';
-import {
-  listPlatforms,
-  listPlatformMethods,
-  reloadPlatformConfig,
-  callPlatform,
-  type PlatformInfo,
-} from '@/services/api/platforms';
+import { ApiOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { listPlatforms, listPlatformMethods, type PlatformInfo } from '@/services/api/platforms';
 import APITester from './APITester';
 import PlatformConfig from './PlatformConfig';
 
@@ -28,7 +22,7 @@ export default function PlatformsPage() {
       setPlatforms(r?.platforms || []);
     } catch (err: any) {
       if (err?.response?.status === 503) {
-        message.warning('第三方平台集成未启用，请检查服务器配置');
+        message.warning('第三方平台扩展未就绪，请先安装并启用 official.external-platform');
       } else {
         message.error('加载平台列表失败');
       }
@@ -45,23 +39,6 @@ export default function PlatformsPage() {
     } catch {
       message.error('加载平台方法失败');
       setPlatformMethods([]);
-    }
-  };
-
-  const handleReload = async () => {
-    setLoading(true);
-    try {
-      const r = await reloadPlatformConfig();
-      if (r?.success) {
-        message.success('平台配置已重新加载');
-        await loadPlatforms();
-      } else {
-        message.error(r?.message || '重新加载失败');
-      }
-    } catch {
-      message.error('重新加载失败');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -92,6 +69,15 @@ export default function PlatformsPage() {
       dataIndex: 'methods',
       key: 'methods',
       render: (methods: string[]) => <Tag color="blue">{methods?.length || 0} 个 API</Tag>,
+    },
+    {
+      title: '来源',
+      dataIndex: 'source',
+      key: 'source',
+      render: (source?: string) => {
+        if (source === 'extension') return <Tag color="green">扩展安装</Tag>;
+        return <Tag color="default">{source || '未知'}</Tag>;
+      },
     },
     {
       title: '操作',
@@ -148,10 +134,10 @@ export default function PlatformsPage() {
   return (
     <PageContainer
       title="第三方运营平台"
-      subTitle="管理和测试第三方运营平台集成"
+      subTitle="管理和测试基于扩展安装的第三方平台能力"
       extra={[
-        <Button key="reload" icon={<ReloadOutlined />} onClick={handleReload} loading={loading}>
-          重新加载配置
+        <Button key="refresh" onClick={loadPlatforms} loading={loading}>
+          刷新
         </Button>,
       ]}
     >

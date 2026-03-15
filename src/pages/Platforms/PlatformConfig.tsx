@@ -16,7 +16,7 @@ export default function PlatformConfig() {
             目前支持的平台包括 QuickSDK，未来可扩展至更多平台。
           </Paragraph>
           <Alert
-            message="平台集成需要在服务器端配置后才能使用"
+            message="平台能力由官方扩展提供，需要先安装并启用 official.external-platform"
             type="info"
             showIcon
             icon={<InfoCircleOutlined />}
@@ -59,17 +59,12 @@ export QUICKSDK_OPEN_ID="your_open_id"
 export QUICKSDK_OPEN_KEY="your_open_key"
 export QUICKSDK_API_BASE_URL="https://www.quicksdk.com"
 
-# 启用平台集成
-export CROUPIER_PLATFORM_ENABLED=true`}
+# 可选：扩展严格模式（建议）
+export CROUPIER_PLATFORM_EXTENSION_ONLY=true`}
             </pre>
           </Card>
 
-          <Card
-            size="small"
-            type="inner"
-            title="配置文件 (platforms.yaml)"
-            style={{ marginTop: 16 }}
-          >
+          <Card size="small" type="inner" title="扩展安装配置（示例）" style={{ marginTop: 16 }}>
             <pre
               style={{
                 background: '#f5f5f5',
@@ -78,21 +73,21 @@ export CROUPIER_PLATFORM_ENABLED=true`}
                 overflow: 'auto',
               }}
             >
-              {`platforms:
-  quicksdk:
-    enabled: true
-    type: quicksdk
-    config:
+              {`extension_id: official.external-platform
+release_version: main
+scope_type: system
+scope_id: global
+target_type: agent_group
+target_id: default
+config:
+  providers:
+    quicksdk:
+      enabled: true
       open_id: "${QUICKSDK_OPEN_ID}"
       open_key: "${QUICKSDK_OPEN_KEY}"
       api_base_url: "https://www.quicksdk.com"
-      timeout: 30s
-      retry_count: 3
-      enable_cache: true
-      cache_duration: 300s
-    rate_limit:
-      requests_per_minute: 1000
-      burst_size: 100`}
+      timeout: "30s"
+      retry_count: 3`}
             </pre>
           </Card>
         </Card>
@@ -199,16 +194,16 @@ export CROUPIER_PLATFORM_ENABLED=true`}
         <Card title="故障排除">
           <Descriptions bordered column={1}>
             <Descriptions.Item label="503 错误">
-              平台集成未启用，请检查服务器配置中的 `CROUPIER_PLATFORM_ENABLED` 环境变量。
+              平台扩展未安装或未启用，请在扩展商店安装并启用 `official.external-platform`。
             </Descriptions.Item>
             <Descriptions.Item label="签名验证失败">
               请检查 `open_id` 和 `open_key` 配置是否正确。
             </Descriptions.Item>
             <Descriptions.Item label="超时">
-              可在配置文件中调整 `timeout` 参数，默认为 30 秒。
+              可在扩展安装配置中调整 `timeout` 参数，默认为 30 秒。
             </Descriptions.Item>
             <Descriptions.Item label="速率限制">
-              如需更高的请求速率，可调整 `rate_limit` 配置项。
+              如需更高请求速率，可在 provider 配置中调整速率限制参数。
             </Descriptions.Item>
           </Descriptions>
         </Card>

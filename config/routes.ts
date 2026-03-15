@@ -254,7 +254,7 @@ export default [
         path: '/operations/approvals',
         name: 'Approvals',
         access: 'canApprovalsRead',
-        component: './Approvals',
+        component: './Extensions/DomainEntry',
       },
       { path: '/operations/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
       {
@@ -274,6 +274,24 @@ export default [
         name: 'Platforms',
         access: 'canOpsRead',
         component: './Platforms',
+      },
+      {
+        path: '/operations/extensions/store',
+        name: 'ExtensionsStore',
+        access: 'canExtensionsRead',
+        component: './Extensions/Store',
+      },
+      {
+        path: '/operations/extensions/installations',
+        name: 'ExtensionsInstallations',
+        access: 'canExtensionsRead',
+        component: './Extensions/Installations',
+      },
+      {
+        path: '/operations/extensions/agent-sync',
+        name: 'ExtensionsAgentSync',
+        access: 'canExtensionsRead',
+        component: './Extensions/AgentSync',
       },
       {
         path: '/operations/storage',
@@ -328,14 +346,24 @@ export default [
       { path: '/ops/health', name: 'Health', access: 'canOpsRead', component: './Ops/Health' },
       { path: '/ops/nodes', name: 'Nodes', access: 'canOpsRead', component: './Ops/Nodes' },
       { path: '/ops/jobs', name: 'Jobs', access: 'canOpsRead', component: './Ops/Jobs' },
-      { path: '/ops/alerts', name: 'Alerts', access: 'canOpsRead', component: './Ops/Alerts' },
+      {
+        path: '/ops/alerts',
+        name: 'Alerts',
+        access: 'canOpsRead',
+        component: './Extensions/DomainEntry',
+      },
       {
         path: '/ops/rate-limits',
         name: 'RateLimits',
         access: 'canOpsManage',
         component: './Ops/RateLimits',
       },
-      { path: '/ops/backups', name: 'Backups', access: 'canOpsManage', component: './Ops/Backups' },
+      {
+        path: '/ops/backups',
+        name: 'Backups',
+        access: 'canOpsManage',
+        component: './Extensions/DomainEntry',
+      },
       { path: '/ops/mq', name: 'MQ', access: 'canOpsRead', component: './Ops/MQ' },
       {
         path: '/ops/certificates',
@@ -347,7 +375,7 @@ export default [
         path: '/ops/notifications',
         name: 'Notifications',
         access: 'canOpsManage',
-        component: './Ops/Notifications',
+        component: './Extensions/DomainEntry',
       },
       {
         path: '/ops/analytics-filters',
