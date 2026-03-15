@@ -8,9 +8,7 @@ export default {
   'menu.AdminUsers.Permissions.Roles': 'Role Management',
   'menu.AdminUsers.Permissions.Users': 'User Management',
   'menu.AdminUsers.Permissions.Config': 'Permission Config',
-  'menu.AdminUsers.Audit': 'Audit Logs',
   'menu.AdminUsers.LoginLogs': 'Login Logs',
-  'menu.AdminUsers.OperationLogs': 'Operation Logs',
 
   // Support
   'menu.Support': 'Support',
@@ -28,7 +26,6 @@ export default {
 
   // New game management structure
   'menu.SystemConfig': 'System Configuration',
-  'menu.SystemConfig.GameCatalog': 'Games',
   'menu.SystemConfig.GameEnvironments': 'Game Environments',
   'menu.SystemConfig.GameEntities': 'Entity Management',
   'menu.SystemConfig.FunctionManagement': 'Function Management',
@@ -52,16 +49,6 @@ export default {
   'menu.SystemConfig.CreateVirtualObject': 'Create Virtual Object',
   'menu.SystemConfig.EditVirtualObject': 'Edit Virtual Object',
 
-  // Operations management
-  'menu.Operations': 'Business Operations',
-  'menu.Operations.Approvals': 'Approval Management',
-  'menu.Operations.Audit': 'Audit Logs',
-  'menu.Operations.OperationLogs': 'Operation Logs',
-  'menu.Operations.Registry': 'Service Registry',
-  'menu.Operations.Servers': 'Servers',
-  'menu.Operations.Configs': 'Configs',
-  'menu.Operations.Platforms': 'Third-party Platforms',
-  'menu.Operations.Storage': 'Object Storage',
   'menu.Ops': 'Operations & SRE',
   'menu.Ops.Registry': 'Service Registry',
   'menu.Ops.Servers': 'Servers',
@@ -77,20 +64,6 @@ export default {
   'menu.Ops.AnalyticsFilters': 'Sampling Control',
   'menu.Ops.Backups': 'Backups',
   'menu.Ops.Maintenance': 'Maintenance',
-  'menu.Operations.Services': 'Services',
-  'menu.Operations.Health': 'Health',
-  'menu.Operations.Terms': 'Terminology',
-  'menu.Operations.Nodes': 'Node Maintenance',
-  'menu.Operations.Jobs': 'Jobs',
-  'menu.Operations.Alerts': 'Alerts',
-  'menu.Operations.RateLimits': 'Rate Limits',
-  'menu.Operations.MQ': 'Message Queue',
-  'menu.Operations.Certificates': 'Certificates',
-  'menu.Operations.Notifications': 'Notifications',
-  'menu.Operations.AnalyticsFilters': 'Sampling Control',
-  'menu.Operations.Backups': 'Backups',
-  'menu.Operations.Maintenance': 'Maintenance',
-
   // Ops
 
   // Analytics

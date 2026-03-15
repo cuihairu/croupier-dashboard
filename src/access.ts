@@ -38,6 +38,8 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     has('games:manage') ||
     has('functions:read') ||
     has('functions:manage') ||
+    has('ops:read') ||
+    has('ops:manage') ||
     has('extension:read') ||
     has('extensions:read') ||
     has('extension:manage') ||

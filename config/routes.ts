@@ -22,13 +22,6 @@ export default [
         path: '/system',
         redirect: '/system/environments',
       },
-      // 游戏基础配置页面已下线，合并到环境/实体等页面
-      {
-        path: '/system/manage',
-        name: 'GameCatalog',
-        access: 'canGamesManage',
-        component: './GameManage',
-      },
       {
         path: '/system/environments',
         name: 'GameEnvironments',
@@ -260,70 +253,6 @@ export default [
       },
     ],
   },
-  // Operations (运营)
-  {
-    path: '/operations',
-    name: 'Operations',
-    icon: 'shop',
-    access: 'canOpsRead',
-    routes: [
-      { path: '/operations', redirect: '/operations/approvals' },
-      {
-        path: '/operations/approvals',
-        name: 'Approvals',
-        access: 'canApprovalsRead',
-        component: './Extensions/DomainEntry',
-      },
-      { path: '/operations/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
-      {
-        path: '/operations/operation-logs',
-        name: 'OperationLogs',
-        access: 'canAuditRead',
-        component: './Admin/OperationLogs',
-      },
-      {
-        path: '/operations/configs',
-        name: 'Configs',
-        access: 'canOpsRead',
-        component: './Operations/Configs',
-      },
-      {
-        path: '/operations/extensions/store',
-        redirect: '/system/extensions/store',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/extensions/installations',
-        redirect: '/system/extensions/installations',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/extensions/agent-sync',
-        redirect: '/system/extensions/agent-sync',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/storage',
-        name: 'Storage',
-        access: 'canOpsRead',
-        component: './Storage',
-      },
-      {
-        path: '/operations/registry',
-        name: 'Registry',
-        access: 'canRegistryRead',
-        component: './Registry',
-        hideInMenu: true,
-      },
-      {
-        path: '/operations/servers',
-        name: 'Servers',
-        access: 'canRegistryRead',
-        component: './Servers',
-        hideInMenu: true,
-      },
-    ],
-  },
   // Ops (运维)
   {
     path: '/ops',
@@ -501,21 +430,12 @@ export default [
           },
         ],
       },
-      // Quick links to audit pages
-      { path: '/admin/audit', name: 'Audit', access: 'canAuditRead', component: './Audit' },
       // Login logs shortcut page (wraps Audit with preset kind=login)
       {
         path: '/admin/login-logs',
         name: 'LoginLogs',
         access: 'canAuditRead',
         component: './Admin/LoginLogs',
-      },
-      // Operation logs (audit view focused on non-login events)
-      {
-        path: '/admin/operation-logs',
-        name: 'OperationLogs',
-        access: 'canAuditRead',
-        component: './Admin/OperationLogs',
       },
     ],
   },

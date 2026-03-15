@@ -8,9 +8,7 @@ export default {
   'menu.AdminUsers.Permissions.Roles': '角色管理',
   'menu.AdminUsers.Permissions.Users': '用户管理',
   'menu.AdminUsers.Permissions.Config': '权限配置',
-  'menu.AdminUsers.Audit': '审计日志',
   'menu.AdminUsers.LoginLogs': '登录日志',
-  'menu.AdminUsers.OperationLogs': '操作日志',
 
   // 客服系统
   'menu.Support': '客服系统',
@@ -28,7 +26,6 @@ export default {
 
   // 新的游戏管理结构
   'menu.SystemConfig': '系统配置',
-  'menu.SystemConfig.GameCatalog': '游戏列表',
   'menu.SystemConfig.GameEnvironments': '游戏环境',
   'menu.SystemConfig.GameEntities': '实体管理',
   'menu.SystemConfig.FunctionManagement': '函数管理',
@@ -56,19 +53,6 @@ export default {
   'menu.SystemConfig.CreateVirtualObject': '创建虚拟对象',
   'menu.SystemConfig.EditVirtualObject': '编辑虚拟对象',
 
-  // 运营管理
-  'menu.Operations': '运营中心',
-  'menu.Operations.Approvals': '审批管理',
-  'menu.Operations.Audit': '审计日志',
-  'menu.Operations.OperationLogs': '操作日志',
-  'menu.Operations.Registry': '服务注册表',
-  'menu.Operations.Servers': '服务列表',
-  'menu.Operations.Configs': '配置管理',
-  'menu.Operations.Platforms': '第三方平台',
-  'menu.Operations.ExtensionsStore': '扩展商店',
-  'menu.Operations.ExtensionsInstallations': '扩展安装',
-  'menu.Operations.ExtensionsAgentSync': '扩展同步调试',
-  'menu.Operations.Storage': '对象存储',
   'menu.Ops': '运维中心',
   'menu.Ops.Registry': '服务注册表',
   'menu.Ops.Servers': '服务列表',
@@ -84,20 +68,6 @@ export default {
   'menu.Ops.AnalyticsFilters': '采样控制',
   'menu.Ops.Backups': '数据备份',
   'menu.Ops.Maintenance': '维护公告',
-  'menu.Operations.Services': '服务列表',
-  'menu.Operations.Health': '服务探活',
-  'menu.Operations.Terms': '术语字典',
-  'menu.Operations.Nodes': '节点维护',
-  'menu.Operations.Jobs': '任务监控',
-  'menu.Operations.Alerts': '告警中心',
-  'menu.Operations.RateLimits': '限速管理',
-  'menu.Operations.MQ': '消息队列',
-  'menu.Operations.Certificates': '证书监控',
-  'menu.Operations.Notifications': '事件通知',
-  'menu.Operations.AnalyticsFilters': '采样控制',
-  'menu.Operations.Backups': '数据备份',
-  'menu.Operations.Maintenance': '维护公告',
-
   // 数据分析
   'menu.Analytics': '数据分析',
   'menu.Analytics.Overview': '概览 KPI',
