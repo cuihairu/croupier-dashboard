@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge } from 'antd';
 import { BellOutlined } from '@ant-design/icons';
-import { openMessagesStream, unreadCount } from '@/services/api';
+import { unreadCount } from '@/services/api';
 import { history } from '@umijs/max';
 
 export default function MessagesBell() {
@@ -9,7 +9,6 @@ export default function MessagesBell() {
   useEffect(() => {
     let alive = true;
     let timer: any;
-    let es: EventSource | null = null;
     const hasToken = () => !!(localStorage.getItem('token') || '');
     const poll = async () => {
       if (!hasToken()) return; // don't call API before login
@@ -18,42 +17,17 @@ export default function MessagesBell() {
         if (alive) setCount(Number(r.count || 0));
       } catch {}
     };
-    const startSSE = () => {
-      try {
-        const token = localStorage.getItem('token') || '';
-        if (!token) return; // wait until token available
-        es = openMessagesStream();
-        const onUnread = (ev: MessageEvent) => {
-          try {
-            const data = JSON.parse(ev.data || '{}');
-            if (typeof data.count === 'number') setCount(data.count);
-          } catch {}
-        };
-        es.addEventListener('unread', onUnread as any);
-        es.onerror = () => {
-          es && es.close();
-          es = null; /* fallback to polling; will retry later */
-        };
-      } catch {
-        es = null;
-      }
-    };
     // prime once
     poll();
-    startSSE();
-    // periodic fallback poll
+    // periodic poll
     const loop = async () => {
       await poll();
-      if (!es) {
-        startSSE();
-      }
       timer = setTimeout(loop, 60000);
     };
     loop();
     return () => {
       alive = false;
       if (timer) clearTimeout(timer);
-      if (es) es.close();
     };
   }, []);
   return (

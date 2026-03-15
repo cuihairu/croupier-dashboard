@@ -107,7 +107,7 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
   return {
     actionsRender: () =>
       [
-        <GameSelector key="scope" variant="header" />,
+        isAuthed ? <GameSelector key="scope" variant="header" /> : null,
         isAuthed ? <MessagesBell key="msgs" /> : null,
         <Question key="doc" />,
         <SelectLang key="SelectLang" />,

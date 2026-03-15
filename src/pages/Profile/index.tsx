@@ -1005,7 +1005,7 @@ export default function Profile() {
                 <Row gutter={[16, 16]} className="profile-stats">
                   {stats.map((stat) => (
                     <Col xs={12} md={6} key={stat.title}>
-                      <Card bordered={false} className="profile-stats__card">
+                      <Card variant="borderless" className="profile-stats__card">
                         <Statistic title={stat.title} value={stat.value} prefix={stat.icon} />
                       </Card>
                     </Col>

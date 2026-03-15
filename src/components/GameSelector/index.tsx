@@ -84,7 +84,8 @@ const GameSelector: React.FC<GameSelectorProps> = ({
   className,
   variant = 'inline',
 }) => {
-  const canListGames = true;
+  const canListGames =
+    typeof window !== 'undefined' && Boolean(localStorage.getItem('token') || '');
 
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
