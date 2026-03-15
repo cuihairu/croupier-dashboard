@@ -64,6 +64,21 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     canAnalyticsRead: has('analytics:read') || has('admin'),
     canAnalyticsManage: has('analytics:manage') || has('admin'),
     canAnalyticsExport: has('analytics:export') || has('admin'),
+    // 扩展商店与安装管理
+    canExtensionsRead:
+      has('extension:read') ||
+      has('extensions:read') ||
+      has('extension:manage') ||
+      has('extensions:manage') ||
+      has('ops:read') ||
+      has('ops:manage') ||
+      has('admin'),
+    canExtensionsManage:
+      has('extension:write') ||
+      has('extensions:write') ||
+      has('extension:manage') ||
+      has('extensions:manage') ||
+      has('admin'),
     // 权限管理相关权限（与后端的 RBAC key 对齐）
     canPermissionManage:
       has('roles:read') ||

@@ -270,12 +270,6 @@ export default [
         component: './Operations/Configs',
       },
       {
-        path: '/operations/platforms',
-        name: 'Platforms',
-        access: 'canOpsRead',
-        component: './Platforms',
-      },
-      {
         path: '/operations/extensions/store',
         name: 'ExtensionsStore',
         access: 'canExtensionsRead',
