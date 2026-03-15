@@ -40,8 +40,13 @@ export default function LayoutDesigner({
     );
   }
 
-  const isTabsLayout = config.layout.type === 'tabs';
-  const tabs = isTabsLayout ? config.layout.tabs || [] : [];
+  const safeLayout = config.layout || { type: 'tabs', tabs: [] };
+  const safeConfig = {
+    ...config,
+    layout: safeLayout,
+  };
+  const isTabsLayout = safeLayout.type === 'tabs';
+  const tabs = isTabsLayout ? safeLayout.tabs || [] : [];
 
   // 添加 Tab
   const handleAddTab = () => {
@@ -66,9 +71,9 @@ export default function LayoutDesigner({
       };
 
       onChange({
-        ...config,
+        ...safeConfig,
         layout: {
-          ...config.layout,
+          ...safeLayout,
           tabs: [...tabs, newTab],
         },
       });
@@ -88,9 +93,9 @@ export default function LayoutDesigner({
       content: '确定要删除这个标签页吗？',
       onOk: () => {
         onChange({
-          ...config,
+          ...safeConfig,
           layout: {
-            ...config.layout,
+            ...safeLayout,
             tabs: (() => {
               const remainingTabs = tabs.filter((t) => t.key !== tabKey);
               if (remainingTabs.length === 0) return [];
@@ -117,9 +122,9 @@ export default function LayoutDesigner({
       : nextTabs;
 
     onChange({
-      ...config,
+      ...safeConfig,
       layout: {
-        ...config.layout,
+        ...safeLayout,
         tabs: normalizedTabs,
       },
     });
@@ -136,9 +141,9 @@ export default function LayoutDesigner({
     reordered.splice(target, 0, current);
 
     onChange({
-      ...config,
+      ...safeConfig,
       layout: {
-        ...config.layout,
+        ...safeLayout,
         tabs: reordered,
       },
     });
@@ -211,7 +216,7 @@ export default function LayoutDesigner({
                 type="primary"
                 onClick={() =>
                   onChange({
-                    ...config,
+                    ...safeConfig,
                     layout: {
                       type: 'tabs',
                       tabs: [],

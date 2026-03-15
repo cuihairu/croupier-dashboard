@@ -130,7 +130,7 @@ export async function startJob(
 }
 
 export async function cancelJob(job_id: string) {
-  return request<void>('/api/v1/jobs/cancel', { method: 'POST', data: { id: job_id } });
+  return request<void>(`/api/v1/jobs/${encodeURIComponent(job_id)}/cancel`, { method: 'POST' });
 }
 
 export async function fetchJobResult(id: string) {

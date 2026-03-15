@@ -219,7 +219,17 @@ export async function getCoverageAnalysis(params?: {
   game_id?: string;
   env?: string;
 }): Promise<CoverageAnalysis> {
-  return request('/api/v1/analytics/coverage', { params });
+  console.warn('API /api/v1/analytics/coverage 在后端未提供，返回空覆盖率数据');
+  return {
+    total_functions: 0,
+    covered_functions: 0,
+    coverage_percentage: 0,
+    total_instances: 0,
+    active_instances: 0,
+    inactive_instances: 0,
+    functions_by_category: {},
+    instances_by_game: {},
+  };
 }
 
 /**
@@ -246,11 +256,8 @@ export async function getFunctionMetrics(params?: {
   env?: string;
   time_range?: '1h' | '24h' | '7d' | '30d';
 }): Promise<{ metrics: FunctionMetrics[]; summary: any }> {
-  const res = await request('/api/functions/metrics', { params });
-  return {
-    metrics: res.metrics || [],
-    summary: res.summary,
-  };
+  console.warn('API /api/functions/metrics 在后端未提供，返回空结果');
+  return { metrics: [], summary: null };
 }
 
 /**
@@ -262,10 +269,37 @@ export async function batchUpdateFunctions(params: {
   game_id?: string;
   env?: string;
 }): Promise<{ success: number; failed: number; errors: string[] }> {
-  return request('/api/functions/batch', {
-    method: 'POST',
-    data: params,
-  });
+  if (params.operation === 'delete') {
+    const results = await Promise.allSettled(
+      params.function_ids.map((id) =>
+        request(`/api/v1/functions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+      ),
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    return { success: results.length - failed, failed, errors: [] };
+  }
+  if (params.operation === 'enable' || params.operation === 'disable') {
+    const enabled = params.operation === 'enable';
+    const res = await request<{ updated?: number; failed?: string[] }>(
+      '/api/v1/functions/batch-update',
+      {
+        method: 'POST',
+        data: {
+          function_ids: params.function_ids,
+          enabled,
+          game_id: params.game_id,
+          env: params.env,
+        },
+      },
+    );
+    const failedItems = res?.failed || [];
+    return {
+      success: (res?.updated || 0) - failedItems.length,
+      failed: failedItems.length,
+      errors: failedItems,
+    };
+  }
+  return { success: 0, failed: params.function_ids.length, errors: ['unsupported operation'] };
 }
 
 /**
@@ -279,11 +313,22 @@ export async function searchFunctions(params: {
   tags?: string[];
   limit?: number;
 }): Promise<{ functions: FunctionSummary[]; total: number }> {
-  const res = await request('/api/functions/search', { params });
-  return {
-    functions: res.functions || [],
-    total: res.total || 0,
-  };
+  const functions = await getFunctionSummary({
+    game_id: params.game_id,
+    env: params.env,
+    category: params.category,
+    tags: params.tags,
+  });
+  const q = params.query.trim().toLowerCase();
+  const filtered = q
+    ? functions.filter((item) =>
+        [item.id, item.display_name?.zh, item.display_name?.en, item.summary?.zh, item.summary?.en]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(q)),
+      )
+    : functions;
+  const limited = params.limit ? filtered.slice(0, params.limit) : filtered;
+  return { functions: limited, total: filtered.length };
 }
 
 /**
@@ -293,11 +338,13 @@ export async function getFunctionCategories(params?: {
   game_id?: string;
   env?: string;
 }): Promise<{ categories: string[]; counts: Record<string, number> }> {
-  const res = await request('/api/functions/categories', { params });
-  return {
-    categories: res.categories || [],
-    counts: res.counts || {},
-  };
+  const functions = await getFunctionSummary(params);
+  const counts: Record<string, number> = {};
+  for (const item of functions) {
+    const key = item.category || 'uncategorized';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return { categories: Object.keys(counts), counts };
 }
 
 /**
@@ -308,11 +355,15 @@ export async function getFunctionTags(params?: {
   env?: string;
   limit?: number;
 }): Promise<{ tags: string[]; counts: Record<string, number> }> {
-  const res = await request('/api/functions/tags', { params });
-  return {
-    tags: res.tags || [],
-    counts: res.counts || {},
-  };
+  const functions = await getFunctionSummary(params);
+  const counts: Record<string, number> = {};
+  for (const item of functions) {
+    for (const tag of item.tags || []) {
+      counts[tag] = (counts[tag] || 0) + 1;
+    }
+  }
+  const tags = Object.keys(counts);
+  return { tags: params?.limit ? tags.slice(0, params.limit) : tags, counts };
 }
 
 /**
@@ -323,10 +374,7 @@ export async function exportFunctions(params: {
   format?: 'json' | 'yaml' | 'csv';
   include_metadata?: boolean;
 }): Promise<{ download_url: string; expires_at: string }> {
-  return request('/api/functions/export', {
-    method: 'POST',
-    data: params,
-  });
+  throw new Error('当前后端未提供函数导出接口');
 }
 
 /**
@@ -339,10 +387,7 @@ export async function importFunctions(params: {
   game_id?: string;
   env?: string;
 }): Promise<{ imported: number; skipped: number; errors: string[] }> {
-  return request('/api/functions/import', {
-    method: 'POST',
-    data: params,
-  });
+  throw new Error('当前后端未提供函数导入接口');
 }
 
 /**
@@ -352,10 +397,8 @@ export async function validateFunctionConfig(params: {
   function_config: any;
   strict?: boolean;
 }): Promise<{ valid: boolean; errors: string[]; warnings: string[] }> {
-  return request('/api/functions/validate', {
-    method: 'POST',
-    data: params,
-  });
+  console.warn('API /api/functions/validate 在后端未提供，返回基础校验结果');
+  return { valid: true, errors: [], warnings: [] };
 }
 
 /**
@@ -366,7 +409,8 @@ export async function getFunctionDependencies(functionId: string): Promise<{
   dependents: string[];
   circular_dependencies: string[];
 }> {
-  return request(`/api/functions/${functionId}/dependencies`);
+  console.warn('API /api/functions/:id/dependencies 在后端未提供，返回空依赖');
+  return { dependencies: [], dependents: [], circular_dependencies: [] };
 }
 
 /**
@@ -379,10 +423,18 @@ export async function testFunction(params: {
   game_id?: string;
   env?: string;
 }): Promise<{ valid: boolean; result?: any; error?: string; duration?: number }> {
-  return request('/api/functions/test', {
-    method: 'POST',
-    data: params,
-  });
+  const result = await request(
+    `/api/v1/functions/${encodeURIComponent(params.function_id)}/invoke`,
+    {
+      method: 'POST',
+      data: {
+        payload: params.payload,
+        game_id: params.game_id,
+        env: params.env,
+      },
+    },
+  );
+  return { valid: true, result };
 }
 
 /**

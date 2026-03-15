@@ -111,6 +111,8 @@ export default function APITester({
   const [loading, setLoading] = useState(false);
   const [calling, setCalling] = useState(false);
   const [availableMethods, setAvailableMethods] = useState<string[]>([]);
+  const [methodsSource, setMethodsSource] = useState<string>('');
+  const [callSource, setCallSource] = useState<string>('');
   const [response, setResponse] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,9 +125,11 @@ export default function APITester({
       listPlatformMethods(selectedPlatform)
         .then((r) => {
           setAvailableMethods(r?.methods || []);
+          setMethodsSource(r?.source || '');
         })
         .catch(() => {
           setAvailableMethods([]);
+          setMethodsSource('');
         })
         .finally(() => {
           setLoading(false);
@@ -161,6 +165,7 @@ export default function APITester({
         method: values.method,
         request: values.request,
       });
+      setCallSource(result?.source || '');
 
       if (result.code === 200) {
         setResponse(result.response);
@@ -219,6 +224,14 @@ export default function APITester({
                       {currentPlatform.enabled ? '已启用' : '未启用'}
                     </Tag>{' '}
                     支持 {currentPlatform.methods?.length || 0} 个 API 方法
+                    {currentPlatform.source && (
+                      <>
+                        {' '}
+                        <Tag color={currentPlatform.source === 'extension' ? 'green' : 'default'}>
+                          {currentPlatform.source}
+                        </Tag>
+                      </>
+                    )}
                   </span>
                 }
                 type={currentPlatform.enabled ? 'info' : 'warning'}
@@ -271,7 +284,19 @@ export default function APITester({
 
                   {Form.useWatch('method', form) && (
                     <Alert
-                      message={getMethodDescription(Form.useWatch('method', form))}
+                      message={
+                        <span>
+                          {getMethodDescription(Form.useWatch('method', form))}
+                          {methodsSource && (
+                            <>
+                              {' '}
+                              <Tag color={methodsSource === 'extension' ? 'green' : 'default'}>
+                                methods: {methodsSource}
+                              </Tag>
+                            </>
+                          )}
+                        </span>
+                      }
                       type="info"
                       showIcon
                       style={{ marginTop: 8 }}
@@ -343,6 +368,13 @@ export default function APITester({
                     showIcon={false}
                     style={{ marginBottom: 12 }}
                   />
+                  {callSource && (
+                    <div style={{ marginBottom: 12 }}>
+                      <Tag color={callSource === 'extension' ? 'green' : 'default'}>
+                        call: {callSource}
+                      </Tag>
+                    </div>
+                  )}
                   <pre
                     style={{
                       background: '#f5f5f5',
