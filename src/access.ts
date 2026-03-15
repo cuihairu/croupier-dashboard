@@ -33,7 +33,18 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     has('admin');
   const canWorkspaceDelete =
     has('workspaces:delete') || has('workspaces:manage') || has('functions:manage') || has('admin');
+  const canSystemConfigRead =
+    has('games:read') ||
+    has('games:manage') ||
+    has('functions:read') ||
+    has('functions:manage') ||
+    has('extension:read') ||
+    has('extensions:read') ||
+    has('extension:manage') ||
+    has('extensions:manage') ||
+    has('admin');
   return {
+    canSystemConfigRead,
     canAdmin: has('admin'),
     // Game meta management
     canGamesManage: has('games:manage') || has('admin'),

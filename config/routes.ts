@@ -16,7 +16,7 @@ export default [
     path: '/system',
     name: 'SystemConfig',
     icon: 'control',
-    access: 'canGamesRead',
+    access: 'canSystemConfigRead',
     routes: [
       {
         path: '/system',
@@ -128,6 +128,24 @@ export default [
         name: 'Terms',
         access: 'canOpsManage',
         component: './Ops/Terms',
+      },
+      {
+        path: '/system/extensions/store',
+        name: 'ExtensionsStore',
+        access: 'canExtensionsRead',
+        component: './Extensions/Store',
+      },
+      {
+        path: '/system/extensions/installations',
+        name: 'ExtensionsInstallations',
+        access: 'canExtensionsRead',
+        component: './Extensions/Installations',
+      },
+      {
+        path: '/system/extensions/agent-sync',
+        name: 'ExtensionsAgentSync',
+        access: 'canExtensionsRead',
+        component: './Extensions/AgentSync',
       },
       // 虚拟对象编辑器（独立页面）
       {
@@ -271,21 +289,18 @@ export default [
       },
       {
         path: '/operations/extensions/store',
-        name: 'ExtensionsStore',
-        access: 'canExtensionsRead',
-        component: './Extensions/Store',
+        redirect: '/system/extensions/store',
+        hideInMenu: true,
       },
       {
         path: '/operations/extensions/installations',
-        name: 'ExtensionsInstallations',
-        access: 'canExtensionsRead',
-        component: './Extensions/Installations',
+        redirect: '/system/extensions/installations',
+        hideInMenu: true,
       },
       {
         path: '/operations/extensions/agent-sync',
-        name: 'ExtensionsAgentSync',
-        access: 'canExtensionsRead',
-        component: './Extensions/AgentSync',
+        redirect: '/system/extensions/agent-sync',
+        hideInMenu: true,
       },
       {
         path: '/operations/storage',
