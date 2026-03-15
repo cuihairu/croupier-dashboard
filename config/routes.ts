@@ -117,12 +117,6 @@ export default [
         component: './ComponentManagement',
       },
       {
-        path: '/system/terms',
-        name: 'Terms',
-        access: 'canOpsManage',
-        component: './Ops/Terms',
-      },
-      {
         path: '/system/extensions/store',
         name: 'ExtensionsStore',
         access: 'canExtensionsRead',
@@ -173,6 +167,7 @@ export default [
     name: 'ControlConsole',
     icon: 'appstore',
     access: 'canFunctionsRead',
+    hideInMenu: true,
     routes: [
       {
         path: '/console',
@@ -322,10 +317,55 @@ export default [
         component: './Ops/AnalyticsFilters',
       },
       {
+        path: '/ops/terms',
+        name: 'Terms',
+        access: 'canOpsManage',
+        component: './Ops/Terms',
+      },
+      {
         path: '/ops/maintenance',
         name: 'Maintenance',
         access: 'canOpsManage',
         component: './Ops/Maintenance',
+      },
+      {
+        path: '/ops/support',
+        name: 'Support',
+        access: 'canSupportRead',
+        routes: [
+          { path: '/ops/support', redirect: '/ops/support/tickets' },
+          {
+            path: '/ops/support/tickets',
+            name: 'Tickets',
+            access: 'canSupportRead',
+            component: './Support/Tickets',
+          },
+          {
+            path: '/ops/support/tickets/:id',
+            name: 'TicketDetail',
+            access: 'canSupportRead',
+            component: './Support/Tickets/Detail',
+            hideInMenu: true,
+          },
+          {
+            path: '/ops/support/faq',
+            name: 'FAQ',
+            access: 'canSupportRead',
+            component: './Support/FAQ',
+          },
+          {
+            path: '/ops/support/bugs',
+            name: 'Bugs',
+            access: 'canSupportRead',
+            component: './Support/Bugs',
+          },
+          {
+            path: '/ops/support/feedback',
+            name: 'Feedback',
+            access: 'canSupportRead',
+            component: './Support/Feedback',
+          },
+        ],
       },
     ],
   },
@@ -341,50 +381,14 @@ export default [
     ],
   },
   {
-    path: '/support',
-    name: 'Support',
-    icon: 'customerService',
-    access: 'canSupportRead',
-    routes: [
-      { path: '/support', redirect: '/support/tickets' },
-      {
-        path: '/support/tickets',
-        name: 'Tickets',
-        access: 'canSupportRead',
-        component: './Support/Tickets',
-      },
-      {
-        path: '/support/tickets/:id',
-        name: 'TicketDetail',
-        access: 'canSupportRead',
-        component: './Support/Tickets/Detail',
-        hideInMenu: true,
-      },
-      {
-        path: '/support/faq',
-        name: 'FAQ',
-        access: 'canSupportRead',
-        component: './Support/FAQ',
-      },
-      {
-        path: '/support/bugs',
-        name: 'Bugs',
-        access: 'canSupportRead',
-        component: './Support/Bugs',
-      },
-      {
-        path: '/support/feedback',
-        name: 'Feedback',
-        access: 'canSupportRead',
-        component: './Support/Feedback',
-      },
-    ],
-  },
-  {
     path: '/admin',
-    name: 'AdminUsers',
+    name: 'AccessControl',
     icon: 'team',
     routes: [
+      {
+        path: '/admin',
+        redirect: '/admin/permissions',
+      },
       {
         path: '/admin/account',
         name: 'UserAccount',
