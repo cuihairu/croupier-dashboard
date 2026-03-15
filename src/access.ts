@@ -55,7 +55,14 @@ export default function access(initialState: { currentUser?: AccessCurrentUser }
     canWorkspaceDelete,
     canEntitiesRead: has('entities:read') || has('entities:manage') || has('admin'),
     // 运维管理（Ops）
-    canOpsRead: has('ops:read') || has('admin') || has('registry:read'),
+    canOpsRead:
+      has('ops:read') ||
+      has('admin') ||
+      has('registry:read') ||
+      has('extension:read') ||
+      has('extensions:read') ||
+      has('extension:manage') ||
+      has('extensions:manage'),
     canOpsManage: has('ops:manage') || has('admin'),
     // Support (客服系统)
     canSupportRead: has('support:read') || has('admin'),

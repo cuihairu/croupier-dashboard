@@ -46,7 +46,11 @@ export async function getInitialState(): Promise<{
       let permissionIDs: string[] = [];
       try {
         const perms = await getMyPermissions();
-        permissionIDs = (perms as any)?.permissionIds || (perms as any)?.permission_ids || [];
+        permissionIDs =
+          (perms as any)?.permissionIDs ||
+          (perms as any)?.permissionIds ||
+          (perms as any)?.permission_ids ||
+          [];
       } catch {
         permissionIDs = [];
       }
