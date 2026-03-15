@@ -15,6 +15,13 @@
 - 权限控制与版本回滚入口
 - V1 稳定布局（`tabs + form-detail/list/form/detail`）
 
+## 在线 Demo
+
+- 地址：<https://croupier.cuihairu.site>
+- 账号：`admin`
+- 密码：`admin123`
+- 提示：该账号仅用于演示环境，请勿在生产环境使用默认凭据。
+
 ## 0. 图标与状态图例
 
 - `✅` 已稳定可用（默认开启，主链路覆盖）
